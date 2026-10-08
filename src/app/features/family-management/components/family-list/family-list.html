@@ -82,7 +82,7 @@
         </thead>
         <tbody>
           <tr
-            *ngFor="let family of families"
+            *ngFor="let family of families; trackBy: trackByFamily"
             tabindex="0"
             (click)="viewFamily(family)"
             (keydown.enter)="viewFamily(family)"

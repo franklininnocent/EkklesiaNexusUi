@@ -14,7 +14,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { SacramentDashboardGaps } from '../../models/sacrament-dashboard.model';
 
 export type SacramentDashboardProgressionKey =

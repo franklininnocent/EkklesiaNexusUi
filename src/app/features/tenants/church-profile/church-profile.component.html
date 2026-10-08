@@ -80,13 +80,36 @@
         <section class="cp-hero">
           <div class="cp-hero__banner">
             <div class="cp-hero__col cp-hero__col--church">
-              <div class="cp-hero__logo">
-                <img *ngIf="getTenantLogoUrl()" [src]="getTenantLogoUrl()" [alt]="churchProfile.name" loading="lazy" />
-                <div *ngIf="!getTenantLogoUrl()" class="cp-hero__logo-fallback" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                  </svg>
+              <div class="cp-hero__logo-wrap">
+                <div class="cp-hero__logo">
+                  <img
+                    *ngIf="showLogoImage()"
+                    [src]="getTenantLogoUrl()!"
+                    [alt]="churchProfile.name"
+                    (error)="handleLogoImageError()"
+                  />
+                  <div *ngIf="!showLogoImage()" class="cp-hero__logo-fallback" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </div>
                 </div>
+                <button
+                  *ngIf="canEdit"
+                  type="button"
+                  class="cp-hero__media-action"
+                  [disabled]="uploadingLogo"
+                  (click)="churchLogoInput.click()"
+                >
+                  {{ showLogoImage() || logoImagePreview ? 'Change logo' : 'Add logo' }}
+                </button>
+                <input
+                  #churchLogoInput
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  (change)="onChurchLogoSelected($event, true)"
+                  hidden
+                />
               </div>
               <div class="cp-hero__copy">
                 <h2 class="cp-hero__name">{{ churchProfile.name }}</h2>
@@ -103,16 +126,15 @@
             </div>
 
             <div class="cp-hero__col cp-hero__col--patron">
-              <div class="cp-hero__figure" *ngIf="getPatronImageUrl() || getPatronName()">
+              <div class="cp-hero__figure" *ngIf="showPatronImage() || getPatronName() || canEdit">
                 <div class="cp-hero__figure-media">
                   <img
-                    *ngIf="getPatronImageUrl()"
+                    *ngIf="showPatronImage()"
                     [src]="getPatronImageUrlWithFallback()"
                     [alt]="getPatronName() || 'Patron saint'"
-                    (error)="handlePatronImageError($event)"
-                    loading="lazy"
+                    (error)="handlePatronImageError()"
                   />
-                  <div *ngIf="!getPatronImageUrl()" class="cp-hero__figure-fallback" aria-hidden="true">
+                  <div *ngIf="!showPatronImage()" class="cp-hero__figure-fallback" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
@@ -121,6 +143,22 @@
                 <div class="cp-hero__figure-copy">
                   <span class="cp-hero__figure-label">Our Patron</span>
                   <span class="cp-hero__figure-name" *ngIf="getPatronName()">{{ getPatronName() }}</span>
+                  <button
+                    *ngIf="canEdit"
+                    type="button"
+                    class="cp-hero__media-action"
+                    [disabled]="uploadingPatronImage"
+                    (click)="patronImageInput.click()"
+                  >
+                    {{ showPatronImage() ? 'Change image' : 'Add image' }}
+                  </button>
+                  <input
+                    #patronImageInput
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    (change)="onHeroPatronSelected($event)"
+                    hidden
+                  />
                 </div>
               </div>
             </div>
@@ -129,13 +167,12 @@
               <div class="cp-hero__figure" *ngIf="getPopeDisplayName()">
                 <div class="cp-hero__figure-media">
                   <img
-                    *ngIf="getPopeImageUrl()"
+                    *ngIf="showPopeImage()"
                     [src]="getPopeImageUrlWithFallback()"
                     [alt]="getPopeDisplayName()!"
-                    (error)="handlePopeImageError($event)"
-                    loading="lazy"
+                    (error)="handlePopeImageError()"
                   />
-                  <div *ngIf="!getPopeImageUrl()" class="cp-hero__figure-fallback" aria-hidden="true">
+                  <div *ngIf="!showPopeImage()" class="cp-hero__figure-fallback" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                     </svg>
@@ -347,12 +384,20 @@
       <!-- ====================================================================== -->
       <!-- LEADERSHIP TAB -->
       <!-- ====================================================================== -->
-      <div *ngIf="activeTab === 'leadership'" class="tab-pane leadership-pane">
-        <app-church-leadership-governance
-          [canEdit]="canEditLeadership"
-          (currentChanged)="onGovernanceCurrentChanged($event)"
-        ></app-church-leadership-governance>
-      </div>
+      @if (activeTab === 'leadership') {
+        @defer {
+          <div class="tab-pane leadership-pane">
+            <app-church-leadership-governance
+              [canEdit]="canEditLeadership"
+              (currentChanged)="onGovernanceCurrentChanged($event)"
+            ></app-church-leadership-governance>
+          </div>
+        } @placeholder {
+          <div class="tab-pane leadership-pane" aria-busy="true">
+            <app-cf-brand-loader size="section" label="Loading leadership" />
+          </div>
+        }
+      }
 
       <!-- ====================================================================== -->
       <!-- STATISTICS TAB -->
@@ -549,9 +594,17 @@
       <!-- ====================================================================== -->
       <!-- DIOCESAN BISHOP TAB -->
       <!-- ====================================================================== -->
-      <div *ngIf="activeTab === 'diocesan-bishop'" class="tab-pane diocesan-bishop-pane">
-        <app-diocesan-bishop-panel></app-diocesan-bishop-panel>
-      </div>
+      @if (activeTab === 'diocesan-bishop') {
+        @defer {
+          <div class="tab-pane diocesan-bishop-pane">
+            <app-diocesan-bishop-panel></app-diocesan-bishop-panel>
+          </div>
+        } @placeholder {
+          <div class="tab-pane diocesan-bishop-pane" aria-busy="true">
+            <app-cf-brand-loader size="section" label="Loading diocesan bishop" />
+          </div>
+        }
+      }
 
     </div>
   </div>
@@ -561,23 +614,30 @@
 <!-- MODALS -->
 <!-- ====================================================================== -->
 
-<!-- Leadership Workspace -->
-<app-church-leader-workspace
-  [open]="showLeaderModal"
-  [leader]="selectedLeader"
-  [canManage]="canEdit"
-  (closed)="closeLeaderModal()"
-  (saved)="onLeaderWorkspaceSaved($event)"
-></app-church-leader-workspace>
+@if (showLeaderModal) {
+  @defer {
+    <app-church-leader-workspace
+      [open]="showLeaderModal"
+      [leader]="selectedLeader"
+      [canManage]="canEdit"
+      (closed)="closeLeaderModal()"
+      (saved)="onLeaderWorkspaceSaved($event)"
+    ></app-church-leader-workspace>
+  }
+}
 
-<app-church-leader-detail
-  [open]="showLeaderDetail"
-  [leader]="viewingLeader"
-  [canManage]="canEdit"
-  (closed)="closeLeaderDetail()"
-  (editRequested)="onLeaderDetailEdit($event)"
-  (deleteRequested)="onLeaderDetailDelete($event)"
-></app-church-leader-detail>
+@if (showLeaderDetail) {
+  @defer {
+    <app-church-leader-detail
+      [open]="showLeaderDetail"
+      [leader]="viewingLeader"
+      [canManage]="canEdit"
+      (closed)="closeLeaderDetail()"
+      (editRequested)="onLeaderDetailEdit($event)"
+      (deleteRequested)="onLeaderDetailDelete($event)"
+    ></app-church-leader-detail>
+  }
+}
 
 <!-- Statistics Modal — exact Add Category (.cf-split-*) form language inside app-modal-shell -->
 <app-modal-shell
@@ -880,6 +940,40 @@
     <section class="cf-split-section" aria-labelledby="general-section-church">
       <h3 id="general-section-church" class="cf-split-section__title">Church information</h3>
       <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="church_logo_input">
+            Church logo <span class="cf-split-optional">optional</span>
+          </label>
+          <div class="cf-split-image-upload">
+            <div class="cf-split-image-upload__preview" *ngIf="logoImagePreview || showLogoImage()">
+              <img
+                [src]="logoImagePreview || getTenantLogoUrl()"
+                [alt]="churchProfile?.name || 'Church logo'"
+                (error)="handleLogoImageError()"
+              />
+              <button
+                type="button"
+                class="cf-split-image-upload__remove"
+                (click)="removeChurchLogo()"
+                *ngIf="showLogoImage() || logoImagePreview"
+                aria-label="Remove church logo"
+              >
+                Remove
+              </button>
+            </div>
+            <label class="cf-btn" for="church_logo_input">
+              {{ logoImagePreview || showLogoImage() ? 'Change logo' : 'Upload logo' }}
+            </label>
+            <input
+              type="file"
+              id="church_logo_input"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              (change)="onChurchLogoSelected($event)"
+              hidden
+            />
+          </div>
+          <p class="cf-split-field__hint">JPG, PNG, or WEBP. Max 5MB. Saved with the rest of this form.</p>
+        </div>
         <div class="cf-split-field">
           <label for="modal_denomination_id">
             Denomination <span class="cf-split-optional">optional</span>

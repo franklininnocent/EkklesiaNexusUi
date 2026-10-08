@@ -4,6 +4,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ParamMap } from '@angular/router';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
+import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
+import { ToastService } from '@core/services/toast.service';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { DataTableComponent } from '@shared/components/data-table/data-table.component';
 import { IfFeatureDirective } from '@shared/directives/if-feature.directive';
@@ -11,7 +13,7 @@ import {
   AdvancedSearchPanelComponent,
   SearchField,
 } from '@shared/components/advanced-search-panel/advanced-search-panel.component';
-import { catchError } from 'rxjs/operators';
+import { catchError, filter } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { DonationDashboardSnapshot } from '../models/donation.model';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
@@ -89,7 +91,10 @@ export class DonationsDuesComponent implements OnInit {
   message: string | null = null;
   error: string | null = null;
   canManage = false;
+  canNotify = false;
   whatsAppQueueing = false;
+  selectionActionBusy = false;
+  selectedIds = new Set<string>();
   headlineFamilies = false;
   overdueFamilyCountFromApi: number | null = null;
   duesListTotal = 0;
@@ -112,6 +117,8 @@ export class DonationsDuesComponent implements OnInit {
     private donationsService: DonationsService,
     private authService: AuthService,
     private quickCollectService: QuickCollectService,
+    private toast: ToastService,
+    private confirmationDialog: ConfirmationDialogService,
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
@@ -120,6 +127,7 @@ export class DonationsDuesComponent implements OnInit {
 
   ngOnInit(): void {
     this.canManage = this.authService.hasPermission('donations.manage');
+    this.canNotify = this.authService.hasPermission('donations.notifications');
     this.applyRouteQueryParams(this.route.snapshot.queryParamMap, true);
     this.initSearchFields();
     this.loadSnapshot();
@@ -179,6 +187,7 @@ export class DonationsDuesComponent implements OnInit {
     this.tableSearch = String(values['search'] ?? '').trim();
     this.showFilters = false;
     this.syncSearchFieldValues();
+    this.pruneSelection();
     void this.router.navigate(['/donations/dues'], {
       queryParams: {
         due_schedule: nextSchedule || null,
@@ -194,6 +203,7 @@ export class DonationsDuesComponent implements OnInit {
     this.tableSearch = '';
     this.showFilters = false;
     this.syncSearchFieldValues();
+    this.pruneSelection();
     void this.router.navigate(['/donations/dues'], {
       queryParams: {
         due_schedule: null,
@@ -231,6 +241,7 @@ export class DonationsDuesComponent implements OnInit {
     if (key === 'search') {
       this.tableSearch = '';
       this.syncSearchFieldValues();
+      this.pruneSelection();
       return;
     }
     if (key === 'schedule') {
@@ -254,6 +265,7 @@ export class DonationsDuesComponent implements OnInit {
 
   clearAllFilters(): void {
     this.tableSearch = '';
+    this.selectedIds = new Set();
     void this.router.navigate(['/donations/dues'], {
       queryParams: {
         due_schedule: null,
@@ -334,6 +346,89 @@ export class DonationsDuesComponent implements OnInit {
       familyId: due.family_id || undefined,
       dueId: due.id,
     });
+  }
+
+  collectSelected(): void {
+    if (!this.canCollectSelected || this.selectionActionBusy) {
+      if (this.selectedCount && !this.canCollectSelected) {
+        this.toast.warning(
+          'Collect Payment works for one family at a time. Select dues for a single family.',
+          'Select one family'
+        );
+      }
+      return;
+    }
+    const due = this.selectedDues.find((row) => !!row.family_id);
+    if (!due) {
+      return;
+    }
+    this.collectForDue(due);
+  }
+
+  get selectedDues(): ContributionDue[] {
+    return this.filteredDues.filter((due) => this.selectedIds.has(due.id));
+  }
+
+  get selectedCount(): number {
+    return this.selectedDues.length;
+  }
+
+  get allVisibleSelected(): boolean {
+    return this.filteredDues.length > 0 && this.filteredDues.every((due) => this.selectedIds.has(due.id));
+  }
+
+  get someVisibleSelected(): boolean {
+    return this.selectedCount > 0 && !this.allVisibleSelected;
+  }
+
+  get canCollectSelected(): boolean {
+    if (!this.selectedCount) {
+      return false;
+    }
+    const familyIds = [
+      ...new Set(this.selectedDues.map((due) => due.family_id).filter((id): id is string => !!id)),
+    ];
+    return familyIds.length === 1;
+  }
+
+  get canWaiveSelected(): boolean {
+    return this.canManage && this.selectedDues.some((due) => this.isWaivable(due));
+  }
+
+  get canWhatsAppSelected(): boolean {
+    return this.canManage && this.selectedDues.some((due) => !!due.family_id);
+  }
+
+  get collectToolbarTitle(): string {
+    if (!this.selectedCount) {
+      return 'Select a family to collect';
+    }
+    if (!this.canCollectSelected) {
+      return 'Select dues for one family to collect';
+    }
+    return 'Collect Payment';
+  }
+
+  isDueSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  toggleDueSelection(id: string, checked: boolean): void {
+    const next = new Set(this.selectedIds);
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    this.selectedIds = next;
+  }
+
+  toggleSelectAll(checked: boolean): void {
+    if (checked) {
+      this.selectedIds = new Set(this.filteredDues.map((due) => due.id));
+      return;
+    }
+    this.selectedIds = new Set();
   }
 
   get filteredDues(): ContributionDue[] {
@@ -479,6 +574,7 @@ export class DonationsDuesComponent implements OnInit {
           this.overdueFamilyCountFromApi = null;
         }
         this.loading = false;
+        this.pruneSelection();
         refreshStewardshipView(this.cdr);
       },
       error: () => {
@@ -490,9 +586,14 @@ export class DonationsDuesComponent implements OnInit {
   }
 
   queueBulkWhatsApp(): void {
-    const ids = this.overdueFamilyIds;
+    if (!this.canWhatsAppSelected || this.whatsAppQueueing) {
+      return;
+    }
+    const ids = [
+      ...new Set(this.selectedDues.filter((due) => !!due.family_id).map((due) => due.family_id)),
+    ];
     if (!ids.length) {
-      this.message = 'No overdue families on this page to remind.';
+      this.toast.warning('Select at least one family to send a WhatsApp reminder.', 'Nothing selected');
       return;
     }
 
@@ -500,12 +601,12 @@ export class DonationsDuesComponent implements OnInit {
     this.donationsService.queueWhatsAppOutreach(ids).subscribe({
       next: (res) => {
         this.whatsAppQueueing = false;
-        this.message = res.message;
+        this.toast.success(res.message || 'WhatsApp reminders queued.', 'Reminders');
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
+      error: (err) => {
         this.whatsAppQueueing = false;
-        this.error = 'Unable to queue WhatsApp reminders right now.';
+        this.toast.error(err?.error?.message || 'Unable to queue WhatsApp reminders right now.', 'Could not remind');
         refreshStewardshipView(this.cdr);
       },
     });
@@ -514,48 +615,110 @@ export class DonationsDuesComponent implements OnInit {
   generateScheduled(): void {
     this.donationsService.generateScheduledContributions().subscribe({
       next: (res) => {
-        this.message = `${res.message} Created ${res.data.generated} new due(s) across auto-generate plans.`;
+        this.toast.success(
+          `${res.message} Created ${res.data.generated} new due(s) across auto-generate plans.`,
+          'Plans updated'
+        );
         this.loadDues();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Scheduled generation failed.';
+        this.toast.error(err?.error?.message || 'Scheduled generation failed.', 'Could not catch up plans');
+      },
+    });
+  }
+
+  waiveSelected(): void {
+    if (!this.canWaiveSelected || this.selectionActionBusy) {
+      return;
+    }
+    const ids = this.selectedDues.filter((due) => this.isWaivable(due)).map((due) => due.id);
+    if (!ids.length) {
+      return;
+    }
+    const countLabel = ids.length === 1 ? '1 contribution due' : `${ids.length} contribution dues`;
+    this.confirmationDialog
+      .confirm({
+        title: 'Waive selected dues',
+        message: `Waive ${countLabel}? Families will no longer be asked to pay these amounts.`,
+        confirmText: 'Waive',
+        variant: 'danger',
+      })
+      .pipe(filter((result) => result.confirmed))
+      .subscribe(() => {
+        this.selectionActionBusy = true;
+        this.donationsService.bulkWaiveDues(ids).subscribe({
+          next: (res) => {
+            this.selectionActionBusy = false;
+            this.applyBulkResultToast(res.message, res.data.skipped_count);
+            this.selectedIds = new Set();
+            this.loadDues();
+          },
+          error: (err) => {
+            this.selectionActionBusy = false;
+            this.toast.error(err?.error?.message || 'Failed to waive dues.', 'Could not waive');
+            refreshStewardshipView(this.cdr);
+          },
+        });
+      });
+  }
+
+  remindSelected(): void {
+    if (!this.canNotify || !this.selectedCount || this.selectionActionBusy) {
+      return;
+    }
+    const ids = this.selectedDues.map((due) => due.id);
+    this.selectionActionBusy = true;
+    this.donationsService.bulkRemindDues(ids).subscribe({
+      next: (res) => {
+        this.selectionActionBusy = false;
+        this.applyBulkResultToast(res.message, res.data.skipped_count);
+        refreshStewardshipView(this.cdr);
+      },
+      error: (err) => {
+        this.selectionActionBusy = false;
+        this.toast.error(err?.error?.message || 'Failed to queue reminders.', 'Could not remind');
+        refreshStewardshipView(this.cdr);
       },
     });
   }
 
   waive(due: ContributionDue): void {
-    this.donationsService.waiveDue(due.id).subscribe({
-      next: (res) => {
-        this.message = res.message;
-        this.loadDues();
-      },
-      error: (err) => {
-        this.error = err?.error?.message || 'Failed to waive due.';
-      },
-    });
+    this.selectedIds = new Set([due.id]);
+    this.waiveSelected();
+  }
+
+  remind(due: ContributionDue): void {
+    this.selectedIds = new Set([due.id]);
+    this.remindSelected();
   }
 
   cancel(due: ContributionDue): void {
     this.donationsService.cancelDue(due.id).subscribe({
       next: (res) => {
-        this.message = res.message;
+        this.toast.success(res.message, 'Cancelled');
         this.loadDues();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to cancel due.';
+        this.toast.error(err?.error?.message || 'Failed to cancel due.', 'Could not cancel');
       },
     });
   }
 
-  remind(due: ContributionDue): void {
-    this.donationsService.remindDue(due.id).subscribe({
-      next: (res) => {
-        this.message = res.message;
-      },
-      error: (err) => {
-        this.error = err?.error?.message || 'Failed to queue reminder.';
-      },
-    });
+  private isWaivable(due: ContributionDue): boolean {
+    return due.status === 'pending' || due.status === 'partially_paid';
+  }
+
+  private applyBulkResultToast(message: string, skippedCount: number): void {
+    if (skippedCount > 0) {
+      this.toast.warning(message, 'Some records were skipped');
+      return;
+    }
+    this.toast.success(message, 'Done');
+  }
+
+  private pruneSelection(): void {
+    const visible = new Set(this.filteredDues.map((due) => due.id));
+    this.selectedIds = new Set([...this.selectedIds].filter((id) => visible.has(id)));
   }
 
   private applyRouteQueryParams(params: ParamMap, initial: boolean): void {

@@ -1,9 +1,9 @@
-jest.mock('chart.js/auto', () => ({
+jest.mock('@shared/charts/ekklesia-chart', () => ({
   Chart: jest.fn().mockImplementation(() => ({ destroy: jest.fn() })),
 }));
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { SacramentDashboardProgressionRadialChartComponent } from './sacrament-dashboard-progression-radial-chart.component';
 import { SacramentDashboardGaps } from '../../models/sacrament-dashboard.model';
 

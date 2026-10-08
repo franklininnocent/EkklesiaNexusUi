@@ -3,6 +3,7 @@ export interface SacramentDashboardParams {
   date_to?: string;
   bcc_id?: string;
   include_gaps?: boolean;
+  gaps_only?: boolean;
   include_marriage_gaps?: boolean;
   preset?: 'calendar_month_mtd';
   minimal?: boolean;

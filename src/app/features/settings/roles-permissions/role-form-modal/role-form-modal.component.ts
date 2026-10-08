@@ -730,7 +730,6 @@ export class RoleFormModalComponent implements OnInit, OnChanges, AfterViewCheck
       members: 'Members',
       families: 'Families',
       events: 'Events',
-      attendance: 'Attendance',
       donations: 'Finance',
       reports: 'Reports',
       roles: 'Roles',

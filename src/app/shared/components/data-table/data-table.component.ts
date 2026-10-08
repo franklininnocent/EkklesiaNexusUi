@@ -11,14 +11,18 @@ import { CfBrandLoaderComponent } from '../cf-brand-loader/cf-brand-loader.compo
  * treatment. Consumers project their own `<thead>`/`<tbody>` exactly as
  * before; `<th>`/`<td>` styling and the fixed-width actions column
  * (`.cf-table__actions-col`) continue to come from the global tokens.
+ *
+ * For large lists, add `trackBy` on projected `*ngFor` rows using
+ * `trackByEntityId` from `@shared/utils/cf-track-by.util`.
  */
+export { trackByEntityId, trackByIndex } from '@shared/utils/cf-track-by.util';
 @Component({
   selector: 'app-data-table',
   standalone: true,
   imports: [CommonModule, CfBrandLoaderComponent],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataTableComponent {
   /** Adds a pointer cursor + hover background to body rows. */

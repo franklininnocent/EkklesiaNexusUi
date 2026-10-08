@@ -46,6 +46,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
+        data: { preload: true },
         loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES)
       },
       {
@@ -57,11 +58,13 @@ export const routes: Routes = [
       },
       {
         path: 'notifications',
+        data: { preload: true },
         loadChildren: () =>
           import('./features/notifications/notifications.routes').then((m) => m.NOTIFICATIONS_ROUTES),
       },
       {
         path: 'profile',
+        data: { preload: true },
         loadChildren: () => import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES)
       },
       {
@@ -118,6 +121,7 @@ export const routes: Routes = [
       {
         path: 'families',
         canActivate: [parishResourceGuard],
+        data: { preload: true },
         loadChildren: () =>
           import('./features/family-management/family.routes').then((m) => m.FAMILY_ROUTES),
       },
@@ -129,6 +133,7 @@ export const routes: Routes = [
       {
         path: 'members',
         canActivate: [parishResourceGuard],
+        data: { preload: true },
         loadChildren: () => import('./features/members/members.routes').then(m => m.MEMBERS_ROUTES)
       },
       {

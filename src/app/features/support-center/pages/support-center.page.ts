@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
+import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap, takeUntil } from 'rxjs';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { TabStripComponent, TabStripItem } from '@shared/components/tab-strip/tab-strip.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
@@ -328,7 +328,9 @@ export class SupportCenterPage implements OnInit, OnDestroy {
           switchMap((q) => {
             this.loadingSearch = true;
             this.cdr.markForCheck();
-            return this.sessions.searchTenants(q);
+            return this.sessions.searchTenants(q).pipe(
+              catchError(() => of({ data: [] as SupportTenantSummary[] }))
+            );
           }),
           takeUntil(this.destroy$)
         )

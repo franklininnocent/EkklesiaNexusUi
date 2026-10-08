@@ -4,7 +4,7 @@
     subtitle="Search, filter, and manage all family members and heads"
   >
     <app-list-toolbar
-      searchPlaceholder="Search by name, phone, email…"
+      searchPlaceholder="Search member or father name (2+ letters)"
       [searchValue]="searchTerm"
       [filterCount]="getActiveFilterCount()"
       (searchChange)="onListSearchChange($event)"

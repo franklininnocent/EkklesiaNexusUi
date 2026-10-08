@@ -15,7 +15,7 @@ import {
   inject,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { MemberAgeChartSlice } from '../../models/member-dashboard.model';
 import { memberAgeColor } from '../../utils/member-age-groups.util';
 

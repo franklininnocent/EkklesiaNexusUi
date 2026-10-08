@@ -77,7 +77,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of users">
+          <tr *ngFor="let user of users; trackBy: trackByUser">
             <td>
               <div class="users__name-cell">
                 <app-user-avatar
@@ -98,7 +98,7 @@
             <td>
               <div class="users__roles">
                 <app-status-badge
-                  *ngFor="let role of getRoles(user); let i = index"
+                  *ngFor="let role of getRoles(user); let i = index; trackBy: trackByIndex"
                   [label]="role"
                   [tone]="roleTone(i, role)"
                 ></app-status-badge>

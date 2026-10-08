@@ -165,6 +165,10 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.paletteService.open$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.open());
+    this.paletteService.close$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.close());
+    if (this.paletteService.consumePendingOpen()) {
+      this.open();
+    }
 
     this.search$.pipe(
       debounceTime(180),
@@ -200,15 +204,6 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   onGlobalKeydown(event: KeyboardEvent): void {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-      event.preventDefault();
-      if (this.isOpen) {
-        this.close();
-      } else {
-        this.open();
-      }
-      return;
-    }
     if (event.key === 'Escape' && this.isOpen) {
       if (this.overlayHandle && !this.overlayHandle.isTop()) {
         return;
@@ -233,6 +228,9 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
     this.isOpen = false;
     this.searchGroups = [];
     this.releaseOverlay();
+    if (this.paletteService.isOpen) {
+      this.paletteService.close();
+    }
   }
 
   ngOnDestroy(): void {

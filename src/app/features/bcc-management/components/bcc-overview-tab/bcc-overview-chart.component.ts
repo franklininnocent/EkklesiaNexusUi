@@ -12,7 +12,7 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 
 export type BccOverviewChartType = 'doughnut' | 'pie' | 'column';
 

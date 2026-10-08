@@ -170,6 +170,16 @@
   vertical-align: top;
 }
 
+.donations-dues__select-col {
+  width: 2rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.donations-dues__selected-count {
+  white-space: nowrap;
+}
+
 .donations-dues__stack {
   display: grid;
   gap: 0.1rem;

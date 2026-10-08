@@ -1,9 +1,20 @@
-import { Component, inject, OnInit, OnDestroy, HostListener, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  inject,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  ElementRef,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  NgZone,
+  Type,
+} from '@angular/core';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject } from 'rxjs';
-import { filter, takeUntil } from 'rxjs/operators';
+import { Observable, Subject, EMPTY } from 'rxjs';
+import { catchError, filter, takeUntil } from 'rxjs/operators';
 
 import { AppState } from '@core/store';
 import { User, Tenant } from '@core/models';
@@ -14,10 +25,9 @@ import { AuthService } from '@core/services/auth.service';
 import { ApplicationContextService } from '@core/services/application-context.service';
 import { NavMenuService, NavMenuId } from '@core/services/nav-menu.service';
 import { BreadcrumbComponent } from '@shared/components/breadcrumb/breadcrumb';
-import { QuickCollectDrawerComponent } from '@features/donations/components/quick-collect-drawer/quick-collect-drawer.component';
 import { QuickCollectService } from '@features/donations/services/quick-collect.service';
-import { CommandPaletteComponent } from '@shared/components/command-palette/command-palette.component';
-import { GlobalFamilySearchComponent } from '@shared/components/global-family-search/global-family-search.component';
+import { CommandPaletteService } from '@shared/services/command-palette.service';
+import { GlobalFamilySearchService } from '@shared/services/global-family-search.service';
 import { SupportSessionBannerComponent } from '@features/support-center/components/support-session-banner/support-session-banner.component';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { SubscriptionStatusBannerComponent } from '@shared/components/subscription-status-banner/subscription-status-banner.component';
@@ -28,6 +38,7 @@ import { resolveUserProfileImageUrl } from '@core/utils/user-profile-image.util'
 import { SidebarNavForestComponent } from '../sidebar-nav/sidebar-nav-forest.component';
 import { NotificationBellComponent } from '@features/notifications/components/notification-bell/notification-bell.component';
 import { NotificationPopoverComponent } from '@features/notifications/components/notification-popover/notification-popover.component';
+import { NotificationInboxService } from '@features/notifications/services/notification-inbox.service';
 import {
   buildAppSidebarSections,
   filterSidebarSections,
@@ -40,9 +51,7 @@ import { SidebarNavSection } from '../sidebar-nav/sidebar-nav.model';
     CommonModule,
     RouterModule,
     BreadcrumbComponent,
-    QuickCollectDrawerComponent,
-    CommandPaletteComponent,
-    GlobalFamilySearchComponent,
+    NgComponentOutlet,
     SupportSessionBannerComponent,
     SubscriptionStatusBannerComponent,
     UserAvatarComponent,
@@ -63,8 +72,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private navMenu = inject(NavMenuService);
   private elementRef = inject(ElementRef);
   private cdr = inject(ChangeDetectorRef);
+  private zone = inject(NgZone);
   private destroy$ = new Subject<void>();
   private quickCollectService = inject(QuickCollectService);
+  private commandPalette = inject(CommandPaletteService);
+  private globalFamilySearch = inject(GlobalFamilySearchService);
+  readonly notificationInbox = inject(NotificationInboxService);
   private supportSessions = inject(SupportSessionService);
   private subscriptionAccess = inject(SubscriptionAccessService);
   private entitlements = inject(EntitlementService);
@@ -80,6 +93,13 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   visibleSidebarSections: SidebarNavSection[] = [];
   private readonly sidebarSections = buildAppSidebarSections();
+  shellQuickCollect = false;
+  commandPaletteMounted = false;
+  shellGlobalFamilySearch = false;
+  quickCollectComponent: Type<unknown> | null = null;
+  commandPaletteComponent: Type<unknown> | null = null;
+  globalFamilySearchComponent: Type<unknown> | null = null;
+  private resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.currentUser$ = this.store.select(selectCurrentUser);
@@ -149,13 +169,38 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             page: url,
             action: 'navigate',
           })
+          .pipe(
+            catchError(() => EMPTY),
+            takeUntil(this.destroy$),
+          )
           .subscribe();
       });
 
     this.updateViewportState();
+
+    this.quickCollectService.open$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        void this.mountQuickCollectShell();
+      });
+
+    this.commandPalette.open$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        void this.mountCommandPaletteShell();
+      });
+
+    this.globalFamilySearch.mount$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        void this.mountGlobalFamilySearchShell();
+      });
   }
 
   ngOnDestroy(): void {
+    if (this.resizeTimer) {
+      clearTimeout(this.resizeTimer);
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -171,9 +216,38 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName?.toLowerCase();
+    const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
+
+    if (event.key === '/' && !isTyping && this.hasParishContext(this.currentUser)) {
+      event.preventDefault();
+      this.openGlobalFamilySearch(true);
+      return;
+    }
+
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') {
+      return;
+    }
+    event.preventDefault();
+    void this.mountCommandPaletteShell().then(() => {
+      this.commandPalette.toggle();
+      this.cdr.markForCheck();
+    });
+  }
+
   @HostListener('window:resize')
   onWindowResize(): void {
-    this.updateViewportState();
+    this.zone.runOutsideAngular(() => {
+      if (this.resizeTimer) {
+        clearTimeout(this.resizeTimer);
+      }
+      this.resizeTimer = setTimeout(() => {
+        this.zone.run(() => this.updateViewportState());
+      }, 150);
+    });
   }
 
   toggleSidebar(): void {
@@ -347,7 +421,48 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     if (this.isSubscriptionReadOnly()) {
       return;
     }
-    this.quickCollectService.open();
+    void this.mountQuickCollectShell().then(() => {
+      this.quickCollectService.open();
+    });
+  }
+
+  openGlobalFamilySearch(focus = false): void {
+    if (!this.hasParishContext(this.currentUser)) {
+      return;
+    }
+    this.globalFamilySearch.requestMount(focus);
+    void this.mountGlobalFamilySearchShell();
+  }
+
+  private async mountQuickCollectShell(): Promise<void> {
+    this.shellQuickCollect = true;
+    if (!this.quickCollectComponent) {
+      const module = await import(
+        '@features/donations/components/quick-collect-drawer/quick-collect-drawer.component'
+      );
+      this.quickCollectComponent = module.QuickCollectDrawerComponent;
+    }
+    this.cdr.markForCheck();
+  }
+
+  private async mountCommandPaletteShell(): Promise<void> {
+    this.commandPaletteMounted = true;
+    if (!this.commandPaletteComponent) {
+      const module = await import('@shared/components/command-palette/command-palette.component');
+      this.commandPaletteComponent = module.CommandPaletteComponent;
+    }
+    this.cdr.markForCheck();
+  }
+
+  private async mountGlobalFamilySearchShell(): Promise<void> {
+    this.shellGlobalFamilySearch = true;
+    if (!this.globalFamilySearchComponent) {
+      const module = await import(
+        '@shared/components/global-family-search/global-family-search.component'
+      );
+      this.globalFamilySearchComponent = module.GlobalFamilySearchComponent;
+    }
+    this.cdr.markForCheck();
   }
 
   private moduleFromUrl(url: string): string {

@@ -34,6 +34,7 @@ export class QuickCollectService {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly toast = inject(ToastService);
   private readonly openSubject = new Subject<QuickCollectLaunchContext>();
+  private pendingOpen: QuickCollectLaunchContext | null = null;
 
   readonly open$ = this.openSubject.asObservable();
 
@@ -42,7 +43,15 @@ export class QuickCollectService {
       this.toast.warning('Read-only mode: renew subscription to collect payments.', 'Read-only');
       return;
     }
-    this.openSubject.next({ ...context });
+    const payload = { ...context };
+    this.pendingOpen = payload;
+    this.openSubject.next(payload);
+  }
+
+  consumePendingOpen(): QuickCollectLaunchContext | null {
+    const pending = this.pendingOpen;
+    this.pendingOpen = null;
+    return pending;
   }
 
   openForFamily(familyId: string, extra: Omit<QuickCollectLaunchContext, 'familyId'> = {}): void {

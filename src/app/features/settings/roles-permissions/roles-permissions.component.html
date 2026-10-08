@@ -38,7 +38,7 @@
         <span class="tab-text">User Role Assignments</span>
       </button>
       <button 
-        *ngIf="hasSuperAdminAccess"
+        *ngIf="canManagePopeDetails"
         class="tab-item" 
         [class.active]="isActiveTab('pope')"
         (click)="selectTab('pope')">
@@ -867,7 +867,7 @@
 
   <!-- Pope Details Tab -->
   <!-- CRITICAL SECURITY: Pope Details tab is SuperAdmin only -->
-  <div class="tab-content" *ngIf="activeTab === 'pope' && hasSuperAdminAccess">
+  <div class="tab-content" *ngIf="activeTab === 'pope' && canManagePopeDetails">
     <div class="cf-panel rp-card">
       <app-pope-details-management [embedded]="true"></app-pope-details-management>
     </div>

@@ -128,16 +128,15 @@
     </ng-container>
 
     <ng-container *ngIf="tenantExecutiveMode">
-      <app-cf-brand-loader
-        *ngIf="executiveLoadState === 'loading' || executiveLoadState === 'idle'"
-        size="section"
-        label="Loading parish overview…"
-      />
-      <div *ngIf="executiveLoadState === 'error'" class="cd-registry__error" role="alert">
+      <div
+        *ngIf="executiveLoadState === 'error' && !executivePrimaryLoaded"
+        class="cd-registry__error"
+        role="alert"
+      >
         <p>Unable to load this section. Retry.</p>
         <button type="button" class="cd-link-btn" (click)="retryExecutiveDashboard()">Try again</button>
       </div>
-      <div class="cd-overview__columns" *ngIf="executiveLoadState === 'ready'">
+      <div class="cd-overview__columns">
         <div class="cd-overview__column" *ngFor="let column of executiveColumns()">
           <ng-container *ngFor="let block of column">
             <ng-container *ngTemplateOutlet="executiveBlock; context: { $implicit: block }"></ng-container>
@@ -159,8 +158,9 @@
         <div class="cd-exec-block" [attr.aria-label]="block.title" [attr.data-exec-block]="block.key">
           <div *ngIf="block.state === 'error'" class="cd-registry__error" role="alert">
             <p>Unable to load this section. Retry.</p>
-            <button type="button" class="cd-link-btn" (click)="retryExecutiveDashboard()">Try again</button>
+            <button type="button" class="cd-link-btn" (click)="retryExecutiveBlock(block.key)">Try again</button>
           </div>
+          <p *ngIf="block.state === 'loading'" class="cd-panel__desc" role="status">Loading…</p>
           <p *ngIf="block.state === 'unavailable'" class="cd-panel__desc" role="status">{{ block.unavailableMessage }}</p>
           <ng-container *ngIf="block.state === 'ready'">
             <p class="cd-financial-snapshot__context" *ngIf="block.context">{{ block.context }}</p>
@@ -204,6 +204,23 @@
               <app-executive-due-schedule-chart
                 [slices]="block.dueScheduleChart!"
                 [currencyCode]="executive?.stewardship?.data?.currency_code || ''"
+              />
+            </div>
+            <div
+              class="cd-overview__people-chart cf-panel"
+              *ngIf="block.key === 'sacraments'"
+              aria-labelledby="exec-sacrament-mix-heading"
+            >
+              <h3 id="exec-sacrament-mix-heading" class="cd-overview__chart-title">This year's celebrations</h3>
+              <p class="cd-overview__chart-caption">
+                Share of Baptism, Confirmation, First Communion, Marriage, and Holy Orders.
+                Reconciliation and Anointing of the Sick are omitted so they do not dominate the mix.
+              </p>
+              <app-executive-sacrament-activity-chart
+                [slices]="block.sacramentActivityChart ?? []"
+                [dateFrom]="block.sacramentActivityDateFrom || ''"
+                [dateTo]="block.sacramentActivityDateTo || ''"
+                [emptyReason]="block.sacramentActivityEmptyReason || 'none'"
               />
             </div>
           </ng-container>

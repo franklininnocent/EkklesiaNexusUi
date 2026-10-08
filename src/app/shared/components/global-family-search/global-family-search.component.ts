@@ -1,16 +1,29 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, ElementRef, HostListener, ViewChild, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, of, Subject, switchMap } from 'rxjs';
 import { DonationsService } from '@features/donations/services/donations.service';
 import { FinancialGlobalSearchResult, FinancialSearchResultItem } from '@features/donations/models/donation.model';
+import { GlobalFamilySearchService } from '@shared/services/global-family-search.service';
+import { trackByEntityId } from '@shared/utils/cf-track-by.util';
 
 @Component({
   selector: 'app-global-family-search',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="global-family-search" [class.open]="isOpen">
       <span class="search-icon" aria-hidden="true">⌕</span>
@@ -28,12 +41,12 @@ import { FinancialGlobalSearchResult, FinancialSearchResultItem } from '@feature
 
       <div class="results" *ngIf="isOpen && (resultGroups.length || loading || (query.length >= 2 && !loading))" role="listbox">
         <p *ngIf="loading" class="empty">Searching…</p>
-        <ng-container *ngFor="let group of resultGroups">
+        <ng-container *ngFor="let group of resultGroups; trackBy: trackByGroup">
           <p class="group-label">{{ group.label }}</p>
           <button
             type="button"
             class="result-item"
-            *ngFor="let item of group.items; let i = index"
+            *ngFor="let item of group.items; let i = index; trackBy: trackBySearchItem"
             [class.active]="flatIndex(group, i) === activeIndex"
             (mousedown)="selectItem(item)"
           >
@@ -119,13 +132,19 @@ import { FinancialGlobalSearchResult, FinancialSearchResultItem } from '@feature
     .empty { padding: 0.55rem 0.75rem; color: #6b7280; margin: 0; }
   `]
 })
-export class GlobalFamilySearchComponent {
+export class GlobalFamilySearchComponent implements OnInit {
   @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
 
   private readonly donationsService = inject(DonationsService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly globalFamilySearch = inject(GlobalFamilySearchService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly search$ = new Subject<string>();
+
+  readonly trackByGroup = (_index: number, group: FinancialGlobalSearchResult['groups'][number]) =>
+    group.label;
+  readonly trackBySearchItem = trackByEntityId;
 
   query = '';
   resultGroups: FinancialGlobalSearchResult['groups'] = [];
@@ -152,7 +171,21 @@ export class GlobalFamilySearchComponent {
       this.flatItems = this.resultGroups.flatMap((group) => group.items);
       this.activeIndex = 0;
       this.loading = false;
+      this.cdr.markForCheck();
     });
+  }
+
+  ngOnInit(): void {
+    if (this.globalFamilySearch.consumePendingMount()) {
+      this.cdr.markForCheck();
+    }
+    if (this.globalFamilySearch.consumePendingFocus()) {
+      queueMicrotask(() => {
+        this.searchInput?.nativeElement.focus();
+        this.openResults();
+        this.cdr.markForCheck();
+      });
+    }
   }
 
   flatIndex(group: FinancialGlobalSearchResult['groups'][number], index: number): number {
@@ -168,17 +201,6 @@ export class GlobalFamilySearchComponent {
 
   @HostListener('document:keydown', ['$event'])
   onGlobalKeydown(event: KeyboardEvent): void {
-    const target = event.target as HTMLElement | null;
-    const tag = target?.tagName?.toLowerCase();
-    const isTyping = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
-
-    if (event.key === '/' && !isTyping) {
-      event.preventDefault();
-      this.searchInput?.nativeElement.focus();
-      this.openResults();
-      return;
-    }
-
     if (!this.isOpen) {
       return;
     }
@@ -192,12 +214,14 @@ export class GlobalFamilySearchComponent {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.activeIndex = Math.min(this.activeIndex + 1, Math.max(0, this.flatItems.length - 1));
+      this.cdr.markForCheck();
       return;
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.activeIndex = Math.max(this.activeIndex - 1, 0);
+      this.cdr.markForCheck();
       return;
     }
 
@@ -219,15 +243,18 @@ export class GlobalFamilySearchComponent {
   onQueryChange(value: string): void {
     this.isOpen = true;
     this.search$.next(value);
+    this.cdr.markForCheck();
   }
 
   openResults(): void {
     this.isOpen = true;
+    this.cdr.markForCheck();
   }
 
   closeResults(): void {
     this.isOpen = false;
     this.activeIndex = 0;
+    this.cdr.markForCheck();
   }
 
   selectItem(item: FinancialSearchResultItem): void {

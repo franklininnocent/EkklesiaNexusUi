@@ -7,7 +7,7 @@ import { ConfirmationDialogHostComponent, ToastContainerComponent } from '@share
   standalone: true,
   imports: [RouterOutlet, ToastContainerComponent, ConfirmationDialogHostComponent],
   templateUrl: './app.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.component.scss'
 })
 export class AppComponent {

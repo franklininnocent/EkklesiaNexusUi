@@ -3,6 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, EMPTY } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
+import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
+import { ToastService } from '@core/services/toast.service';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import { DonationsDuesComponent } from './donations-dues.component';
@@ -13,17 +15,50 @@ describe('DonationsDuesComponent', () => {
   let fixture: ComponentFixture<DonationsDuesComponent>;
   let component: DonationsDuesComponent;
   let getDues: jest.Mock;
+  let bulkRemindDues: jest.Mock;
+  let bulkWaiveDues: jest.Mock;
+  let queueWhatsAppOutreach: jest.Mock;
   let router: Router;
   let quickCollect: { open: jest.Mock; openForFamily: jest.Mock };
 
+  const dueA = {
+    id: 'due-1',
+    family_id: 'fam-1',
+    plan_id: 'plan-1',
+    period_label: 'Oct 2026',
+    due_date: '2026-10-10',
+    amount_due: 250,
+    amount_paid: 0,
+    outstanding_amount: 250,
+    status: 'pending',
+    family: { id: 'fam-1', family_name: 'Family A', family_code: 'FAM001' },
+    plan: { id: 'plan-1', name: 'Monthly Tithe', code: 'TITHE' },
+  };
+  const dueB = {
+    id: 'due-2',
+    family_id: 'fam-2',
+    plan_id: 'plan-1',
+    period_label: 'Oct 2026',
+    due_date: '2026-10-12',
+    amount_due: 100,
+    amount_paid: 0,
+    outstanding_amount: 100,
+    status: 'pending',
+    family: { id: 'fam-2', family_name: 'Family B', family_code: 'FAM002' },
+    plan: { id: 'plan-1', name: 'Monthly Tithe', code: 'TITHE' },
+  };
+
   const duesResponse = {
     success: true,
-    data: { data: [], total: 0, current_page: 1, last_page: 1, per_page: 20 },
+    data: { data: [dueA, dueB], total: 2, current_page: 1, last_page: 1, per_page: 20 },
     meta: { overdue_family_count: 0 },
   };
 
   beforeEach(async () => {
     getDues = jest.fn().mockReturnValue(of(duesResponse));
+    bulkRemindDues = jest.fn().mockReturnValue(of({ success: true, message: '2 dues reminded.', data: { processed_count: 2, skipped_count: 0, processed_ids: ['due-1', 'due-2'], skipped: [] } }));
+    bulkWaiveDues = jest.fn().mockReturnValue(of({ success: true, message: '1 due waived.', data: { processed_count: 1, skipped_count: 0, processed_ids: ['due-1'], skipped: [] } }));
+    queueWhatsAppOutreach = jest.fn().mockReturnValue(of({ success: true, message: '1 WhatsApp outreach reminders queued.' }));
     quickCollect = { open: jest.fn(), openForFamily: jest.fn() };
 
     await TestBed.configureTestingModule({
@@ -53,16 +88,20 @@ describe('DonationsDuesComponent', () => {
                 },
               })
             ),
-            queueWhatsAppOutreach: jest.fn(),
+            queueWhatsAppOutreach,
             generateScheduledContributions: jest.fn(),
             waiveDue: jest.fn(),
             cancelDue: jest.fn(),
             remindDue: jest.fn(),
+            bulkWaiveDues,
+            bulkRemindDues,
             ledgerMutated$: EMPTY,
           },
         },
         { provide: QuickCollectService, useValue: quickCollect },
         { provide: AuthService, useValue: { hasPermission: jest.fn(() => true) } },
+        { provide: ToastService, useValue: { success: jest.fn(), warning: jest.fn(), error: jest.fn() } },
+        { provide: ConfirmationDialogService, useValue: { confirm: jest.fn(() => of({ confirmed: true })) } },
         { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD' } },
         {
           provide: EntitlementService,
@@ -187,5 +226,56 @@ describe('DonationsDuesComponent', () => {
       familyId: 'fam-1',
       dueId: 'due-1',
     });
+  });
+
+  it('uses table checkboxes and a disabled common toolbar until rows are selected', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.cf-row-actions')).toBeNull();
+    expect(el.querySelectorAll('tbody input[type="checkbox"]').length).toBe(2);
+    const collect = el.querySelector('button[aria-label="Collect Payment"]') as HTMLButtonElement;
+    const remind = el.querySelector('button[aria-label="Send reminder"]') as HTMLButtonElement;
+    const waive = el.querySelector('button[aria-label="Waive selected dues"]') as HTMLButtonElement;
+    expect(collect.disabled).toBe(true);
+    expect(remind.disabled).toBe(true);
+    expect(waive.disabled).toBe(true);
+    expect(el.textContent).not.toContain('selected');
+  });
+
+  it('selects all visible dues and enables bulk actions with an accurate count', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const headerCheckbox = el.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
+    headerCheckbox.dispatchEvent(new Event('change'));
+    component.toggleSelectAll(true);
+    fixture.detectChanges();
+
+    expect(component.selectedCount).toBe(2);
+    expect(el.textContent).toContain('2 selected');
+    const remind = el.querySelector('button[aria-label="Send reminder"]') as HTMLButtonElement;
+    const waive = el.querySelector('button[aria-label="Waive selected dues"]') as HTMLButtonElement;
+    expect(remind.disabled).toBe(false);
+    expect(waive.disabled).toBe(false);
+    expect((el.querySelector('button[aria-label="Collect Payment"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('collects the selected family and reminds every selected due', () => {
+    component.toggleDueSelection('due-1', true);
+    fixture.detectChanges();
+    component.collectSelected();
+    expect(quickCollect.open).toHaveBeenCalledWith({ familyId: 'fam-1', dueId: 'due-1' });
+
+    component.toggleDueSelection('due-2', true);
+    component.remindSelected();
+    expect(bulkRemindDues).toHaveBeenCalledWith(['due-1', 'due-2']);
+  });
+
+  it('clears the selected count when rows are deselected', () => {
+    component.toggleSelectAll(true);
+    expect(component.selectedCount).toBe(2);
+    component.toggleDueSelection('due-1', false);
+    expect(component.selectedCount).toBe(1);
+    component.toggleSelectAll(false);
+    expect(component.selectedCount).toBe(0);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('selected');
   });
 });

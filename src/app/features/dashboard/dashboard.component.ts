@@ -1,5 +1,5 @@
 /**
- * Dashboard version 3.0 — executive Overview (single API) + Operations tab.
+ * Dashboard version 3.0 — executive Overview (parallel section APIs) + Operations tab.
  * Restore Version 2.0 from: ./v2.0/ (see v2.0/VERSION.md). Version 1.0: ./v1.0/.
  */
 import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
@@ -33,13 +33,17 @@ import { ExecutiveDashboardService } from './services/executive-dashboard.servic
 import {
   ExecBlock,
   ExecMetric,
+  EXECUTIVE_OVERVIEW_BUNDLES,
+  ExecutiveDashboardBundle,
   ExecutiveDashboardPayload,
   ExecutiveCelebrationsData,
+  ExecutiveSacramentActivitySlice,
   ExecutiveSectionState,
   ExecutiveStewardshipData,
 } from './models/executive-dashboard.model';
 import { MemberAgeDistributionChartComponent } from '@features/members/components/member-age-distribution-chart/member-age-distribution-chart.component';
 import { ExecutiveDueScheduleChartComponent } from './components/executive-due-schedule-chart.component';
+import { ExecutiveSacramentActivityChartComponent } from './components/executive-sacrament-activity-chart.component';
 import { memberAgeChartSlices } from '@features/members/utils/member-age-groups.util';
 import { MemberAgeChartSlice, MemberDashboardSummary } from '@features/members/models/member-dashboard.model';
 import { QuickCollectService } from '@features/donations/services/quick-collect.service';
@@ -66,7 +70,7 @@ interface HeroKpi {
 }
 
 export type FinancialHubState = 'unauthorized' | 'loading' | 'ready' | 'error';
-export type DataLoadState = 'idle' | 'loading' | 'ready' | 'error';
+export type DataLoadState = 'idle' | 'loading' | 'partial' | 'ready' | 'error';
 
 interface GivingChannelRow {
   channel: string;
@@ -91,6 +95,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
     FormsModule,
     MemberAgeDistributionChartComponent,
     ExecutiveDueScheduleChartComponent,
+    ExecutiveSacramentActivityChartComponent,
     CfBrandLoaderComponent,
   ],
   templateUrl: './dashboard.component.html',
@@ -114,6 +119,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   tenantExecutiveMode = false;
   executive: ExecutiveDashboardPayload | null = null;
   executiveLoadState: DataLoadState = 'idle';
+  executivePrimaryLoaded = false;
+  private executiveRequestId = 0;
+  private requestedExecutiveBundles: ExecutiveDashboardBundle[] = [];
+  private loadedExecutiveBundles = new Set<ExecutiveDashboardBundle>();
+  private failedExecutiveBundles = new Set<ExecutiveDashboardBundle>();
   private cachedExecutiveBlocks: ExecBlock[] = [];
   private cachedExecutiveColumns: ExecBlock[][] = [[], []];
 
@@ -138,6 +148,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   assigningBusy = false;
   canViewPastoral = false;
   canAssignPastoral = false;
+  canViewMinistries = false;
   pastoralLoaded = false;
   loadingPastoral = false;
   pastoralError = false;
@@ -242,6 +253,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     this.canViewPastoral = isTenantActor && this.authService.canAccessPastoral(user);
     this.canAssignPastoral = this.authService.hasPermission('pastoral.care.assign');
+    this.canViewMinistries = hasTenantContext && this.authService.canAccessMinistries(user, { hasActiveSupportSession });
     if (this.operationsVisited) {
       this.loadOperationsScopedData();
     }
@@ -363,41 +375,137 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadExecutiveDashboard();
   }
 
+  retryExecutiveBlock(key: string): void {
+    const bundle = this.bundleForExecBlock(key);
+    if (!bundle) {
+      this.retryExecutiveDashboard();
+      return;
+    }
+    const requestId = this.executiveRequestId;
+    this.loadedExecutiveBundles.delete(bundle);
+    this.failedExecutiveBundles.delete(bundle);
+    if (bundle === 'snapshot') {
+      this.executivePrimaryLoaded = false;
+    }
+    this.finalizeExecutiveLoadState();
+    this.rebuildExecutiveBlocksCache();
+    this.cdr.markForCheck();
+    this.executiveDashboard
+      .getExecutive(bundle)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => this.applyExecutiveBundle(requestId, bundle, data),
+        error: () => this.failExecutiveBundle(requestId, bundle),
+      });
+  }
+
+  private bundleForExecBlock(key: string): ExecutiveDashboardBundle | null {
+    const map: Record<string, ExecutiveDashboardBundle> = {
+      people: 'snapshot',
+      community: 'snapshot',
+      sacraments: 'snapshot',
+      ministry: 'ministries',
+      finance: 'stewardship',
+      'mass-intentions': 'mass',
+      worship: 'mass',
+      pastoral: 'pastoral',
+    };
+    return map[key] ?? null;
+  }
+
   loadExecutiveDashboard(): void {
+    const requestId = ++this.executiveRequestId;
     this.executiveLoadState = 'loading';
     this.registryState = 'loading';
     this.executive = null;
+    this.executivePrimaryLoaded = false;
+    this.requestedExecutiveBundles = [...EXECUTIVE_OVERVIEW_BUNDLES];
+    this.loadedExecutiveBundles.clear();
+    this.failedExecutiveBundles.clear();
     this.cachedExecutiveBlocks = [];
     this.cachedExecutiveColumns = [[], []];
+    this.rebuildExecutiveBlocksCache();
     this.cdr.markForCheck();
 
-    this.executiveDashboard
-      .getExecutive()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (data) => {
-          this.executive = data;
-          this.executiveLoadState = 'ready';
-          const snapState = data.snapshot?.state;
-          if (snapState === 'error') {
-            this.registryState = 'error';
-          } else if (snapState === 'forbidden') {
-            this.registryState = 'idle';
-          } else {
-            this.registryState = 'ready';
-            this.syncRegistryFromExecutive(data);
-          }
-          this.rebuildExecutiveBlocksCache();
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.executiveLoadState = 'error';
-          this.registryState = 'error';
-          this.cachedExecutiveBlocks = [];
-          this.cachedExecutiveColumns = [[], []];
-          this.cdr.markForCheck();
-        },
-      });
+    for (const bundle of this.requestedExecutiveBundles) {
+      this.executiveDashboard
+        .getExecutive(bundle)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (data) => this.applyExecutiveBundle(requestId, bundle, data),
+          error: () => this.failExecutiveBundle(requestId, bundle),
+        });
+    }
+  }
+
+  private applyExecutiveBundle(
+    requestId: number,
+    bundle: ExecutiveDashboardBundle,
+    data: ExecutiveDashboardPayload
+  ): void {
+    if (requestId !== this.executiveRequestId) {
+      return;
+    }
+    this.executive = { ...(this.executive ?? {}), ...data };
+    this.loadedExecutiveBundles.add(bundle);
+    this.failedExecutiveBundles.delete(bundle);
+    if (bundle === 'snapshot') {
+      this.executivePrimaryLoaded = true;
+      this.applyExecutiveRegistryState(data);
+    }
+    this.finalizeExecutiveLoadState();
+    this.rebuildExecutiveBlocksCache();
+    this.cdr.markForCheck();
+  }
+
+  private failExecutiveBundle(requestId: number, bundle: ExecutiveDashboardBundle): void {
+    if (requestId !== this.executiveRequestId) {
+      return;
+    }
+    this.failedExecutiveBundles.add(bundle);
+    if (bundle === 'snapshot') {
+      this.executiveLoadState = 'error';
+      this.registryState = 'error';
+      this.executivePrimaryLoaded = false;
+    }
+    this.finalizeExecutiveLoadState();
+    this.rebuildExecutiveBlocksCache();
+    this.cdr.markForCheck();
+  }
+
+  private finalizeExecutiveLoadState(): void {
+    if (this.failedExecutiveBundles.has('snapshot')) {
+      this.executiveLoadState = 'error';
+      return;
+    }
+    const remaining = this.requestedExecutiveBundles.filter(
+      (bundle) => !this.loadedExecutiveBundles.has(bundle) && !this.failedExecutiveBundles.has(bundle)
+    );
+    this.executiveLoadState = remaining.length === 0 ? 'ready' : 'partial';
+  }
+
+  private bundlePending(bundle: ExecutiveDashboardBundle): boolean {
+    return (
+      this.requestedExecutiveBundles.includes(bundle)
+      && !this.loadedExecutiveBundles.has(bundle)
+      && !this.failedExecutiveBundles.has(bundle)
+    );
+  }
+
+  private bundleFailed(bundle: ExecutiveDashboardBundle): boolean {
+    return this.failedExecutiveBundles.has(bundle);
+  }
+
+  private applyExecutiveRegistryState(data: ExecutiveDashboardPayload): void {
+    const snapState = data.snapshot?.state;
+    if (snapState === 'error') {
+      this.registryState = 'error';
+    } else if (snapState === 'forbidden') {
+      this.registryState = 'idle';
+    } else {
+      this.registryState = 'ready';
+      this.syncRegistryFromExecutive(data);
+    }
   }
 
   private syncRegistryFromExecutive(payload: ExecutiveDashboardPayload): void {
@@ -427,7 +535,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private rebuildExecutiveBlocksCache(): void {
-    if (this.executiveLoadState !== 'ready' || !this.executive) {
+    if (this.requestedExecutiveBundles.length === 0 && !this.executive) {
       this.cachedExecutiveBlocks = [];
       this.cachedExecutiveColumns = [[], []];
       return;
@@ -479,7 +587,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     if (pastoral) {
-      columns[0].push(pastoral);
+      columns[1].push(pastoral);
     }
 
     return columns;
@@ -508,13 +616,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   executiveSectionState(section: keyof ExecutiveDashboardPayload): ExecutiveSectionState | 'loading' {
-    if (this.executiveLoadState === 'loading' || this.executiveLoadState === 'idle') {
+    const bundleBySection: Partial<Record<keyof ExecutiveDashboardPayload, ExecutiveDashboardBundle>> = {
+      snapshot: 'snapshot',
+      celebrations: 'celebrations',
+      quick_actions: 'quick_actions',
+      stewardship: 'stewardship',
+      mass_intentions: 'mass',
+      worship: 'mass',
+      pastoral: 'pastoral',
+      ministries: 'ministries',
+    };
+    const bundle = bundleBySection[section];
+    if (bundle && this.bundlePending(bundle)) {
       return 'loading';
     }
-    if (this.executiveLoadState === 'error' || !this.executive) {
+    if (bundle && this.bundleFailed(bundle)) {
       return 'error';
     }
-    return this.executive[section]?.state ?? 'error';
+    if (this.executiveLoadState === 'idle' && !this.executive) {
+      return 'loading';
+    }
+    return this.executive?.[section]?.state ?? 'error';
   }
 
   openExecutiveDrilldown(key: string): void {
@@ -626,6 +748,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private pushPeopleBlock(blocks: ExecBlock[]): void {
+    if (this.bundlePending('snapshot')) {
+      blocks.push(this.loadingBlock('people', 'People executive summary', 'Open members', 'members.list'));
+      return;
+    }
+    if (this.bundleFailed('snapshot') && this.bundlePending('celebrations')) {
+      blocks.push(this.loadingBlock('people', 'People executive summary', 'Open members', 'members.list'));
+      return;
+    }
+    if (this.bundleFailed('snapshot') && this.bundleFailed('celebrations')) {
+      blocks.push(this.errorBlock('people', 'People executive summary', 'Open directory', 'families.directory'));
+      return;
+    }
     const cards = this.executiveSnapshotCards();
     const families = cards['families'];
     const members = cards['members'];
@@ -761,14 +895,32 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private pushMinistryBlock(blocks: ExecBlock[]): void {
-    const card = this.executiveSnapshotCards()['ministries'];
-    if (!card) {
+    if (this.bundlePending('ministries')) {
+      if (this.canViewMinistries) {
+        blocks.push(this.loadingBlock('ministry', 'Ministry executive summary', 'Open ministries', 'ministries.home'));
+      }
       return;
     }
-    if (card['error']) {
+    if (this.bundleFailed('ministries')) {
       blocks.push(this.errorBlock('ministry', 'Ministry executive summary', 'Open ministries', 'ministries.home'));
       return;
     }
+
+    const section = this.executive?.ministries;
+    const snapshotCard = this.executiveSnapshotCards()['ministries'];
+    if (section?.state === 'forbidden' && !snapshotCard) {
+      return;
+    }
+    if (section?.state === 'error' || snapshotCard?.['error']) {
+      blocks.push(this.errorBlock('ministry', 'Ministry executive summary', 'Open ministries', 'ministries.home'));
+      return;
+    }
+
+    const card = (section?.state === 'ready' ? section.data : snapshotCard) as Record<string, unknown> | undefined;
+    if (!card) {
+      return;
+    }
+
     blocks.push({
       key: 'ministry',
       title: 'Ministry executive summary',
@@ -921,34 +1073,63 @@ export class DashboardComponent implements OnInit, OnDestroy {
       blocks.push(this.errorBlock('sacraments', 'Sacraments executive summary', 'Open sacraments', 'sacraments.home'));
       return;
     }
-    const period = this.snapshotText(card, 'period_label') || 'All time';
+    const yearFrom = this.snapshotText(card, 'date_from');
+    const yearTo = this.snapshotText(card, 'date_to');
+    const mix = this.sacramentActivitySlices(card['activity_mix']);
     blocks.push({
       key: 'sacraments',
       title: 'Sacraments executive summary',
       openLabel: 'Open sacraments',
       openDrilldown: 'sacraments.home',
       state: 'ready',
-      context: this.snapshotSacramentContext(card),
-      metrics: [
-        {
-          label: 'In period',
-          value: this.formatCount(card['total_period']),
-          hint: period,
-          drilldown: 'sacraments.home',
-          tone: 'indigo',
-        },
-        {
-          label: 'This month',
-          value: this.formatCount(card['this_month']),
-          hint: 'Administered this month',
-          drilldown: 'sacraments.home',
-          tone: Number(card['this_month'] ?? 0) > 0 ? 'forest' : 'info',
-        },
-      ],
+      metrics: [],
+      sacramentActivityChart: mix,
+      sacramentActivityEmptyReason: this.snapshotText(card, 'activity_mix_empty_reason') || 'none',
+      sacramentActivityDateFrom: yearFrom,
+      sacramentActivityDateTo: yearTo,
     });
   }
 
+  private sacramentActivitySlices(raw: unknown): ExecutiveSacramentActivitySlice[] {
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((row) => {
+        if (!row || typeof row !== 'object') {
+          return null;
+        }
+        const record = row as Record<string, unknown>;
+        const count = Number(record['count'] ?? 0);
+        const typeId = Number(record['sacrament_type_id'] ?? 0);
+        const label = String(record['label'] ?? record['code'] ?? '').trim();
+        if (!label || !Number.isFinite(count) || count <= 0 || !Number.isFinite(typeId) || typeId <= 0) {
+          return null;
+        }
+        return {
+          code: String(record['code'] ?? ''),
+          label,
+          sacrament_type_id: typeId,
+          count,
+          percent: Number(record['percent'] ?? 0),
+        };
+      })
+      .filter((row): row is ExecutiveSacramentActivitySlice => row !== null);
+  }
+
   private pushFinanceBlock(blocks: ExecBlock[]): void {
+    if (this.bundlePending('stewardship')) {
+      if (this.canViewFinancial) {
+        blocks.push(this.loadingBlock('finance', 'Financial executive summary', 'Open Financial Dashboard', 'donations.home'));
+      }
+      return;
+    }
+    if (this.bundleFailed('stewardship')) {
+      if (this.canViewFinancial) {
+        blocks.push(this.errorBlock('finance', 'Financial executive summary', 'Open Financial Dashboard', 'donations.home'));
+      }
+      return;
+    }
     const state = this.executive?.stewardship?.state;
     if (!state || state === 'forbidden') {
       return;
@@ -1022,6 +1203,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private pushMassIntentionsBlock(blocks: ExecBlock[]): void {
+    if (this.bundlePending('mass')) {
+      return;
+    }
+    if (this.bundleFailed('mass')) {
+      blocks.push(this.errorBlock('mass-intentions', 'Mass intentions executive summary', 'Open Mass intentions', 'mass.home'));
+      return;
+    }
     const section = this.executive?.mass_intentions;
     if (!section || section.state === 'forbidden') {
       return;
@@ -1073,6 +1261,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private pushWorshipBlock(blocks: ExecBlock[]): void {
+    if (this.bundlePending('mass')) {
+      return;
+    }
+    if (this.bundleFailed('mass')) {
+      blocks.push(this.errorBlock('worship', 'Worship executive summary', 'Open Mass intentions', 'mass.home'));
+      return;
+    }
     const section = this.executive?.worship;
     if (!section || section.state === 'forbidden') {
       return;
@@ -1108,6 +1303,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private pushPastoralBlock(blocks: ExecBlock[]): void {
+    if (this.bundlePending('pastoral')) {
+      if (this.canViewPastoral) {
+        blocks.push(this.loadingBlock('pastoral', 'Pastoral executive summary', 'Open pastoral care', 'dashboard.operations'));
+      }
+      return;
+    }
+    if (this.bundleFailed('pastoral')) {
+      blocks.push(this.errorBlock('pastoral', 'Pastoral executive summary', 'Open pastoral care', 'dashboard.operations'));
+      return;
+    }
     const section = this.executive?.pastoral;
     if (!section || section.state === 'forbidden') {
       return;
@@ -1145,6 +1350,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return { key, title, openLabel, openDrilldown, state: 'error', metrics: [] };
   }
 
+  private loadingBlock(key: string, title: string, openLabel: string, openDrilldown: string): ExecBlock {
+    return { key, title, openLabel, openDrilldown, state: 'loading', metrics: [] };
+  }
+
   private formatCount(value: unknown): string {
     const count = Number(value);
     if (!Number.isFinite(count)) {
@@ -1166,27 +1375,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       query['event_date_to'] = data.week_end;
     }
     return query;
-  }
-
-  snapshotSacramentContext(card: Record<string, unknown>): string {
-    const period = this.snapshotText(card, 'period_label');
-    const types = card['top_types'];
-    if (!Array.isArray(types) || types.length === 0) {
-      return period || 'This month';
-    }
-    const labels = types
-      .slice(0, 3)
-      .map((row: Record<string, unknown>) => {
-        const name = (row['name'] ?? row['label'] ?? row['code'] ?? 'Type') as string;
-        const count = Number(row['count'] ?? 0);
-        return `${name} (${count.toLocaleString()})`;
-      });
-    const more = this.snapshotMetric(card, 'more_types_count');
-    let detail = labels.join(', ');
-    if (more > 0) {
-      detail += `, and ${more.toLocaleString()} more`;
-    }
-    return period ? `${period} · ${detail}` : detail;
   }
 
   retryPlatformStatistics(): void {

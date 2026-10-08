@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { BCCService } from '@core/services/bcc.service';
 import { FamilyService } from '@core/services/family.service';
@@ -72,8 +72,59 @@ function buildExecutiveDashboardFixture(overrides: Record<string, unknown> = {})
     worship: { state: 'forbidden' },
     celebrations: { state: 'forbidden' },
     quick_actions: { state: 'empty', data: { actions: [] } },
+    ministries: { state: 'forbidden' },
     ...overrides,
   };
+}
+
+type ExecutiveBundleArg = 'all' | 'primary' | 'secondary' | 'snapshot' | 'celebrations' | 'quick_actions' | 'stewardship' | 'mass' | 'pastoral' | 'ministries';
+
+function mockGetExecutive(bundle?: ExecutiveBundleArg) {
+  const full = buildExecutiveDashboardFixture();
+  if (bundle === 'primary') {
+    return of({
+      snapshot: full.snapshot,
+      celebrations: full.celebrations,
+      quick_actions: full.quick_actions,
+    });
+  }
+  if (bundle === 'secondary') {
+    const payload = full as Record<string, unknown>;
+    return of({
+      attention: full.attention,
+      stewardship: full.stewardship,
+      mass_intentions: payload['mass_intentions'],
+      worship: full.worship,
+      pastoral: payload['pastoral'],
+    });
+  }
+  if (bundle === 'snapshot') {
+    return of({ snapshot: full.snapshot });
+  }
+  if (bundle === 'celebrations') {
+    return of({ celebrations: full.celebrations });
+  }
+  if (bundle === 'quick_actions') {
+    return of({ quick_actions: full.quick_actions });
+  }
+  if (bundle === 'stewardship') {
+    return of({ stewardship: full.stewardship });
+  }
+  if (bundle === 'ministries') {
+    return of({ ministries: (full as Record<string, unknown>)['ministries'] });
+  }
+  if (bundle === 'mass') {
+    const payload = full as Record<string, unknown>;
+    return of({
+      mass_intentions: payload['mass_intentions'],
+      worship: full.worship,
+    });
+  }
+  if (bundle === 'pastoral') {
+    const payload = full as Record<string, unknown>;
+    return of({ pastoral: payload['pastoral'] });
+  }
+  return of(full);
 }
 
 const familyStatsFixture = {
@@ -223,7 +274,7 @@ describe('DashboardComponent (ministries module-status)', () => {
         },
         {
           provide: ExecutiveDashboardService,
-          useValue: { getExecutive: jest.fn(() => of(buildExecutiveDashboardFixture())) },
+          useValue: { getExecutive: jest.fn((bundle?: ExecutiveBundleArg) => mockGetExecutive(bundle)) },
         },
         { provide: QuickCollectService, useValue: { open: jest.fn() } },
       ],
@@ -296,7 +347,7 @@ describe('DashboardComponent (Stewardship Hub)', () => {
 
   beforeEach(async () => {
     executiveDashboard = {
-      getExecutive: jest.fn(() => of(buildExecutiveDashboardFixture())),
+      getExecutive: jest.fn((bundle?: ExecutiveBundleArg) => mockGetExecutive(bundle)),
     };
     donationsService = {
       getOperationsDashboard: jest.fn(() => of(liveOpsPayload)),
@@ -396,6 +447,108 @@ describe('DashboardComponent (Stewardship Hub)', () => {
     expect(html).toContain('₹1,500');
     expect(html).toContain('People executive summary');
     expect(donationsService.getOperationsDashboard).not.toHaveBeenCalled();
+  });
+
+  it('renders the dashboard shell and fires independent APIs in parallel', () => {
+    const snapshot$ = new Subject<ReturnType<typeof buildExecutiveDashboardFixture>>();
+    executiveDashboard.getExecutive.mockImplementation((bundle) => {
+      if (bundle === 'snapshot') {
+        return snapshot$.asObservable();
+      }
+      return mockGetExecutive(bundle);
+    });
+
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement.textContent as string;
+    expect(html).toContain('Dashboard');
+    expect(html).toContain('Overview');
+    expect(html).toContain('Operations');
+    expect(html).toContain('People executive summary');
+    expect(html).toContain('Loading…');
+    expect(html).not.toContain('Loading parish overview…');
+    expect(html).toContain('Financial executive summary');
+    expect(html).toContain('Collected this month');
+    expect(executiveDashboard.getExecutive.mock.calls.map((call) => call[0]).sort()).toEqual(
+      ['celebrations', 'mass', 'ministries', 'pastoral', 'quick_actions', 'snapshot', 'stewardship']
+    );
+
+    snapshot$.next({ snapshot: buildExecutiveDashboardFixture().snapshot } as ReturnType<typeof buildExecutiveDashboardFixture>);
+    snapshot$.complete();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Active families');
+  });
+
+  it('renders ministry executive summary without waiting for snapshot', () => {
+    auth.canAccessMinistries.mockReturnValue(true);
+    const snapshot$ = new Subject<ReturnType<typeof buildExecutiveDashboardFixture>>();
+    executiveDashboard.getExecutive.mockImplementation((bundle) => {
+      if (bundle === 'snapshot') {
+        return snapshot$.asObservable();
+      }
+      if (bundle === 'ministries') {
+        return of({
+          ministries: {
+            state: 'ready',
+            data: {
+              active_groups_total: 4,
+              groups_by_type: [{ code: 'choir', name: 'Choir', count: 4 }],
+              active_memberships: 12,
+              vacancies: 1,
+              expiring_soon_count: 0,
+              drilldown: 'ministries.home',
+            },
+          },
+        });
+      }
+      return mockGetExecutive(bundle);
+    });
+
+    fixture.detectChanges();
+    const html = fixture.nativeElement.textContent as string;
+    expect(html).toContain('Ministry executive summary');
+    expect(html).toContain('Active groups');
+    expect(html).toContain('Choir');
+    expect(html).toContain('People executive summary');
+    expect(html).toContain('Loading…');
+    expect(html).not.toContain('Active families');
+  });
+
+  it('renders ministry metrics without waiting for the people snapshot', () => {
+    auth.canAccessMinistries.mockReturnValue(true);
+    const snapshot$ = new Subject<ReturnType<typeof buildExecutiveDashboardFixture>>();
+    executiveDashboard.getExecutive.mockImplementation((bundle) => {
+      if (bundle === 'snapshot') {
+        return snapshot$.asObservable();
+      }
+      if (bundle === 'ministries') {
+        return of({
+          ministries: {
+            state: 'ready',
+            data: {
+              active_groups_total: 4,
+              groups_by_type: [{ code: 'choir', name: 'Choir', count: 4 }],
+              active_memberships: 12,
+              vacancies: 2,
+              expiring_soon_count: 0,
+              drilldown: 'ministries.home',
+            },
+          },
+        });
+      }
+      return mockGetExecutive(bundle);
+    });
+
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement.textContent as string;
+    expect(html).toContain('Ministry executive summary');
+    expect(html).toContain('Active groups');
+    expect(html).toContain('Choir');
+    expect(html).toContain('People executive summary');
+    expect(html).toContain('Loading…');
+    expect(html).not.toContain('Active families');
   });
 
   it('shows the donations snapshot metrics and comparable-day growth', () => {
@@ -626,7 +779,7 @@ describe('DashboardComponent (Overview metrics)', () => {
 
   beforeEach(async () => {
     executiveDashboard = {
-      getExecutive: jest.fn(() => of(buildExecutiveDashboardFixture())),
+      getExecutive: jest.fn((bundle?: ExecutiveBundleArg) => mockGetExecutive(bundle)),
     };
     auth = {
       canAccessMinistries: jest.fn(() => false),
@@ -763,28 +916,46 @@ describe('DashboardComponent (Overview metrics)', () => {
             },
           },
           pastoral: { state: 'ready', data: { open_count: 5, assigned_count: 2, drilldown: 'dashboard.operations' } },
+          ministries: {
+            state: 'ready',
+            data: {
+              active_ministries: 3,
+              active_associations: 2,
+              active_other: 1,
+              active_groups_total: 6,
+              groups_by_type: [
+                { code: 'ministry', name: 'Ministry', count: 3 },
+                { code: 'association', name: 'Association', count: 2 },
+                { code: 'choir', name: 'Choir', count: 1 },
+              ],
+              active_memberships: 18,
+              vacancies: 4,
+              expiring_soon_count: 1,
+              drilldown: 'ministries.home',
+            },
+          },
           snapshot: {
             state: 'ready',
             data: {
               cards: {
                 families: { active_families: 8, total_families: 10, drilldown: 'families.directory' },
                 members: { active_members: 22, total_members: 25, members_added_this_month: 3, drilldown: 'members.directory' },
-                sacraments: { total_period: 40, this_month: 6, period_label: 'All time', top_types: [], more_types_count: 0, drilldown: 'sacraments.home' },
-                ministries: {
-                  active_ministries: 3,
-                  active_associations: 2,
-                  active_other: 1,
-                  active_groups_total: 6,
-                  groups_by_type: [
-                    { code: 'ministry', name: 'Ministry', count: 3 },
-                    { code: 'association', name: 'Association', count: 2 },
-                    { code: 'choir', name: 'Choir', count: 1 },
+                sacraments: {
+                  total_period: 10,
+                  this_year: 10,
+                  this_month: 6,
+                  period_label: 'Year to date',
+                  date_from: '2026-01-01',
+                  date_to: '2026-10-02',
+                  month_from: '2026-10-01',
+                  month_to: '2026-10-31',
+                  activity_mix: [
+                    { code: 'BAPTISM', label: 'Baptism', sacrament_type_id: 1, count: 8, percent: 80 },
+                    { code: 'MATRIMONY', label: 'Marriage', sacrament_type_id: 7, count: 2, percent: 20 },
                   ],
-                  groups_by_category: [{ code: 'spiritual', name: 'Spiritual', count: 4 }],
-                  active_memberships: 18,
-                  vacancies: 4,
-                  expiring_soon_count: 1,
-                  drilldown: 'ministries.home',
+                  activity_mix_total: 10,
+                  activity_mix_empty_reason: 'none',
+                  drilldown: 'sacraments.home',
                 },
               },
             },
@@ -798,7 +969,10 @@ describe('DashboardComponent (Overview metrics)', () => {
     expect(html).toContain('People executive summary');
     expect(html).toContain('Birthdays');
     expect(html).toContain('Sacraments executive summary');
-    expect(html).toContain('In period');
+    expect(html).not.toContain('Parish register · year to date');
+    expect(html).not.toContain('On the parish register this month');
+    expect(html).not.toContain('mix of Baptism, Confirmation, First Communion, Marriage, and Holy Orders');
+    expect(html).toContain("This year's celebrations");
     expect(html).toContain('Ministry executive summary');
     expect(html).toContain('Active groups');
     expect(html).toContain('Choir');
@@ -812,8 +986,8 @@ describe('DashboardComponent (Overview metrics)', () => {
     expect(html).not.toContain('Collections trend');
 
     const columns = fixture.componentInstance.executiveColumns();
-    expect(columns[0].map((block) => block.key)).toContain('pastoral');
-    expect(columns[1].map((block) => block.key)).not.toContain('pastoral');
+    expect(columns[1].map((block) => block.key)).toContain('pastoral');
+    expect(columns[0].map((block) => block.key)).not.toContain('pastoral');
   });
 
   it('shows registry error state instead of zero counts when executive snapshot fails', () => {

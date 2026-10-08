@@ -13,7 +13,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import {
   AdvancedSearchPanelComponent,
   SearchField,

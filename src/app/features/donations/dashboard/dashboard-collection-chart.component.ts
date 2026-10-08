@@ -12,7 +12,7 @@ import {
   ViewChild,
   inject
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { CollectionPerformanceChart, DonationDashboardSummary } from '../models/donation.model';
 
 type ChartPeriod = 'month' | 'quarter' | 'year';

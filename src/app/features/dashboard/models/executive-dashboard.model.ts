@@ -1,6 +1,29 @@
 import type { MemberAgeChartSlice } from '@features/members/models/member-dashboard.model';
 
-export type ExecutiveSectionState = 'ready' | 'empty' | 'forbidden' | 'unavailable' | 'error';
+export type ExecutiveSectionState = 'ready' | 'empty' | 'forbidden' | 'unavailable' | 'error' | 'loading';
+
+export type ExecutiveDashboardBundle =
+  | 'all'
+  | 'primary'
+  | 'secondary'
+  | 'snapshot'
+  | 'celebrations'
+  | 'quick_actions'
+  | 'stewardship'
+  | 'mass'
+  | 'pastoral'
+  | 'ministries';
+
+/** Independent overview requests fired in parallel. Each paints as soon as it returns. */
+export const EXECUTIVE_OVERVIEW_BUNDLES: ExecutiveDashboardBundle[] = [
+  'snapshot',
+  'celebrations',
+  'quick_actions',
+  'stewardship',
+  'mass',
+  'pastoral',
+  'ministries',
+];
 
 export interface ExecutiveSection<T = unknown> {
   state: ExecutiveSectionState;
@@ -8,14 +31,15 @@ export interface ExecutiveSection<T = unknown> {
 }
 
 export interface ExecutiveDashboardPayload {
-  snapshot: ExecutiveSection<{ cards: Record<string, unknown> }>;
-  attention: ExecutiveSection<{ items: ExecutiveAttentionItem[]; all_clear: boolean }>;
-  stewardship: ExecutiveSection<ExecutiveStewardshipData>;
+  snapshot?: ExecutiveSection<{ cards: Record<string, unknown> }>;
+  attention?: ExecutiveSection<{ items: ExecutiveAttentionItem[]; all_clear: boolean }>;
+  stewardship?: ExecutiveSection<ExecutiveStewardshipData>;
   mass_intentions?: ExecutiveSection<ExecutiveMassIntentionsData>;
-  worship: ExecutiveSection<ExecutiveWorshipData>;
+  worship?: ExecutiveSection<ExecutiveWorshipData>;
   pastoral?: ExecutiveSection<ExecutivePastoralData>;
-  celebrations: ExecutiveSection<ExecutiveCelebrationsData>;
-  quick_actions: ExecutiveSection<{ actions: ExecutiveQuickAction[] }>;
+  celebrations?: ExecutiveSection<ExecutiveCelebrationsData>;
+  quick_actions?: ExecutiveSection<{ actions: ExecutiveQuickAction[] }>;
+  ministries?: ExecutiveSection<Record<string, unknown>>;
 }
 
 export interface ExecutiveMassIntentionsData {
@@ -122,6 +146,15 @@ export interface ExecMetric {
     | 'stew-sky';
 }
 
+/** Year-to-date mix of public parish-register sacraments (not Reconciliation / Anointing). */
+export interface ExecutiveSacramentActivitySlice {
+  code: string;
+  label: string;
+  sacrament_type_id: number;
+  count: number;
+  percent: number;
+}
+
 export interface ExecBlock {
   key: string;
   title: string;
@@ -134,4 +167,8 @@ export interface ExecBlock {
   /** Compact age distribution for the People executive summary (label includes band key via chart util). */
   memberAgeChart?: MemberAgeChartSlice[];
   dueScheduleChart?: ExecutiveDueScheduleSlice[];
+  sacramentActivityChart?: ExecutiveSacramentActivitySlice[];
+  sacramentActivityEmptyReason?: 'none' | 'no_register_activity' | 'only_excluded_types' | string;
+  sacramentActivityDateFrom?: string;
+  sacramentActivityDateTo?: string;
 }

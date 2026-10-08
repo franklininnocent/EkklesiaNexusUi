@@ -12,7 +12,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart, ChartConfiguration } from 'chart.js/auto';
+import { Chart, ChartConfiguration } from '@shared/charts/ekklesia-chart';
 
 export interface FamilyMetricSlice {
   key: string;

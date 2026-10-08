@@ -274,10 +274,22 @@ export class SacramentDetailComponent implements OnInit, OnDestroy {
       return null;
     }
     if (this.isMarriage()) {
-      const groom = (this.sacrament.marriage_groom_full_name || '').trim();
-      const bride = (this.sacrament.marriage_bride_full_name || '').trim();
-      if (!groom || !bride) {
-        return 'Certificate data incomplete — please fill required register fields.';
+      const missing: string[] = [];
+      const check = (label: string, value: string | null | undefined) => {
+        if (!(value || '').trim()) {
+          missing.push(label);
+        }
+      };
+      check("Groom's full name", this.sacrament.marriage_groom_full_name);
+      check("Groom's father's name", this.sacrament.marriage_groom_father_name);
+      check("Groom's mother's name", this.sacrament.marriage_groom_mother_name);
+      check("Groom's address", this.sacrament.marriage_groom_address);
+      check("Bride's full name", this.sacrament.marriage_bride_full_name);
+      check("Bride's father's name", this.sacrament.marriage_bride_father_name);
+      check("Bride's mother's name", this.sacrament.marriage_bride_mother_name);
+      check("Bride's address", this.sacrament.marriage_bride_address);
+      if (missing.length) {
+        return `Certificate data incomplete — missing: ${missing.join('; ')}.`;
       }
       return null;
     }

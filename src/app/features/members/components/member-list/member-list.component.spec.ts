@@ -160,4 +160,33 @@ describe('MemberListComponent (list photos)', () => {
     expect(component.isAvatarBroken(member)).toBe(true);
     expect(component.getMemberPhotoUrl(member)).toBeNull();
   });
+
+  it('searches from two characters, trims input, and skips duplicate case-only queries', () => {
+    configure();
+    const fixture = TestBed.createComponent(MemberListComponent);
+    const component = fixture.componentInstance;
+    const memberService = TestBed.inject(MemberService) as unknown as { getMembers: jest.Mock };
+
+    fixture.detectChanges();
+    memberService.getMembers.mockClear();
+
+    component.onListSearchChange('a');
+    expect(memberService.getMembers).not.toHaveBeenCalled();
+
+    component.onListSearchChange('an');
+    expect(memberService.getMembers).toHaveBeenCalledTimes(1);
+    expect(memberService.getMembers.mock.calls[0][0].search).toBe('an');
+
+    component.onListSearchChange(' ANTONY ');
+    expect(memberService.getMembers).toHaveBeenCalledTimes(2);
+    expect(memberService.getMembers.mock.calls[1][0].search).toBe('ANTONY');
+
+    component.onListSearchChange('antony');
+    expect(memberService.getMembers).toHaveBeenCalledTimes(2);
+
+    component.onListSearchChange('GEORGE');
+    expect(memberService.getMembers).toHaveBeenCalledTimes(3);
+    expect(memberService.getMembers.mock.calls[2][0].search).toBe('GEORGE');
+    expect(memberService.getMembers.mock.calls[2][0].page).toBe(1);
+  });
 });

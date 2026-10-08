@@ -4,6 +4,7 @@ import { Observable, Subject, map, tap } from 'rxjs';
 import { newIdempotencyKey } from '../utils/local-date-only';
 import { environment } from '@environments/environment';
 import {
+  BulkDueActionResult,
   ContributionDue,
   ContributionPlan,
   ContributionPlanAssignment,
@@ -420,6 +421,23 @@ export class DonationsService {
 
   remindDue(dueId: string): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(`${this.baseUrl}/dues/${dueId}/remind`, {});
+  }
+
+  bulkWaiveDues(
+    dueIds: string[],
+    reason?: string
+  ): Observable<{ success: boolean; message: string; data: BulkDueActionResult }> {
+    return this.http.post<{ success: boolean; message: string; data: BulkDueActionResult }>(
+      `${this.baseUrl}/dues/bulk-waive`,
+      { due_ids: dueIds, reason }
+    );
+  }
+
+  bulkRemindDues(dueIds: string[]): Observable<{ success: boolean; message: string; data: BulkDueActionResult }> {
+    return this.http.post<{ success: boolean; message: string; data: BulkDueActionResult }>(
+      `${this.baseUrl}/dues/bulk-remind`,
+      { due_ids: dueIds }
+    );
   }
 
   getProjects(): Observable<{ success: boolean; data: DonationProject[] }> {

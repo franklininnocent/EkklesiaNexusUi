@@ -1,4 +1,4 @@
-jest.mock('chart.js/auto', () => ({
+jest.mock('@shared/charts/ekklesia-chart', () => ({
   Chart: jest.fn().mockImplementation(() => ({ destroy: jest.fn() }))
 }));
 

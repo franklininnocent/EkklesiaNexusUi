@@ -238,6 +238,28 @@ export class TenantService {
   }
 
   /**
+   * Upload or replace the signed-in parish logo.
+   * The API uses the session tenant, not a client-supplied id.
+   */
+  uploadChurchLogo(file: File): Observable<LogoUploadResponse> {
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    return this.http.post<LogoUploadResponse>(`${this.apiUrl}/church-profile/logo`, formData).pipe(
+      catchError(error => this.handleError(error))
+    );
+  }
+
+  /**
+   * Remove the signed-in parish logo.
+   */
+  deleteChurchLogo(): Observable<TenantSuccessResponse> {
+    return this.http.delete<TenantSuccessResponse>(`${this.apiUrl}/church-profile/logo`).pipe(
+      catchError(error => this.handleError(error))
+    );
+  }
+
+  /**
    * Get tenant statistics
    */
   getStatistics(): Observable<TenantStatisticsResponse> {

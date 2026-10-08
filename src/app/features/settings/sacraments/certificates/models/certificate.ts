@@ -78,6 +78,7 @@ export interface MatrimonySpouseSnapshot {
   ecclesialAffiliationLabel?: string | null;
   fatherName?: string | null;
   motherName?: string | null;
+  residenceAddress?: string | null;
   parishResidence?: string | null;
 }
 
@@ -218,6 +219,7 @@ export interface LiturgicalTerminology {
   nameAsRecordedLabel: string;
   baptismalStatusLabel: string;
   parishResidenceLabel: string;
+  partyAddressLabel: string;
   witness1Label: string;
   witness2Label: string;
   dateOfBirthLabel: string;

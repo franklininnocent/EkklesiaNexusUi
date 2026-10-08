@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRe
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, switchMap, takeUntil } from 'rxjs';
 import { ToastService } from '@core/services/toast.service';
 import { MemberService, MemberFilters } from '../../services/member.service';
 import { BCCService } from '@core/services/bcc.service';
@@ -26,6 +26,10 @@ import {
   memberAgeBandFilterLabel,
 } from '../../utils/member-age-groups.util';
 import { MemberAgeBandKey } from '../../models/member-dashboard.model';
+import {
+  memberDirectorySearchKey,
+  memberDirectorySearchParam,
+} from '../../utils/member-directory-search.util';
 
 @Component({
   selector: 'app-member-list',
@@ -51,6 +55,7 @@ import { MemberAgeBandKey } from '../../models/member-dashboard.model';
 })
 export class MemberListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private readonly membersLoad$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
 
   // Data
@@ -91,7 +96,7 @@ export class MemberListComponent implements OnInit, OnDestroy {
   searchFields: SearchField[] = [];
 
   get hasActiveFiltersOrSearch(): boolean {
-    return this.getActiveFilterCount() > 0 || this.searchTerm.trim().length > 0;
+    return this.getActiveFilterCount() > 0 || memberDirectorySearchParam(this.searchTerm) !== undefined;
   }
 
   openAdvancedSearch(): void {
@@ -127,11 +132,70 @@ export class MemberListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initializeSearchFields();
+    this.setupMembersLoadPipeline();
     this.loadBCCs();
     this.applyQueryParams(this.route.snapshot.queryParamMap);
     this.route.queryParamMap
       .pipe(takeUntil(this.destroy$))
       .subscribe((params) => this.applyQueryParams(params));
+  }
+
+  private setupMembersLoadPipeline(): void {
+    this.membersLoad$
+      .pipe(
+        switchMap(() => {
+          this.loading = true;
+          this.error = null;
+          this.cdr.markForCheck();
+          return this.memberService.getMembers(this.buildMemberFilters());
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (response) => {
+          if (response && response.success !== false) {
+            this.members = response.data || [];
+            this.totalRecords = response.total || 0;
+            this.totalPages = response.last_page || 1;
+            const apiPage = response.current_page || 1;
+            this.currentPage = Math.max(1, Math.min(apiPage, this.totalPages));
+            this.error = null;
+          } else {
+            this.members = [];
+            this.error = 'Failed to load members.';
+          }
+          this.loading = false;
+          this.loaded = true;
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.members = [];
+          this.error = error?.error?.message || error?.message || 'Failed to load members. Please try again.';
+          this.loading = false;
+          this.loaded = true;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private buildMemberFilters(): MemberFilters {
+    return {
+      search: memberDirectorySearchParam(this.searchTerm),
+      status: this.selectedStatus || undefined,
+      bcc_id: this.selectedBccId || undefined,
+      progression: this.selectedProgression || undefined,
+      age_band: this.selectedAgeBand || undefined,
+      family_status: this.selectedFamilyStatus || undefined,
+      gender: this.selectedGender || undefined,
+      missing: this.selectedMissing || undefined,
+      occupation: this.selectedOccupation || undefined,
+      education: this.selectedEducation || undefined,
+      is_head: this.showHeadOnly ? 'true' : undefined,
+      sort_by: this.sortColumn,
+      sort_order: this.sortDirection,
+      per_page: this.perPage,
+      page: this.currentPage,
+    };
   }
 
   private applyQueryParams(params: import('@angular/router').ParamMap): void {
@@ -304,70 +368,16 @@ export class MemberListComponent implements OnInit, OnDestroy {
    * Load members with current filters
    */
   loadMembers(): void {
-    this.loading = true;
-    this.error = null;
-    this.cdr.markForCheck();
-
-    const filters: MemberFilters = {
-      search: this.searchTerm || undefined,
-      status: this.selectedStatus || undefined,
-      bcc_id: this.selectedBccId || undefined,
-      progression: this.selectedProgression || undefined,
-      age_band: this.selectedAgeBand || undefined,
-      family_status: this.selectedFamilyStatus || undefined,
-      gender: this.selectedGender || undefined,
-      missing: this.selectedMissing || undefined,
-      occupation: this.selectedOccupation || undefined,
-      education: this.selectedEducation || undefined,
-      is_head: this.showHeadOnly ? 'true' : undefined,
-      sort_by: this.sortColumn,
-      sort_order: this.sortDirection,
-      per_page: this.perPage,
-      page: this.currentPage
-    };
-
-    this.memberService.getMembers(filters)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          console.log('Members API Response:', response);
-          if (response && response.success !== false) {
-            this.members = response.data || [];
-            this.totalRecords = response.total || 0;
-            this.totalPages = response.last_page || 1;
-            // Ensure currentPage is within valid range
-            const apiPage = response.current_page || 1;
-            this.currentPage = Math.max(1, Math.min(apiPage, this.totalPages));
-            this.error = null;
-            console.log(`Loaded ${this.members.length} members (Total: ${this.totalRecords}, Page: ${this.currentPage}/${this.totalPages})`);
-          } else {
-            console.error('API returned unsuccessful response:', response);
-            this.members = [];
-            this.error = 'Failed to load members.';
-          }
-          this.loading = false;
-          this.loaded = true;
-          this.cdr.markForCheck();
-        },
-        error: (error) => {
-          console.error('Error loading members:', error);
-          console.error('Error details:', {
-            status: error?.status,
-            statusText: error?.statusText,
-            message: error?.message,
-            error: error?.error
-          });
-          this.members = [];
-          this.error = error?.error?.message || error?.message || 'Failed to load members. Please try again.';
-          this.loading = false;
-          this.loaded = true;
-          this.cdr.markForCheck();
-        }
-      });
+    this.membersLoad$.next();
   }
 
   onListSearchChange(value: string): void {
+    const previousKey = memberDirectorySearchKey(this.searchTerm);
     this.searchTerm = value ?? '';
+    this.cdr.markForCheck();
+    if (memberDirectorySearchKey(this.searchTerm) === previousKey) {
+      return;
+    }
     this.currentPage = 1;
     this.loadMembers();
   }

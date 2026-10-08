@@ -750,7 +750,7 @@ export class AssignPermissionsModalComponent implements OnInit, OnChanges {
   getModuleRiskLevel(module: string): 'high' | 'medium' | 'low' {
     const normalizedModule = module.toLowerCase();
     const highRiskModules = ['users', 'churchsettings', 'settings'];
-    const mediumRiskModules = ['donations', 'reports', 'attendance', 'families'];
+    const mediumRiskModules = ['donations', 'reports', 'families'];
 
     if (highRiskModules.includes(normalizedModule)) {
       return 'high';
@@ -929,7 +929,6 @@ export class AssignPermissionsModalComponent implements OnInit, OnChanges {
       members: 'Members',
       families: 'Families',
       events: 'Events',
-      attendance: 'Attendance',
       donations: 'Finance',
       reports: 'Reports',
       roles: 'Roles',

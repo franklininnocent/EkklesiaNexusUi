@@ -20,6 +20,7 @@ import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
+import { trackByEntityId, trackByIndex } from '@shared/utils/cf-track-by.util';
 
 @Component({
   selector: 'app-users',
@@ -53,6 +54,8 @@ export class UsersComponent implements OnInit, OnDestroy {
   inactiveUsers = 0;
   filteredTotal = 0;
   search = '';
+  readonly trackByUser = trackByEntityId<User>;
+  readonly trackByIndex = trackByIndex;
 
   // Modal state
   showUserModal = false;

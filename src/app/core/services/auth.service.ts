@@ -12,6 +12,11 @@ import { EntitlementService } from './entitlement.service';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { ChurchCurrency } from '@core/models/church-currency.model';
 
+/**
+ * Tokens are stored in localStorage for Passport compatibility. Moving to
+ * HttpOnly cookies requires coordinated API, CSRF, and refresh-token work —
+ * not a frontend-only change.
+ */
 @Injectable({
   providedIn: 'root'
 })

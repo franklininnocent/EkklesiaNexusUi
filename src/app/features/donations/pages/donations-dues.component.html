@@ -10,14 +10,46 @@
     >
       <button
         type="button"
+        class="cf-btn cf-btn-icon cf-btn-primary"
+        (click)="collectSelected()"
+        [disabled]="!canCollectSelected || selectionActionBusy"
+        aria-label="Collect Payment"
+        [attr.title]="collectToolbarTitle"
+      >
+        <app-cf-action-icon name="collect-payment" />
+      </button>
+      <button
+        type="button"
         class="cf-btn cf-btn-icon"
-        *ngIf="canManage && overdueCount"
-        (click)="queueBulkWhatsApp()"
-        [disabled]="whatsAppQueueing"
-        aria-label="WhatsApp all overdue"
-        title="WhatsApp all overdue"
+        *ngIf="canNotify"
+        (click)="remindSelected()"
+        [disabled]="!selectedCount || selectionActionBusy"
+        aria-label="Send reminder"
+        title="Remind selected"
       >
         <app-cf-action-icon name="message-circle" />
+      </button>
+      <button
+        type="button"
+        class="cf-btn cf-btn-icon"
+        *ngIf="canManage"
+        (click)="waiveSelected()"
+        [disabled]="!canWaiveSelected || selectionActionBusy"
+        aria-label="Waive selected dues"
+        title="Waive selected"
+      >
+        <app-cf-action-icon name="badge-minus" />
+      </button>
+      <button
+        type="button"
+        class="cf-btn cf-btn-icon"
+        *ngIf="canManage"
+        (click)="queueBulkWhatsApp()"
+        [disabled]="!canWhatsAppSelected || whatsAppQueueing"
+        aria-label="WhatsApp selected families"
+        title="WhatsApp selected families"
+      >
+        <app-cf-action-icon name="send" />
       </button>
       <ng-container *appIfFeature="'CONTRIBUTION_PLANS'">
         <button
@@ -28,18 +60,9 @@
           aria-label="Catch up auto plans"
           title="Catch up auto plans"
         >
-          <app-cf-action-icon name="refresh" />
+          <app-cf-action-icon name="calendar-check" />
         </button>
       </ng-container>
-      <button
-        type="button"
-        class="cf-btn cf-btn-icon cf-btn-primary"
-        (click)="openQuickCollect()"
-        aria-label="Collect Payment"
-        title="Collect Payment"
-      >
-        <app-cf-action-icon name="collect-payment" />
-      </button>
       <button
         type="button"
         class="cf-btn cf-btn-icon"
@@ -49,6 +72,14 @@
       >
         <app-cf-action-icon name="refresh" />
       </button>
+      <span
+        class="cf-meta donations-dues__selected-count"
+        *ngIf="selectedCount"
+        role="status"
+        aria-live="polite"
+      >
+        {{ selectedCount }} selected
+      </span>
     </app-list-toolbar>
   </app-page-header>
 
@@ -161,6 +192,15 @@
       <app-data-table *ngIf="filteredDues.length">
         <thead>
           <tr>
+            <th scope="col" class="donations-dues__select-col">
+              <input
+                type="checkbox"
+                [checked]="allVisibleSelected"
+                [indeterminate]="someVisibleSelected"
+                (change)="toggleSelectAll($any($event.target).checked)"
+                aria-label="Select all dues in this table"
+              />
+            </th>
             <th
               scope="col"
               appSortable="family_name"
@@ -210,13 +250,18 @@
             >
               Status
             </th>
-            <th scope="col" class="cf-table__actions-col">
-              <span class="sr-only">Actions</span>
-            </th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let due of filteredDues; trackBy: trackDue">
+            <td class="donations-dues__select-col">
+              <input
+                type="checkbox"
+                [checked]="isDueSelected(due.id)"
+                (change)="toggleDueSelection(due.id, $any($event.target).checked)"
+                [attr.aria-label]="'Select ' + familyName(due)"
+              />
+            </td>
             <td class="cf-table__cell--truncate" [attr.title]="familyName(due)">
               <div class="donations-dues__stack">
                 <a
@@ -243,43 +288,6 @@
             </td>
             <td>
               <app-status-badge [label]="dueStatusLabel(due)" [tone]="dueStatusTone(due)"></app-status-badge>
-            </td>
-            <td
-              class="cf-table__actions-cell"
-              (click)="$event.stopPropagation()"
-              (keydown)="$event.stopPropagation()"
-            >
-              <div class="cf-row-actions">
-                <button
-                  type="button"
-                  class="cf-btn cf-btn-icon cf-btn-primary cf-btn--sm"
-                  *ngIf="due.family_id"
-                  (click)="collectForDue(due)"
-                  aria-label="Collect payment for {{ familyName(due) }}"
-                  title="Collect"
-                >
-                  <app-cf-action-icon name="collect-payment" />
-                </button>
-                <button
-                  type="button"
-                  class="cf-btn cf-btn-icon cf-btn--sm"
-                  (click)="remind(due)"
-                  aria-label="Send reminder for {{ familyName(due) }}"
-                  title="Remind"
-                >
-                  <app-cf-action-icon name="message-circle" />
-                </button>
-                <button
-                  type="button"
-                  class="cf-btn cf-btn-icon cf-btn--sm"
-                  *ngIf="canManage && (due.status === 'pending' || due.status === 'partially_paid')"
-                  (click)="waive(due)"
-                  aria-label="Waive due for {{ familyName(due) }}"
-                  title="Waive"
-                >
-                  <app-cf-action-icon name="badge-minus" />
-                </button>
-              </div>
             </td>
           </tr>
         </tbody>

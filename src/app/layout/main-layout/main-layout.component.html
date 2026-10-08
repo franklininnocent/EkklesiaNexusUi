@@ -57,7 +57,20 @@
       </div>
 
       <div class="topbar-center" *ngIf="hasParishContext((currentUser$ | async))">
-        <app-global-family-search></app-global-family-search>
+        @if (shellGlobalFamilySearch && globalFamilySearchComponent) {
+          <ng-container [ngComponentOutlet]="globalFamilySearchComponent" />
+        } @else {
+          <button
+            type="button"
+            class="global-search-launcher"
+            aria-label="Search financial records globally"
+            (click)="openGlobalFamilySearch(true)"
+          >
+            <span class="global-search-launcher__icon" aria-hidden="true">⌕</span>
+            <span class="global-search-launcher__label">Find family, receipt, project…</span>
+            <kbd class="global-search-launcher__hint" aria-hidden="true">/</kbd>
+          </button>
+        }
       </div>
       
       <div class="topbar-right">
@@ -162,9 +175,17 @@
     </footer>
   </div>
 
-  <app-quick-collect-drawer></app-quick-collect-drawer>
-  <app-notification-popover></app-notification-popover>
-  <app-command-palette></app-command-palette>
+  @if (shellQuickCollect && quickCollectComponent) {
+    <ng-container [ngComponentOutlet]="quickCollectComponent" />
+  }
+  @if (notificationInbox.isPopoverOpen()) {
+    @defer {
+      <app-notification-popover />
+    }
+  }
+  @if (commandPaletteMounted && commandPaletteComponent) {
+    <ng-container [ngComponentOutlet]="commandPaletteComponent" />
+  }
 
   <app-image-viewer
     *ngIf="photoViewer as viewer"

@@ -1,4 +1,4 @@
-jest.mock('chart.js/auto', () => ({
+jest.mock('@shared/charts/ekklesia-chart', () => ({
   Chart: jest.fn().mockImplementation(() => ({ destroy: jest.fn() })),
 }));
 
@@ -105,12 +105,32 @@ describe('SacramentsDashboardComponent', () => {
   let getBCCs: jest.Mock;
 
   beforeEach(async () => {
-    getDashboardSummary = jest.fn(() =>
-      of({
+    getDashboardSummary = jest.fn((params?: { gaps_only?: boolean }) => {
+      if (params?.gaps_only) {
+        return of({
+          success: true,
+          data: {
+            gaps: {
+              eligible_members: 12,
+              thresholds: { eucharist: 7, progression: 10, confirmation: 10, matrimony: 18 },
+              by_sacrament: [],
+              progression: {
+                without_first_communion: { count: 0, eligible_count: 0 },
+                without_confirmation: { count: 0, eligible_count: 0 },
+                female_unmarried: { count: 0, eligible_count: 0 },
+                male_unmarried: { count: 0, eligible_count: 0 },
+              },
+            },
+            meta: { gaps_only: true, generated_at: new Date().toISOString(), restricted_types_excluded: [] },
+          },
+        });
+      }
+
+      return of({
         success: true,
         data: buildSummary(),
-      })
-    );
+      });
+    });
     getBCCs = jest.fn(() =>
       of({
         success: true,
@@ -169,14 +189,15 @@ describe('SacramentsDashboardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('3');
   });
 
-  it('defaults to all-time period on initial load', () => {
+  it('defaults to year-to-date period on initial load', () => {
     fixture.detectChanges();
 
-    expect(component.periodPreset).toBe('all');
+    expect(component.periodPreset).toBe('ytd');
     expect(getDashboardSummary).toHaveBeenCalledWith(
-      expect.not.objectContaining({
-        date_from: expect.anything(),
-        date_to: expect.anything(),
+      expect.objectContaining({
+        include_gaps: false,
+        date_from: expect.any(String),
+        date_to: expect.any(String),
       })
     );
   });
@@ -301,8 +322,8 @@ describe('SacramentsDashboardComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('All records');
-    expect(fixture.nativeElement.textContent).toContain('Open parish register');
-    expect(fixture.nativeElement.textContent).toContain('12 sacraments on record');
+    expect(fixture.nativeElement.textContent).toContain('Parish register');
+    expect(fixture.nativeElement.textContent).not.toContain('Sacrament records');
   });
 
   it('navigates to families with missing sacrament filter', () => {
@@ -310,7 +331,7 @@ describe('SacramentsDashboardComponent', () => {
     component.selectedBccId = 'bcc-1';
     component.openFamiliesMissing('BAPTISM');
 
-    expect(router.navigate).toHaveBeenCalledWith(['/families'], {
+    expect(router.navigate).toHaveBeenCalledWith(['/families/list'], {
       queryParams: {
         missing_sacrament: 'BAPTISM',
         bcc_id: 'bcc-1',

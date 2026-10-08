@@ -933,6 +933,19 @@ export interface ContributionDue {
   plan?: { id: string; name: string; code: string; frequency?: string };
 }
 
+export interface BulkDueActionSkipped {
+  id: string;
+  family_name: string | null;
+  reason: string;
+}
+
+export interface BulkDueActionResult {
+  processed_count: number;
+  skipped_count: number;
+  processed_ids: string[];
+  skipped: BulkDueActionSkipped[];
+}
+
 export interface PlanRevisionHistory {
   id: number;
   plan_id: string;

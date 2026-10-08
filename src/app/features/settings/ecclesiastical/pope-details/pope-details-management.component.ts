@@ -2,7 +2,7 @@
  * Pope Details Management Component
  *
  * Manages Pope details within the Ecclesiastical Data Management interface.
- * Global Pope record — SuperAdmin only.
+ * Global Pope record. Only Ekklesia roles can change it.
  */
 
 import { Component, Input, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
@@ -17,6 +17,7 @@ import { PageHeaderComponent } from '@shared/components/page-header/page-header.
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { filter } from 'rxjs/operators';
+import { resolveMediaDisplaySrc } from '@core/utils/media-url.util';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 
 @Component({
@@ -62,30 +63,13 @@ export class PopeDetailsManagementComponent implements OnInit {
   }
 
   /**
-   * Check if user has permission to manage pope details
-   * CRITICAL SECURITY: Pope Details is SuperAdmin only
+   * Pope portrait and details are limited to Ekklesia roles.
    */
   private checkPermissions(): void {
-    const user = this.authService.currentUserValue;
-
-    const isSuperAdmin = this.authService.isSuperAdmin() ||
-                        (user?.role_name === 'SuperAdmin') ||
-                        (user?.role?.name === 'SuperAdmin') ||
-                        (user?.is_super_admin === true) ||
-                        (user?.is_admin === true);
-
-    this.canManage = isSuperAdmin;
-
-    if (!this.canManage && user) {
-      console.warn('Non-SuperAdmin user attempted to access Pope Details (SuperAdmin only)', {
-        user_id: user.id,
-        user_email: user.email,
-        role_name: user.role_name || user.role?.name,
-      });
-    }
+    this.canManage = this.authService.hasEkklesiaRole();
 
     if (!this.canManage) {
-      this.toastService.error('You do not have permission to manage pope details.');
+      this.toastService.error('Only Ekklesia roles can manage pope details.');
     }
   }
 
@@ -137,7 +121,7 @@ export class PopeDetailsManagementComponent implements OnInit {
     });
 
     if (data.pope_image_url) {
-      this.imagePreview = data.pope_image_url;
+      this.imagePreview = resolveMediaDisplaySrc(data.pope_image_url);
     } else {
       this.imagePreview = null;
     }
@@ -188,7 +172,7 @@ export class PopeDetailsManagementComponent implements OnInit {
     if (!this.popeDetails?.pope_image_url) {
       this.imagePreview = null;
     } else if (this.popeDetails.pope_image_url) {
-      this.imagePreview = this.popeDetails.pope_image_url;
+      this.imagePreview = resolveMediaDisplaySrc(this.popeDetails.pope_image_url);
     }
   }
 
@@ -204,7 +188,7 @@ export class PopeDetailsManagementComponent implements OnInit {
           this.toastService.success('Pope image uploaded successfully');
           this.selectedFile = null;
           if (response.data.pope_image_url) {
-            this.imagePreview = response.data.pope_image_url;
+            this.imagePreview = resolveMediaDisplaySrc(response.data.pope_image_url);
           }
           this.loadPopeDetails();
         }

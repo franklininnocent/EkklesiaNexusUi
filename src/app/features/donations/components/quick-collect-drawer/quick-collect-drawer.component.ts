@@ -609,6 +609,11 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.method = this.quickCollectService.getDefaultMethod();
     this.recentFamilies = this.quickCollectService.getRecentFamilies();
 
+    const pending = this.quickCollectService.consumePendingOpen();
+    if (pending) {
+      this.openDrawer(pending);
+    }
+
     this.quickCollectService.open$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((context) => this.openDrawer(context));

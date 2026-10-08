@@ -21,6 +21,7 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { ImageViewerComponent } from '@shared/components/image-viewer/image-viewer.component';
+import { trackByEntityId } from '@shared/utils/cf-track-by.util';
 
 @Component({
   selector: 'app-family-list',
@@ -75,6 +76,7 @@ export class FamilyListComponent implements OnInit, OnDestroy {
 
   Math = Math;
   Object = Object;
+  readonly trackByFamily = trackByEntityId<Family>;
 
   constructor(
     private familyService: FamilyService,

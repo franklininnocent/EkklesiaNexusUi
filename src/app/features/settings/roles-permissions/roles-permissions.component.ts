@@ -50,7 +50,7 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
 
   activeTab: 'roles' | 'permissions' | 'assign' | 'users' | 'pope' = 'roles';
   hasEkklesiaRole = false; // For backward compatibility
-  hasSuperAdminAccess = false; // For Pope tab - SuperAdmin only
+  canManagePopeDetails = false;
   isTenantMode = false;
   
   // Roles filter state
@@ -280,17 +280,10 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if user has SuperAdmin access for Pope tab
-   * CRITICAL SECURITY: Pope section is SuperAdmin only
+   * Pope details are limited to Ekklesia roles.
    */
   private updateSuperAdminAccess(user: any): void {
-    if (!user) {
-      this.hasSuperAdminAccess = false;
-      return;
-    }
-
-    // Only SuperAdmin can access Pope section
-    this.hasSuperAdminAccess = this.authService.isSuperAdmin();
+    this.canManagePopeDetails = !!user && this.authService.hasEkklesiaRole(user);
   }
 
   private updateTenantMode(user: any): void {
@@ -312,6 +305,9 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
   // Tab Management
   selectTab(tab: 'roles' | 'permissions' | 'assign' | 'users' | 'pope'): void {
     if (tab === 'pope') {
+      if (!this.canManagePopeDetails) {
+        return;
+      }
       this.activeTab = tab;
       return;
     }

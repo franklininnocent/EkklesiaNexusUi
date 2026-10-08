@@ -12,7 +12,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { MassIntentionsTrendPoint } from '../services/mass-intentions-api.service';
 
 /** Soft dashboard palette (teal / violet / amber) — matches component SCSS tokens */

@@ -173,7 +173,7 @@
         </thead>
         <tbody>
           <tr
-            *ngFor="let tenant of tenants()"
+            *ngFor="let tenant of tenants(); trackBy: trackByTenant"
             tabindex="0"
             (click)="manageTenant(tenant)"
             (keydown.enter)="manageTenant(tenant)"
@@ -254,7 +254,7 @@
         [attr.aria-label]="'Tenant cards, showing ' + tenants().length + ' of ' + filteredTotal() + ' tenants'"
       >
         <article
-          *ngFor="let tenant of tenants(); let i = index"
+          *ngFor="let tenant of tenants(); let i = index; trackBy: trackByTenant"
           class="tenant-manager__card"
           role="listitem"
           tabindex="0"

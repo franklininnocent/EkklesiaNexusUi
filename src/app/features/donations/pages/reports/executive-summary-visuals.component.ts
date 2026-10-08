@@ -16,7 +16,7 @@ import {
 } from '@angular/core';
 import { ReportDrillDownRequestPayload, ReportDrillDownGraphId } from '../../models/donation.model';
 import { REPORT_DRILL_DOWN_GRAPH_IDS } from './report-drill-down.constants';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import {
   ExecutiveReportCollectionSnapshot,

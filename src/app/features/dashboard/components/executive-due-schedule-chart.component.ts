@@ -15,7 +15,7 @@ import {
   inject,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { cfFormatMoney } from '@shared/utils/cf-intl.util';
 import { ExecutiveDueScheduleSlice } from '../models/executive-dashboard.model';
 import {
