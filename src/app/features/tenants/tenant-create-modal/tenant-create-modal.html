@@ -161,6 +161,86 @@
       </div>
     </section>
 
+    <section class="cf-split-section" aria-labelledby="tenant-section-plan">
+      <h3 id="tenant-section-plan" class="cf-split-section__title">Subscription plan</h3>
+      <p class="cf-split-field__hint">
+        Choose the plan this church starts on. If none is selected, the platform default for new churches is assigned.
+        List prices are shown in each plan’s billed currency.
+      </p>
+
+      <div *ngIf="plansLoading" class="cf-loading-block" role="status" aria-busy="true">
+        <app-loading-skeleton type="card" [rows]="2"></app-loading-skeleton>
+      </div>
+
+      <p *ngIf="plansLoadError" class="cf-split-form-alert cf-split-form-alert--error" role="alert">
+        {{ plansLoadError }}
+        <button
+          type="button"
+          class="cf-btn"
+          (click)="loadPlans()"
+          [disabled]="isSubmitting || plansLoading"
+        >
+          Try again
+        </button>
+      </p>
+
+      <p
+        *ngIf="!plansLoading && !plansLoadError && assignablePlans.length === 0"
+        class="cf-split-field__hint"
+        role="status"
+      >
+        No subscription plans are available to assign. The platform default will be used if one is configured.
+      </p>
+
+      <fieldset
+        class="tenant-create-plan-grid"
+        *ngIf="!plansLoading && assignablePlans.length"
+        [class.tenant-create-plan-grid--invalid]="isFieldInvalid('plan')"
+      >
+        <legend class="sr-only">Choose a subscription plan</legend>
+        <label
+          *ngFor="let plan of assignablePlans"
+          class="tenant-create-plan-card"
+          [class.tenant-create-plan-card--selected]="selectedPlanKey === plan.key"
+        >
+          <span class="tenant-create-plan-card__title">
+            <input
+              type="radio"
+              name="tenantCreatePlan"
+              [value]="plan.key"
+              [(ngModel)]="selectedPlanKey"
+              (ngModelChange)="onPlanKeySelected()"
+              [disabled]="isSubmitting"
+            />
+            <strong>{{ plan.name }}</strong>
+            <span class="tenant-create-plan-card__badge" *ngIf="plan.is_default">Default for new churches</span>
+          </span>
+          <span class="tenant-create-plan-card__description" *ngIf="plan.short_description">
+            {{ plan.short_description }}
+          </span>
+          <span class="tenant-create-plan-card__price" *ngIf="plan.active_version as version">
+            <ng-container [ngSwitch]="plan.pricing_type">
+              <ng-container *ngSwitchCase="'CUSTOM'">Custom pricing</ng-container>
+              <ng-container *ngSwitchCase="'FREE'">Free</ng-container>
+              <ng-container *ngSwitchDefault>
+                {{ version.monthly_price | cfCurrency: version.currency_code : 0 }}/month
+              </ng-container>
+            </ng-container>
+          </span>
+          <ul class="tenant-create-plan-card__limits" *ngIf="visibleLimits(plan).length">
+            <li *ngFor="let limit of visibleLimits(plan)">
+              {{ limit.name }}:
+              {{ limit.unlimited ? 'Unlimited' : limit.value }}
+              <ng-container *ngIf="!limit.unlimited && limit.unit"> {{ limit.unit }}</ng-container>
+            </li>
+          </ul>
+        </label>
+      </fieldset>
+      <p class="cf-split-field__error" *ngIf="isFieldInvalid('plan')">
+        {{ getFieldError('plan') }}
+      </p>
+    </section>
+
     <section class="cf-split-section" aria-labelledby="tenant-section-address">
       <h3 id="tenant-section-address" class="cf-split-section__title">Tenant official address</h3>
       <div class="cf-split-grid">

@@ -112,6 +112,9 @@ export class FamilyRelationshipNavigatorComponent implements OnChanges {
     ) {
       this.rebuildView();
     }
+    if (changes['selectedMemberId'] && this.selectedMemberId) {
+      this.syncExpandedGroupToSelectedMember();
+    }
   }
 
   private rebuildView(): void {
@@ -253,7 +256,39 @@ export class FamilyRelationshipNavigatorComponent implements OnChanges {
   }
 
   isGroupExpanded(key: HierarchyGroupKey): boolean {
-    return this.expandedGroups.get(key) ?? true;
+    const group = this.groups.find((g) => g.key === key);
+    return this.expandedGroups.get(key) ?? group?.defaultExpanded ?? false;
+  }
+
+  private syncExpandedGroupToSelectedMember(): void {
+    if (!this.selectedMemberId) {
+      return;
+    }
+    for (const g of this.groups) {
+      if (g.members.some((vm) => vm.member.id === this.selectedMemberId)) {
+        this.setAccordionExpandedGroup(g.key);
+        return;
+      }
+    }
+  }
+
+  private expandGroupForMemberIndex(memberIndex: number): void {
+    for (const g of this.groups) {
+      if (g.members.some((vm) => vm.memberIndex === memberIndex)) {
+        this.setAccordionExpandedGroup(g.key);
+        return;
+      }
+    }
+  }
+
+  private setAccordionExpandedGroup(activeKey: HierarchyGroupKey): void {
+    for (const g of this.groups) {
+      this.expandedGroups.set(g.key, g.key === activeKey);
+    }
+    this.flatRows = this.buildFlatRows();
+    const memberRowCount = this.flatRows.filter((r) => r.type === 'member').length;
+    this.useVirtualScroll = memberRowCount > VIRTUAL_SCROLL_THRESHOLD;
+    this.updateVisibleRows(this.virtualViewportRef?.nativeElement?.scrollTop ?? 0);
   }
 
   onGroupExpandedChange(key: HierarchyGroupKey, expanded: boolean): void {
@@ -335,6 +370,7 @@ export class FamilyRelationshipNavigatorComponent implements OnChanges {
   }
 
   onMemberSelect(index: number): void {
+    this.expandGroupForMemberIndex(index);
     this.selectMember.emit(index);
     const flatIdx = this.flatRows.findIndex(
       (r) => r.type === 'member' && r.vm.memberIndex === index

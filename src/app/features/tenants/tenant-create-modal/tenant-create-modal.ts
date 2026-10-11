@@ -17,6 +17,13 @@ import { PhoneCodeService } from '@core/services/phone-code.service';
 import { PhoneInputComponent } from '@shared/components/phone-input/phone-input.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { CfBusyLabelComponent } from '@shared/components/cf-busy-label/cf-busy-label.component';
+import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
+import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
+import { CatalogPlan, PlanLimitSummary } from '@features/subscriptions/models/subscription-admin.models';
+import {
+  SubscriptionAdminService,
+  subscriptionErrorMessage,
+} from '@features/subscriptions/services/subscription-admin.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -40,7 +47,16 @@ const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\
 @Component({
   selector: 'app-tenant-create-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule, PhoneInputComponent, ModalShellComponent, CfBusyLabelComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NgSelectModule,
+    PhoneInputComponent,
+    ModalShellComponent,
+    CfBusyLabelComponent,
+    LoadingSkeletonComponent,
+    CfCurrencyPipe,
+  ],
   templateUrl: './tenant-create-modal.html',
   styleUrls: ['./tenant-create-modal.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -51,6 +67,7 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
   private geographyService = inject(GeographyService);
   private archdioceseService = inject(ArchdioceseService);
   private phoneCodeService = inject(PhoneCodeService);
+  private subscriptionAdmin = inject(SubscriptionAdminService);
   private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
@@ -60,6 +77,7 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadCountries();
     this.loadArchdioceses();
+    this.loadPlans();
   }
 
   loadArchdioceses(): void {
@@ -140,6 +158,65 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         }
       });
+  }
+
+  loadPlans(): void {
+    this.plansLoading = true;
+    this.plansLoadError = '';
+    this.cdr.markForCheck();
+
+    this.subscriptionAdmin
+      .listPlans()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (plans) => {
+          this.assignablePlans = (Array.isArray(plans) ? plans : []).filter((plan) => this.isAssignableCatalogPlan(plan));
+          this.plansLoading = false;
+          this.applyDefaultPlanSelection();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.assignablePlans = [];
+          this.selectedPlanKey = null;
+          this.plansLoadError = subscriptionErrorMessage(err, 'Unable to load plans.');
+          this.plansLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  choosePlan(plan: CatalogPlan): void {
+    if (this.isSubmitting || !plan.key) {
+      return;
+    }
+    this.selectedPlanKey = plan.key;
+    this.onPlanKeySelected();
+  }
+
+  onPlanKeySelected(): void {
+    delete this.formErrors['plan'];
+    this.cdr.markForCheck();
+  }
+
+  visibleLimits(plan: CatalogPlan): PlanLimitSummary[] {
+    return (plan.active_version?.limit_summary ?? []).slice(0, 3);
+  }
+
+  private isAssignableCatalogPlan(plan: CatalogPlan): boolean {
+    return (
+      !!plan.key &&
+      plan.is_assignable &&
+      !plan.is_legacy &&
+      plan.status !== 'ARCHIVED' &&
+      !!plan.active_version
+    );
+  }
+
+  private applyDefaultPlanSelection(): void {
+    if (this.selectedPlanKey && this.assignablePlans.some((plan) => plan.key === this.selectedPlanKey)) {
+      return;
+    }
+    this.selectedPlanKey = this.assignablePlans.find((plan) => plan.is_default)?.key ?? null;
   }
 
   onTenantCountryChange(countryId: number | null): void {
@@ -303,6 +380,11 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
   loadingArchdioceses = false;
   archdiocesesLoadError = '';
 
+  assignablePlans: CatalogPlan[] = [];
+  plansLoading = false;
+  plansLoadError = '';
+  selectedPlanKey: string | null = null;
+
   formData: CreateTenantRequest = {
     tenant_name: '',
     slogan: '',
@@ -370,6 +452,7 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
     this.touched['primary_contact_number'] = true;
     this.touched['domain'] = true;
     this.touched['archdiocese_id'] = true;
+    this.touched['plan'] = true;
 
     Object.keys(this.formData.tenant_official_address).forEach(key => {
       this.touched[`tenant_official_address.${key}`] = true;
@@ -544,7 +627,8 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
       'primary_user_address.state_id': 'primary_user_address.state_id',
       'primary_user_address.district': 'primary_user_address.district',
       'primary_user_address.pin_zip_code': 'primary_user_address.pin_zip_code',
-      tenant_logo: 'tenant_logo'
+      tenant_logo: 'tenant_logo',
+      plan: 'plan',
     };
 
     Object.entries(errors).forEach(([key, value]) => {
@@ -562,6 +646,10 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
+    if (this.isSubmitting) {
+      return;
+    }
+
     this.markAllFieldsTouched();
 
     const isValid = this.validateForm();
@@ -606,6 +694,10 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
 
     if (this.formData.archdiocese_id) {
       requestData.archdiocese_id = this.formData.archdiocese_id;
+    }
+
+    if (this.selectedPlanKey) {
+      requestData.plan = this.selectedPlanKey;
     }
 
     this.tenantService.createTenant(requestData)
@@ -717,6 +809,9 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
     this.successMessage = '';
     this.touched = {};
     this.isSubmitting = false;
+    this.plansLoadError = '';
+    this.selectedPlanKey = null;
+    this.applyDefaultPlanSelection();
   }
 
   ngOnDestroy(): void {

@@ -1,4 +1,13 @@
-import { ChangeDetectorRef, ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FamilyService } from '../../../../core/services/family.service';
@@ -82,6 +91,8 @@ const DEFAULT_SACRAMENT_TYPES: SacramentTypeDto[] = [
 export class FamilyDetail implements OnInit, OnDestroy {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly confirmationDialog = inject(ConfirmationDialogService);
+
+  @ViewChild('workspaceDetail') private workspaceDetailRef?: ElementRef<HTMLElement>;
 
   family: Family | null = null;
   loading = true;
@@ -1274,6 +1285,27 @@ export class FamilyDetail implements OnInit, OnDestroy {
       replaceUrl: true,
     });
     this.cdr.markForCheck();
+    this.scrollWorkspacePanelToTop();
+  }
+
+  /** Scroll main layout so the right-hand workspace starts at the top after member change. */
+  private scrollWorkspacePanelToTop(): void {
+    setTimeout(() => {
+      const detailEl = this.workspaceDetailRef?.nativeElement;
+      if (!detailEl) {
+        return;
+      }
+      const pageContent = detailEl.closest('.page-content') as HTMLElement | null;
+      if (pageContent) {
+        const top =
+          detailEl.getBoundingClientRect().top -
+          pageContent.getBoundingClientRect().top +
+          pageContent.scrollTop;
+        pageContent.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'auto' });
+        return;
+      }
+      detailEl.scrollIntoView({ block: 'start', behavior: 'auto' });
+    }, 0);
   }
 
   private loadMemberRegisterSacraments(): void {
