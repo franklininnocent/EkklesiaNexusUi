@@ -1,0 +1,126 @@
+<div class="marketing-seo">
+  <app-tab-strip
+    [tabs]="seoPanelStrip"
+    [activeId]="panel"
+    density="compact"
+    ariaLabel="SEO configuration"
+    (tabChange)="onSeoPanelChange($event)">
+  </app-tab-strip>
+
+  <ng-container *ngIf="panel === 'global'">
+    <section class="marketing-seo__section">
+      <h3 class="marketing-seo__heading">Global SEO</h3>
+      <label class="marketing-admin-field">
+        <span>Canonical origin</span>
+        <select [(ngModel)]="model.canonicalOrigin" (ngModelChange)="emit()">
+          <option *ngFor="let o of origins" [value]="o">{{ o }}</option>
+        </select>
+      </label>
+      <label class="marketing-admin-field">
+        <span>Organization name</span>
+        <input type="text" [(ngModel)]="model.organizationName" (ngModelChange)="emit()" maxlength="120" />
+      </label>
+      <label class="marketing-admin-field">
+        <span>Organization description</span>
+        <textarea rows="3" [(ngModel)]="model.organizationDescription" (ngModelChange)="emit()" maxlength="500"></textarea>
+      </label>
+      <label class="marketing-admin-field">
+        <span>Default social image path</span>
+        <input type="text" [(ngModel)]="model.defaultOgImage" (ngModelChange)="emit()" />
+      </label>
+      <p class="marketing-admin-field__hint">Rendered canonical URLs use the marketing site <code>NEXT_PUBLIC_SITE_URL</code> in production.</p>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="panel === 'pages'">
+    <section class="marketing-seo__section">
+      <h3 class="marketing-seo__heading">Page SEO</h3>
+      <label class="marketing-admin-field">
+        <span>Page</span>
+        <select [(ngModel)]="activePageId">
+          <option *ngFor="let id of pageIds" [ngValue]="id">{{ pageMeta[id].name }} ({{ pageMeta[id].path }})</option>
+        </select>
+      </label>
+
+      <ng-container *ngIf="model.pages[activePageId] as page">
+        <p *ngIf="pageMeta[activePageId].indexLockedNo" class="marketing-admin-callout marketing-admin-callout--warn" role="status">
+          This page stays <strong>noindex</strong> until legal content is approved.
+        </p>
+        <label class="marketing-admin-field">
+          <span>SEO title</span>
+          <input type="text" [(ngModel)]="page.seoTitle" (ngModelChange)="onPageFieldChange()" maxlength="70" />
+          <p class="marketing-admin-field__hint">{{ titleLengthHint(page.seoTitle.length) }}</p>
+        </label>
+        <label class="marketing-admin-field">
+          <span>Meta description</span>
+          <textarea rows="3" [(ngModel)]="page.seoDescription" (ngModelChange)="onPageFieldChange()" maxlength="180"></textarea>
+          <p class="marketing-admin-field__hint">{{ descriptionLengthHint(page.seoDescription.length) }}</p>
+        </label>
+        <label class="marketing-admin-field">
+          <span>Social title (optional)</span>
+          <input type="text" [(ngModel)]="page.ogTitle" (ngModelChange)="onPageFieldChange()" maxlength="70" />
+        </label>
+        <label class="marketing-admin-field">
+          <span>Social description (optional)</span>
+          <textarea rows="2" [(ngModel)]="page.ogDescription" (ngModelChange)="onPageFieldChange()" maxlength="180"></textarea>
+        </label>
+        <label class="marketing-admin-field" *ngIf="!pageMeta[activePageId].indexLockedNo">
+          <span class="marketing-seo__check">
+            <input type="checkbox" [(ngModel)]="page.robotsIndex" (ngModelChange)="onPageFieldChange()" />
+            Allow search indexing
+          </span>
+        </label>
+
+        <div class="marketing-seo__preview-grid">
+          <div class="marketing-seo__preview">
+            <h4 class="marketing-seo__preview-label">Search preview</h4>
+            <p class="marketing-seo__preview-title">{{ page.seoTitle }}</p>
+            <p class="marketing-seo__preview-url">{{ model.canonicalOrigin }}{{ page.path === '/' ? '/' : page.path }}</p>
+            <p class="marketing-seo__preview-desc">{{ page.seoDescription }}</p>
+          </div>
+          <div class="marketing-seo__preview">
+            <h4 class="marketing-seo__preview-label">Social preview</h4>
+            <p class="marketing-seo__preview-title">{{ socialPreviewTitle(activePageId) }}</p>
+            <p class="marketing-seo__preview-desc">{{ socialPreviewDescription(activePageId) }}</p>
+            <p class="marketing-admin-field__hint">Image: {{ page.ogImage || model.defaultOgImage }}</p>
+          </div>
+        </div>
+      </ng-container>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="panel === 'discoverability'">
+    <section class="marketing-seo__section">
+      <h3 class="marketing-seo__heading">Sitemap &amp; robots</h3>
+      <p *ngIf="seoPublishedAt" class="marketing-admin-field__hint" role="status">
+        SEO config last published: <strong>{{ seoPublishedAt | cfDate:'datetime' }}</strong>
+      </p>
+      <p class="marketing-admin-field__hint">Sitemap includes only published, indexable routes. Hash sections (#features, #pricing) are not separate URLs.</p>
+      <ul class="marketing-seo__list">
+        <li *ngFor="let url of sitemapPreview()">{{ url }}</li>
+      </ul>
+      <p *ngIf="sitemapPreview().length === 0" class="marketing-admin-callout marketing-admin-callout--warn">No indexable URLs configured.</p>
+      <p class="marketing-admin-field__hint">Excluded: /privacy and /terms (noindex), /application and APIs (not on marketing site).</p>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="panel === 'integrations'">
+    <section class="marketing-seo__section">
+      <h3 class="marketing-seo__heading">Search &amp; analytics</h3>
+      <p class="marketing-admin-field__hint">Submit <code>{{ model.canonicalOrigin.replace(/\/$/, '') }}/sitemap.xml</code> in Search Console. Sitemap submission does not guarantee indexing.</p>
+      <label class="marketing-admin-field">
+        <span>Google Search Console verification token</span>
+        <input type="text" [(ngModel)]="model.googleVerification" (ngModelChange)="emit()" autocomplete="off" />
+      </label>
+      <label class="marketing-admin-field">
+        <span>Bing Webmaster verification token</span>
+        <input type="text" [(ngModel)]="model.bingVerification" (ngModelChange)="emit()" autocomplete="off" />
+      </label>
+      <label class="marketing-admin-field">
+        <span>GA4 measurement ID</span>
+        <input type="text" [(ngModel)]="model.ga4MeasurementId" (ngModelChange)="emit()" placeholder="G-XXXXXXXX" />
+      </label>
+      <p class="marketing-admin-field__hint">Analytics loads only when <code>NEXT_PUBLIC_ANALYTICS_ENABLED=true</code> on the marketing site.</p>
+    </section>
+  </ng-container>
+</div>

@@ -26,9 +26,32 @@ export interface PagedEnvelope<T> extends ApiEnvelope<T[]> {
   meta: PageMeta;
 }
 
+export interface PlanLimitSummary {
+  code: string;
+  name: string;
+  unit: string | null;
+  value: number | null;
+  unlimited: boolean;
+}
+
+export interface PlanCoverageRow {
+  code: string;
+  name: string;
+  description: string | null;
+  category: string;
+  feature_type: FeatureType | string;
+  unit: string | null;
+  display_order?: number | null;
+  is_core: boolean;
+  included: boolean;
+  value?: number | null;
+  unlimited?: boolean;
+}
+
 export interface VersionEntitlement {
   feature_code: string;
   feature_name: string;
+  description?: string | null;
   feature_type: FeatureType;
   category: string;
   unit: string | null;
@@ -67,6 +90,8 @@ export interface PlanVersion {
   change_notes: string | null;
   is_editable: boolean;
   entitlements?: VersionEntitlement[];
+  limit_summary?: PlanLimitSummary[];
+  discovery?: PlanVersionDiscovery;
   tenant_count?: number;
 }
 
@@ -189,6 +214,7 @@ export interface MatrixFeature {
   id: number;
   code: string;
   name: string;
+  description?: string | null;
   category: string;
   feature_type: FeatureType;
   unit: string | null;
@@ -209,9 +235,26 @@ export interface MatrixColumn {
   cells: Record<string, MatrixCell>;
 }
 
+export interface PlanCapabilityRow {
+  label: string;
+  entitlement: string;
+  customer_note: string;
+}
+
+export type RbacCapabilityRow = PlanCapabilityRow;
+
+export interface FeatureCapabilitySection {
+  id: string;
+  title: string;
+  intro: string;
+  rows: PlanCapabilityRow[];
+}
+
 export interface FeatureMatrix {
   features: MatrixFeature[];
   plans: MatrixColumn[];
+  rbac_capability_comparison?: PlanCapabilityRow[];
+  feature_capability_sections?: FeatureCapabilitySection[];
 }
 
 export interface FeatureChange {
@@ -269,8 +312,16 @@ export interface PublicPlanCard {
     monthly?: TaxBreakdown | null;
     annual?: TaxBreakdown | null;
   };
-  features?: { code: string; name: string; category: string }[];
+  features?: {
+    code: string;
+    name: string;
+    category: string;
+    description?: string | null;
+    is_core?: boolean;
+    included?: boolean;
+  }[];
   limits?: { code: string; name: string; unit: string | null; value: number | null; unlimited: boolean }[];
+  coverage?: PlanCoverageRow[];
   display_order?: number;
   version_number?: number | null;
   id?: number;
@@ -333,11 +384,34 @@ export interface TaxBreakdown {
   inclusive: boolean;
 }
 
+export interface PlanVersionDiscovery {
+  modules: {
+    code: string;
+    name: string;
+    description?: string | null;
+    category: string;
+    module_key: string | null;
+    is_core: boolean;
+    enabled: boolean;
+    included?: boolean;
+    tier: string | null;
+  }[];
+  limits: {
+    code: string;
+    name: string;
+    description?: string | null;
+    unit: string | null;
+    value: number | null;
+    unlimited: boolean;
+    included?: boolean;
+  }[];
+}
+
 export interface VersionPreview {
   card: PublicPlanCard;
   version: { id: number; version_number: number; status: PlanVersionStatus };
-  modules: { code: string; name: string; category: string; module_key: string | null; is_core: boolean; enabled: boolean; tier: string | null }[];
-  limits: { code: string; name: string; unit: string | null; value: number | null; unlimited: boolean }[];
+  modules: PlanVersionDiscovery['modules'];
+  limits: PlanVersionDiscovery['limits'];
 }
 
 export interface PlanTenantRow {

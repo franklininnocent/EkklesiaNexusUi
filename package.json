@@ -1,7 +1,7 @@
 {
   "name": "ekklesia-soft-ui",
   "version": "1.0.0",
-  "description": "EkklesiaSoft - Multi-tenant SaaS Application",
+  "description": "EkklesiaNexus - Multi-tenant SaaS Application",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -28,6 +28,7 @@
     "e2e:bishop-list-edit": "playwright test e2e/bishop-management/bishop-list-edit.spec.ts",
     "e2e:bishop-succession": "playwright test e2e/bishop-management/bishop-succession-lifecycle.spec.ts",
     "e2e:subscription-expired": "playwright test e2e/subscription",
+    "e2e:subscription-enforcement": "playwright test e2e/subscription/view-only-locked-enforcement.spec.ts",
     "e2e:application-access": "playwright test e2e/application-access.spec.ts",
     "e2e:nav-isolation": "playwright test e2e/navigation/tenant-ekklesia-isolation.spec.ts"
   },

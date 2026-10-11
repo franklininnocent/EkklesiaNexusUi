@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, Subject, map, tap } from 'rxjs';
+import { Observable, Subject, map, of, tap } from 'rxjs';
+import { EntitlementService } from '@core/services/entitlement.service';
 import { newIdempotencyKey } from '../utils/local-date-only';
 import { environment } from '@environments/environment';
 import {
@@ -58,6 +59,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class DonationsService {
+  private readonly entitlements = inject(EntitlementService);
   private baseUrl = `${environment.apiUrl}/tenant/donations`;
   private readonly ledgerMutatedSubject = new Subject<void>();
   readonly ledgerMutated$ = this.ledgerMutatedSubject.asObservable();
@@ -228,6 +230,9 @@ export class DonationsService {
   }
 
   getCollectionForecast(months = 3): Observable<{ success: boolean; data: CollectionForecast }> {
+    if (!this.entitlements.hasFeature('FINANCIAL_DASHBOARD')) {
+      return of({ success: true, data: {} as CollectionForecast });
+    }
     const params = new HttpParams().set('months', String(months));
     return this.http.get<{ success: boolean; data: CollectionForecast }>(`${this.baseUrl}/dashboard/forecast`, { params });
   }

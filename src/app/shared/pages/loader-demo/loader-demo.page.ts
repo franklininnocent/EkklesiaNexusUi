@@ -11,7 +11,7 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
     <main class="loader-demo">
       <header class="loader-demo__hero">
         <p class="loader-demo__eyebrow">Preview only — not rolled out yet</p>
-        <h1>EkklesiaSoft loading system</h1>
+        <h1>EkklesiaNexus loading system</h1>
         <p>
           Brand mark for waits. Existing skeletons stay for tables and cards so the layout does not jump.
         </p>

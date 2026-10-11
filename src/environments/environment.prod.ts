@@ -1,7 +1,11 @@
+import { officialBrand } from '../app/core/config/official-brand';
+
 export const environment = {
   production: true,
-  apiUrl: 'https://api.ekklesiasoft.com/api',
-  appName: 'EkklesiaSoft',
+  apiUrl: officialBrand.apiBaseUrl,
+  /** Public marketing site. Contact Support opens `{websiteUrl}/#contact`. */
+  websiteUrl: officialBrand.websiteUrl,
+  appName: officialBrand.productName,
   appVersion: '1.0.0',
   enableDevTools: false,
   defaultLanguage: 'en',

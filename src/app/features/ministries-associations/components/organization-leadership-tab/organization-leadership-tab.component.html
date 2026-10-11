@@ -3,6 +3,11 @@
     <p>Activate this organization to manage leadership.</p>
   </div>
 
+  <div class="cf-inline-alert organization-leadership__plan-notice" *ngIf="showLeadershipPlanNotice" role="status">
+    You can view leadership history on your plan. Assigning or changing terms needs Advanced Ministry Management.
+    <a routerLink="/settings/my-subscription">Compare plans</a>
+  </div>
+
   <div class="organization-leadership__workspace">
     <section
       class="organization-leadership__column cf-panel"

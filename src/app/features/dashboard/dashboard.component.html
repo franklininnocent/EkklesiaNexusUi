@@ -1,4 +1,4 @@
-<!-- Dashboard version 3.0 — Executive overview + Operations. Restore: ./v2.0/ -->
+<!-- Dashboard version 3.0 compact density. Previous spacing snapshot: ./v3.0/ -->
 <div class="church-dashboard" data-dashboard-version="3.0">
   <!-- Page header (uses app shell for tenant + profile; no duplicate topbar) -->
   <header class="cd-page-header">
@@ -85,6 +85,7 @@
       [attr.aria-selected]="activeTab === tab"
       [attr.aria-controls]="dashboardPanelId(tab)"
       [attr.tabindex]="activeTab === tab ? 0 : -1"
+      [attr.title]="dashboardTabHints[tab]"
       (click)="selectTab(tab)"
     >
       <span class="cd-tab__name">{{ dashboardTabLabels[tab] }}</span>

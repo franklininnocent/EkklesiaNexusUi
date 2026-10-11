@@ -17,7 +17,9 @@ import { DonationsReportsWorkbenchComponent } from './reports/donations-reports-
     <section class="reports cf-page cf-financial-dashboard">
       <app-donations-reports-workbench
         [canExport]="canExportReports"
-        [advancedReports]="advancedReports"
+        [advancedReports]="advancedFinancialReporting"
+        [planAdvancedReports]="planAdvancedReports"
+        [planBasicReports]="planBasicReports"
         [exports]="exports"
         [exportsLoading]="exportsLoading"
         (refreshExports)="load()"
@@ -29,7 +31,9 @@ export class DonationsReportsComponent implements OnInit, OnDestroy {
   exports: DonationReportExport[] = [];
   exportsLoading = false;
   canExportReports = false;
-  advancedReports = true;
+  advancedFinancialReporting = false;
+  planAdvancedReports = false;
+  planBasicReports = false;
   private routerSub?: Subscription;
   private skipNextNavReload = true;
   private exportPollTimer?: ReturnType<typeof setInterval>;
@@ -75,7 +79,9 @@ export class DonationsReportsComponent implements OnInit, OnDestroy {
   private reloadAll(): void {
     this.load();
     this.entitlements.load().subscribe(() => {
-      this.advancedReports = this.entitlements.hasFeature('ADVANCED_FINANCIAL_REPORTING');
+      this.advancedFinancialReporting = this.entitlements.hasFeature('ADVANCED_FINANCIAL_REPORTING');
+      this.planAdvancedReports = this.entitlements.hasFeature('ADVANCED_REPORTS');
+      this.planBasicReports = this.entitlements.hasFeature('BASIC_REPORTS');
       this.cdr.detectChanges();
     });
   }

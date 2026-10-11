@@ -42,7 +42,9 @@ export type NavMenuId =
   | 'settings-support-access'
   | 'settings-forgot-password-requests'
   | 'settings-data-export'
-  | 'settings-default-seeds';
+  | 'settings-default-seeds'
+  | 'settings-web-settings'
+  | 'settings-contact-enquiries';
 
 type NavAudience = 'ekklesia' | 'tenant' | 'both';
 
@@ -73,6 +75,7 @@ export class NavMenuService {
     'mass-intentions': 'MASS_INTENTIONS',
     'ministries-audit': 'AUDIT_LOG',
     'settings-data-export': 'IMPORT_EXPORT',
+    'roles-permissions': 'RBAC_BASIC',
   };
 
   private readonly auth = inject(AuthService);
@@ -204,6 +207,8 @@ export class NavMenuService {
       'forgot-password-requests',
       'data-export',
       'default-seeds',
+      'web-settings',
+      'contact-enquiries',
     ];
     return allowed.includes(key) ? key : null;
   }

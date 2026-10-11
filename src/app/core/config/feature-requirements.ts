@@ -11,6 +11,7 @@ export const ROUTE_FEATURE_REQUIREMENTS: Readonly<Record<string, string>> = {
   '/mass-intentions': 'MASS_INTENTIONS',
   '/ministries/audit': 'AUDIT_LOG',
   '/settings/data-export': 'IMPORT_EXPORT',
+  '/settings/roles-permissions': 'RBAC_BASIC',
 };
 
 /** Feature codes a route needs: its own entry plus any parent section entry. */

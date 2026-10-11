@@ -478,8 +478,8 @@ export class TenantService {
   /**
    * Super Admin: platform subscription settings (grace days, etc.)
    */
-  getSubscriptionSettings(): Observable<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number}; message?: string}> {
-    return this.http.get<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number}; message?: string}>(
+  getSubscriptionSettings(): Observable<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number; view_only_allowance_days: number}; message?: string}> {
+    return this.http.get<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number; view_only_allowance_days: number}; message?: string}>(
       `${this.apiUrl.replace('/tenant', '')}/subscription/settings`
     ).pipe(catchError(error => this.handleError(error)));
   }
@@ -487,8 +487,8 @@ export class TenantService {
   /**
    * Super Admin: update grace / expiring warning days
    */
-  updateSubscriptionSettings(data: {grace_period_days: number; expiring_warning_days: number}): Observable<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number}; message?: string}> {
-    return this.http.put<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number}; message?: string}>(
+  updateSubscriptionSettings(data: {grace_period_days: number; expiring_warning_days: number; view_only_allowance_days: number}): Observable<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number; view_only_allowance_days: number}; message?: string}> {
+    return this.http.put<{success: boolean; data: {grace_period_days: number; expiring_warning_days: number; view_only_allowance_days: number}; message?: string}>(
       `${this.apiUrl.replace('/tenant', '')}/subscription/settings`,
       data
     ).pipe(catchError(error => this.handleError(error)));
@@ -497,6 +497,23 @@ export class TenantService {
   /**
    * Tenant: lightweight subscription access (any tenant user)
    */
+  getTenantSubscriptionAccessPolicy(tenantId: number): Observable<{ success: boolean; data: Record<string, unknown> }> {
+    const base = this.apiUrl.replace('/tenant', '');
+    return this.http
+      .get<{ success: boolean; data: Record<string, unknown> }>(`${base}/tenant/${tenantId}/subscription/access-policy`)
+      .pipe(catchError((error) => this.handleError(error)));
+  }
+
+  updateTenantSubscriptionAccessPolicy(
+    tenantId: number,
+    data: { custom_grace_period_days: number | null; custom_view_only_allowance_days: number | null }
+  ): Observable<{ success: boolean; data: Record<string, unknown> }> {
+    const base = this.apiUrl.replace('/tenant', '');
+    return this.http
+      .put<{ success: boolean; data: Record<string, unknown> }>(`${base}/tenant/${tenantId}/subscription/access-policy`, data)
+      .pipe(catchError((error) => this.handleError(error)));
+  }
+
   getSubscriptionAccess(): Observable<{success: boolean; data: any; message?: string}> {
     return this.http.get<{success: boolean; data: any; message?: string}>(`${this.apiUrl}/subscription-access`)
       .pipe(catchError(error => this.handleError(error)));

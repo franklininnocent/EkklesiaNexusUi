@@ -177,6 +177,10 @@ export class OrganizationLeadershipTabComponent implements OnInit, OnChanges, On
     );
   }
 
+  get showLeadershipPlanNotice(): boolean {
+    return this.canManageLeadership && !this.isInactiveOrganization && !this.canChangeLeadership;
+  }
+
   get canAssign(): boolean {
     return this.canChangeLeadership;
   }

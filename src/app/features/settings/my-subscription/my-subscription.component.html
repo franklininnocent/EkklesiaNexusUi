@@ -109,6 +109,11 @@
           Your plan changes to <strong>{{ change.plan_name }}</strong>
           <ng-container *ngIf="change.scheduled_for"> on {{ formatDate(change.scheduled_for) }}</ng-container>.
         </p>
+        <p class="my-sub-muted my-sub-version-note" *ngIf="usingSubscribedVersion" role="status">
+          Your church is on plan version <strong>v{{ currentPlanIdentity?.subscribed_version_number }}</strong>.
+          The catalog now shows <strong>v{{ currentPlanIdentity?.catalog_version_number }}</strong> for new assignments —
+          your features below reflect the version you are pinned to until Ekklesia approves a plan change.
+        </p>
       </section>
 
       <!-- Priority 3: How much of the plan is used -->
@@ -163,9 +168,17 @@
             <p>What this plan covers for your church</p>
           </div>
         </header>
-        <ul class="my-sub-features" *ngIf="enabledFeatures.length; else legacyFeatures">
-          <li *ngFor="let feature of enabledFeatures">{{ feature.name }}</li>
-        </ul>
+        <div class="my-sub-feature-groups" *ngIf="enabledFeatureGroups.length; else legacyFeatures">
+          <section *ngFor="let group of enabledFeatureGroups" class="my-sub-feature-group">
+            <h3 class="my-sub-feature-group__title">{{ group.label }}</h3>
+            <ul class="my-sub-features">
+              <li *ngFor="let feature of group.items">
+                <strong>{{ feature.name }}</strong>
+                <span class="my-sub-muted" *ngIf="feature.description">{{ feature.description }}</span>
+              </li>
+            </ul>
+          </section>
+        </div>
         <ng-template #legacyFeatures>
           <ul class="my-sub-features">
             <li *ngFor="let feature of s.features">{{ featureLabel(feature) }}</li>
@@ -179,12 +192,12 @@
       <header class="my-sub-panel__header">
         <div>
           <h2 id="my-sub-requests-title">Plan requests</h2>
-          <p>Requests your church has sent to EkklesiaSoft</p>
+          <p>Requests your church has sent to EkklesiaNexus</p>
         </div>
       </header>
       <div class="my-sub-alert" *ngIf="openRequest?.status === 'INFO_REQUESTED'" role="status">
         <div class="my-sub-alert__copy">
-          <strong>EkklesiaSoft needs a little more information</strong>
+          <strong>EkklesiaNexus needs a little more information</strong>
           <p>{{ openRequest!.review_notes }}</p>
           <p>Choose the plan again below and add your answer in the message box.</p>
         </div>
@@ -206,6 +219,14 @@
       </ul>
     </section>
 
+    <div *ngIf="comparisonError" class="cf-inline-alert my-sub-alert" role="alert">
+      <div class="my-sub-alert__copy">
+        <strong>Could not load plan comparison</strong>
+        <p>{{ comparisonError }}</p>
+      </div>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="load()">Try again</button>
+    </div>
+
     <!-- Priority 6: Compare plans and ask for a change -->
     <section class="my-sub-panel" aria-labelledby="my-sub-compare-title" *ngIf="plans.length" id="compare-plans">
       <header class="my-sub-panel__header">
@@ -215,7 +236,7 @@
             You were looking for <strong>{{ askedFeatureName }}</strong>. Plans that include it are marked.
           </p>
           <ng-template #genericCompare>
-            <p>Need more room or more features? Ask EkklesiaSoft to change your plan.</p>
+            <p>Need more room or more features? Ask EkklesiaNexus to change your plan.</p>
           </ng-template>
         </div>
       </header>
@@ -237,8 +258,15 @@
         [highlightFeature]="askedFeature"
         [selectable]="true"
         [disabled]="!canRequest"
-        (choose)="choosePlan($event)">
+        (choose)="choosePlan($event)"
+        (viewFeatures)="openPlanFeatures($event)">
       </app-plan-comparison>
+
+      <h3 class="my-sub-compare-table-title">Feature comparison</h3>
+      <app-plan-compare-table
+        [plans]="plans"
+        [currentCode]="currentPlanCode"
+        [capabilitySections]="featureCapabilitySections"></app-plan-compare-table>
 
       <form
         *ngIf="selectedPlan as plan"
@@ -246,6 +274,24 @@
         (ngSubmit)="submitRequest()"
         aria-labelledby="my-sub-request-title">
         <h3 id="my-sub-request-title">Request {{ plan.name }}</h3>
+        <div class="cf-inline-alert my-sub-preview" *ngIf="planChangePreviewLoading" role="status">Loading what would change…</div>
+        <div class="cf-inline-alert my-sub-preview my-sub-preview--error" *ngIf="planChangePreviewError" role="alert">{{ planChangePreviewError }}</div>
+        <section class="my-sub-preview cf-panel" *ngIf="planChangePreview && !planChangePreviewLoading" aria-label="Upgrade preview">
+          <p class="my-sub-muted">This is a preview only. Your plan does not change until Ekklesia approves the request.</p>
+          <ul class="my-sub-preview__gains" *ngIf="planChangePreview.features_gained.length">
+            <li *ngFor="let f of planChangePreview.features_gained">+ {{ f.name }}</li>
+          </ul>
+          <ul class="my-sub-preview__losses" *ngIf="planChangePreview.features_lost.length">
+            <li *ngFor="let f of planChangePreview.features_lost">− {{ f.name }}</li>
+          </ul>
+          <dl class="my-sub-preview__limits" *ngIf="planChangePreview.limit_changes.length">
+            <ng-container *ngFor="let row of planChangePreview.limit_changes">
+              <dt>{{ row.name }}</dt>
+              <dd>{{ row.from ?? 'Unlimited' }} → {{ row.to ?? 'Unlimited' }}</dd>
+            </ng-container>
+          </dl>
+          <p class="my-sub-muted" *ngIf="planChangePreview.data_preserved">Existing records stay on your church account; limits only affect new activity.</p>
+        </section>
         <fieldset *ngIf="plan.pricing_type !== 'CUSTOM' && plan.billing_intervals.length > 1" class="my-sub-request-form__intervals">
           <legend>How would you like to pay?</legend>
           <label *ngFor="let interval of plan.billing_intervals">
@@ -254,7 +300,7 @@
           </label>
         </fieldset>
         <label class="my-sub-request-form__message">
-          Message for EkklesiaSoft (optional)
+          Message for EkklesiaNexus (optional)
           <textarea
             name="message"
             rows="3"
@@ -262,7 +308,7 @@
             [(ngModel)]="requestMessage"
             placeholder="For example: we are growing and need contribution plans"></textarea>
         </label>
-        <p class="my-sub-muted">No payment is taken here. EkklesiaSoft will review your request and contact you.</p>
+        <p class="my-sub-muted">No payment is taken here. EkklesiaNexus will review your request and contact you.</p>
         <p class="my-sub-request-form__error" *ngIf="requestError" role="alert">{{ requestError }}</p>
         <div class="my-sub-request-form__actions">
           <button type="submit" class="cf-btn cf-btn-primary" [disabled]="submitting">
@@ -277,7 +323,7 @@
     <aside class="my-sub-footnote" aria-label="About subscription management">
       <p>
         This page shows your church's subscription and access status.
-        Plan changes and renewals are managed by EkklesiaSoft administrators — payment and billing are not handled here.
+        Plan changes and renewals are managed by EkklesiaNexus administrators — payment and billing are not handled here.
       </p>
       <p *ngIf="s.grace_period_days != null">
         Grace period is currently {{ s.grace_period_days }} day<span *ngIf="s.grace_period_days !== 1">s</span> after the end date.
@@ -285,3 +331,20 @@
     </aside>
   </ng-container>
 </div>
+
+<app-modal-shell
+  *ngIf="featuresPlan"
+  [title]="featuresPlan.name + ' — features'"
+  size="lg"
+  (closeRequested)="closePlanFeatures()">
+  <p class="my-sub-muted" *ngIf="featuresPlan.using_subscribed_version">
+    Showing the version your church is on (may differ from the latest catalog version).
+  </p>
+  <app-plan-feature-details-panel [coverage]="featuresPlan.coverage ?? null"></app-plan-feature-details-panel>
+  <p *ngIf="!featuresPlan.coverage?.length" class="my-sub-muted">
+    Feature details could not be loaded. Refresh the page or try again later.
+  </p>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closePlanFeatures()">Close</button>
+  </ng-container>
+</app-modal-shell>

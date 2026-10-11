@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Subject, switchMap, of, takeUntil } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
-import { DataTableComponent } from '@shared/components/data-table/data-table.component';
+import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
+import { DataTableComponent, trackByEntityId } from '@shared/components/data-table/data-table.component';
+import { TabStripComponent, TabStripItem } from '@shared/components/tab-strip/tab-strip.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
@@ -33,7 +35,16 @@ interface FeatureForm {
 @Component({
   selector: 'app-feature-catalog-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTableComponent, LoadingSkeletonComponent, ModalShellComponent, StatusBadgeComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CfEmptyStateComponent,
+    DataTableComponent,
+    LoadingSkeletonComponent,
+    ModalShellComponent,
+    StatusBadgeComponent,
+    TabStripComponent,
+  ],
   templateUrl: './feature-catalog.page.html',
   styleUrls: ['../../styles/subscription-admin.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,6 +57,11 @@ export class FeatureCatalogPage implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   readonly can = subscriptionAdminCapabilities(this.auth);
+  readonly trackFeature = trackByEntityId;
+  readonly statusTabs: TabStripItem[] = [
+    { id: 'on', label: 'Features', domId: 'sa-feature-tab-on', ariaControls: 'sa-feature-panel' },
+    { id: 'off', label: 'Features – Off', domId: 'sa-feature-tab-off', ariaControls: 'sa-feature-panel' },
+  ];
   readonly featureTypes: { value: FeatureType; label: string }[] = [
     { value: 'MODULE', label: 'Module (area of the app)' },
     { value: 'BOOLEAN', label: 'On / off capability' },
@@ -58,6 +74,8 @@ export class FeatureCatalogPage implements OnInit, OnDestroy {
   loading = false;
   error: string | null = null;
   search = '';
+  /** Which catalog slice is shown: enabled (on) vs disabled (off). */
+  statusView: 'on' | 'off' = 'on';
 
   editing: CatalogFeature | null = null;
   creating = false;
@@ -65,11 +83,33 @@ export class FeatureCatalogPage implements OnInit, OnDestroy {
   saving = false;
 
   get filtered(): CatalogFeature[] {
+    const activeOnly = this.statusView === 'on';
+    let list = this.features.filter((f) => (activeOnly ? f.is_active : !f.is_active));
     const q = this.search.trim().toLowerCase();
-    if (!q) return this.features;
-    return this.features.filter(
+    if (!q) return list;
+    return list.filter(
       (f) => f.name.toLowerCase().includes(q) || f.code.toLowerCase().includes(q) || f.category.toLowerCase().includes(q),
     );
+  }
+
+  get emptyTabMessage(): { title: string; description: string } {
+    const q = this.search.trim();
+    if (q) {
+      return {
+        title: 'No matching features',
+        description: 'Try a different search term or switch tabs to see other features.',
+      };
+    }
+    if (this.statusView === 'off') {
+      return {
+        title: 'No features are off',
+        description: 'Every feature in the catalog is currently enabled. Turn a feature off from its edit screen to list it here.',
+      };
+    }
+    return {
+      title: 'No features are on',
+      description: 'There are no enabled features in the catalog. Turn a feature on from the Features – Off tab.',
+    };
   }
 
   get dependencyOptions(): CatalogFeature[] {
@@ -88,6 +128,12 @@ export class FeatureCatalogPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  onStatusTabChange(id: string): void {
+    if (id !== 'on' && id !== 'off') return;
+    this.statusView = id;
+    this.cdr.markForCheck();
   }
 
   load(): void {
@@ -216,8 +262,9 @@ export class FeatureCatalogPage implements OnInit, OnDestroy {
           this.saving = false;
           this.creating = false;
           this.editing = null;
+          this.upsertFeature(saved);
           this.toast.success(`${saved.name} saved.`, 'Saved');
-          this.load();
+          this.cdr.markForCheck();
         },
         error: (err) => {
           this.saving = false;
@@ -225,6 +272,15 @@ export class FeatureCatalogPage implements OnInit, OnDestroy {
           this.load();
         },
       });
+  }
+
+  private upsertFeature(saved: CatalogFeature): void {
+    const idx = this.features.findIndex((f) => f.id === saved.id);
+    if (idx >= 0) {
+      this.features = [...this.features.slice(0, idx), saved, ...this.features.slice(idx + 1)];
+    } else {
+      this.features = [...this.features, saved];
+    }
   }
 
   private blankForm(): FeatureForm {

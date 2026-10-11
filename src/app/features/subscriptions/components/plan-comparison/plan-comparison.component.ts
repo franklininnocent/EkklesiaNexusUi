@@ -7,6 +7,7 @@ interface ComparisonCard {
   plan: PublicPlanCard;
   previousName: string | null;
   newFeatures: { code: string; name: string }[];
+  includesLabel: string;
   isCurrent: boolean;
   isRequested: boolean;
   hasHighlight: boolean;
@@ -64,9 +65,7 @@ interface ComparisonCard {
           </li>
         </ul>
 
-        <p class="plan-compare__includes">
-          {{ card.previousName ? 'Everything in ' + card.previousName + ', plus:' : 'Includes:' }}
-        </p>
+        <p class="plan-compare__includes">{{ card.includesLabel }}</p>
         <ul class="plan-compare__features">
           <li
             *ngFor="let feature of card.newFeatures"
@@ -78,21 +77,26 @@ interface ComparisonCard {
 
         <p class="plan-compare__match" *ngIf="card.hasHighlight && !card.isCurrent">Includes what you asked about</p>
 
-        <footer class="plan-compare__actions" *ngIf="selectable()">
-          <span *ngIf="card.isCurrent" class="plan-compare__state">
-            {{ currentPlanState(card.plan) }}
-          </span>
-          <span *ngIf="!card.isCurrent && card.isRequested" class="plan-compare__state">Request sent</span>
-          <button
-            *ngIf="!card.isCurrent && !card.isRequested && card.plan.primary_action !== 'current'"
-            type="button"
-            class="cf-btn"
-            [class.cf-btn-primary]="card.plan.is_featured || card.hasHighlight"
-            [class.cf-btn-secondary]="!(card.plan.is_featured || card.hasHighlight)"
-            [disabled]="disabled()"
-            (click)="choose.emit(card.plan)">
-            {{ card.plan.primary_action === 'quote' || card.plan.pricing_type === 'CUSTOM' ? 'Ask for a quote' : 'Request this plan' }}
+        <footer class="plan-compare__actions">
+          <button type="button" class="cf-btn cf-btn-secondary cf-btn--sm" (click)="viewFeatures.emit(card.plan)">
+            View all features
           </button>
+          <ng-container *ngIf="selectable()">
+            <span *ngIf="card.isCurrent" class="plan-compare__state">
+              {{ currentPlanState(card.plan) }}
+            </span>
+            <span *ngIf="!card.isCurrent && card.isRequested" class="plan-compare__state">Request sent</span>
+            <button
+              *ngIf="!card.isCurrent && !card.isRequested && card.plan.primary_action !== 'current'"
+              type="button"
+              class="cf-btn"
+              [class.cf-btn-primary]="card.plan.is_featured || card.hasHighlight"
+              [class.cf-btn-secondary]="!(card.plan.is_featured || card.hasHighlight)"
+              [disabled]="disabled()"
+              (click)="choose.emit(card.plan)">
+              {{ card.plan.primary_action === 'quote' || card.plan.pricing_type === 'CUSTOM' ? 'Ask for a quote' : 'Request this plan' }}
+            </button>
+          </ng-container>
         </footer>
       </article>
     </div>
@@ -101,14 +105,20 @@ interface ComparisonCard {
     `
       .plan-compare {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-        gap: var(--spacing-md);
+        grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+        gap: var(--spacing-sm, 0.75rem);
+      }
+      @media (min-width: 1100px) {
+        .plan-compare {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
       }
       .plan-compare__card {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
-        padding: var(--spacing-md);
+        gap: 0.4rem;
+        padding: var(--spacing-sm, 0.75rem) var(--spacing-md);
+        min-width: 0;
         border: 1px solid var(--cf-panel-border, var(--gray-200));
         border-radius: var(--cf-radius, var(--radius-md));
         background: var(--cf-panel-bg, #fff);
@@ -181,6 +191,10 @@ interface ComparisonCard {
       .plan-compare__actions {
         margin-top: auto;
         padding-top: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
       }
       .plan-compare__state {
         font-weight: 600;
@@ -197,6 +211,7 @@ export class PlanComparisonComponent {
   readonly selectable = input(false);
   readonly disabled = input(false);
   readonly choose = output<PublicPlanCard>();
+  readonly viewFeatures = output<PublicPlanCard>();
 
   readonly cards = computed<ComparisonCard[]>(() => {
     const sorted = [...this.plans()].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
@@ -206,10 +221,20 @@ export class PlanComparisonComponent {
     return sorted.map((plan) => {
       const features = plan.features ?? [];
       const before = new Set((previous?.features ?? []).map((f) => f.code));
+      const currentCodes = new Set(features.map((f) => f.code));
+      const strictSuperset =
+        !!previous &&
+        [...before].every((code) => currentCodes.has(code)) &&
+        features.length >= (previous?.features?.length ?? 0);
+      const delta = features.filter((f) => !before.has(f.code));
       const card: ComparisonCard = {
         plan,
         previousName: previous?.name ?? null,
-        newFeatures: features.filter((f) => !before.has(f.code)),
+        newFeatures: strictSuperset && previous ? delta : features.slice(0, 8),
+        includesLabel:
+          strictSuperset && previous?.name
+            ? `Everything in ${previous.name}, plus:`
+            : 'Includes:',
         isCurrent: this.isCurrentPlan(plan),
         isRequested: plan.code === this.requestedCode(),
         hasHighlight: !!highlight && features.some((f) => f.code === highlight),

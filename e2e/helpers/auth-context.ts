@@ -7,6 +7,8 @@ const tenantMemberState = process.env.RBAC_TENANT_MEMBER_STORAGE_STATE;
 const platformAdminState = process.env.RBAC_PLATFORM_ADMIN_STORAGE_STATE;
 const expiredTenantAdminState = process.env.SUBSCRIPTION_EXPIRED_E2E_STORAGE_STATE;
 const graceTenantAdminState = process.env.SUBSCRIPTION_GRACE_E2E_STORAGE_STATE;
+const viewOnlyTenantAdminState = process.env.SUBSCRIPTION_VIEW_ONLY_E2E_STORAGE_STATE;
+const lockedTenantAdminState = process.env.SUBSCRIPTION_LOCKED_E2E_STORAGE_STATE;
 
 function storageStateReady(path: string | undefined, label: string): string | false {
   if (!path) {
@@ -100,4 +102,30 @@ export function skipWithoutExpiredTenantAdmin(): string | false {
 
 export function skipWithoutGraceTenantAdmin(): string | false {
   return storageStateReady(graceTenantAdminState, 'Subscription grace parish admin');
+}
+
+export async function createViewOnlyTenantAdminContext(browser: Browser): Promise<BrowserContext> {
+  const skipReason = skipWithoutViewOnlyTenantAdmin();
+  if (skipReason) {
+    throw new Error(skipReason);
+  }
+
+  return browser.newContext({ storageState: viewOnlyTenantAdminState });
+}
+
+export function skipWithoutViewOnlyTenantAdmin(): string | false {
+  return storageStateReady(viewOnlyTenantAdminState, 'Subscription view-only parish admin');
+}
+
+export async function createLockedTenantAdminContext(browser: Browser): Promise<BrowserContext> {
+  const skipReason = skipWithoutLockedTenantAdmin();
+  if (skipReason) {
+    throw new Error(skipReason);
+  }
+
+  return browser.newContext({ storageState: lockedTenantAdminState });
+}
+
+export function skipWithoutLockedTenantAdmin(): string | false {
+  return storageStateReady(lockedTenantAdminState, 'Subscription locked parish admin');
 }

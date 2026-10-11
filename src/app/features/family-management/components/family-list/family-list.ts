@@ -20,6 +20,7 @@ import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empt
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
+import { CfSubscriptionGuardDirective } from '@shared/directives/cf-subscription-guard.directive';
 import { ImageViewerComponent } from '@shared/components/image-viewer/image-viewer.component';
 import { trackByEntityId } from '@shared/utils/cf-track-by.util';
 
@@ -40,6 +41,7 @@ import { trackByEntityId } from '@shared/utils/cf-track-by.util';
     CfEmptyStateComponent,
     LoadingSkeletonComponent,
     DisableWhenReadOnlyDirective,
+    CfSubscriptionGuardDirective,
     ImageViewerComponent,
   ],
   templateUrl: './family-list.html',

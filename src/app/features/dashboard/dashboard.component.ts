@@ -1,6 +1,6 @@
 /**
  * Dashboard version 3.0 — executive Overview (parallel section APIs) + Operations tab.
- * Restore Version 2.0 from: ./v2.0/ (see v2.0/VERSION.md). Version 1.0: ./v1.0/.
+ * Compact density is live. Previous spacing: ./v3.0/. Product 2.0: ./v2.0/. Version 1.0: ./v1.0/.
  */
 import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';

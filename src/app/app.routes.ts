@@ -15,6 +15,7 @@ import { MainLayoutComponent } from './layout/main-layout/main-layout.component'
 import { bccGuard } from './core/guards/bcc.guard';
 import { supportGuard } from './core/guards/support.guard';
 import { parishResourceGuard } from './core/guards/parish-resource.guard';
+import { subscriptionLockedGuard } from './core/guards/subscription-locked.guard';
 
 export const routes: Routes = [
   {
@@ -42,8 +43,15 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [authGuard, forcePasswordChangeGuard],
+    canActivate: [authGuard, forcePasswordChangeGuard, subscriptionLockedGuard],
     children: [
+      {
+        path: 'subscription-locked',
+        loadComponent: () =>
+          import('./features/settings/subscription-locked/subscription-locked.page').then(
+            (m) => m.SubscriptionLockedPageComponent
+          ),
+      },
       {
         path: 'dashboard',
         data: { preload: true },

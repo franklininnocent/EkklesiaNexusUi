@@ -11,6 +11,6 @@ import { ConfirmationDialogHostComponent, ToastContainerComponent } from '@share
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'EkklesiaSoft';
+  title = 'EkklesiaNexus';
 }
 

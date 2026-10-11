@@ -12,6 +12,15 @@
     Adding a feature here does not give it to any plan until you include it in a plan version.
   </p>
 
+  <div *ngIf="features.length > 0" class="cf-nav-cluster">
+    <app-tab-strip
+      ariaLabel="Feature status"
+      [tabs]="statusTabs"
+      [activeId]="statusView"
+      (tabChange)="onStatusTabChange($event)">
+    </app-tab-strip>
+  </div>
+
   <div *ngIf="loading && features.length === 0" class="cf-loading-block cf-panel" role="status" aria-live="polite" aria-busy="true">
     <app-loading-skeleton type="table" [rows]="8" [columns]="5"></app-loading-skeleton>
   </div>
@@ -24,8 +33,20 @@
     <button type="button" class="cf-btn cf-btn-primary" (click)="load()">Try again</button>
   </div>
 
-  <app-data-table *ngIf="features.length > 0" [ariaBusy]="loading">
-    <caption class="sr-only">Feature catalog</caption>
+  <app-cf-empty-state
+    *ngIf="features.length > 0 && !loading && filtered.length === 0"
+    [title]="emptyTabMessage.title"
+    [description]="emptyTabMessage.description"
+    icon="◇">
+  </app-cf-empty-state>
+
+  <section
+    *ngIf="features.length > 0 && filtered.length > 0"
+    id="sa-feature-panel"
+    role="tabpanel"
+    [attr.aria-labelledby]="statusView === 'on' ? 'sa-feature-tab-on' : 'sa-feature-tab-off'">
+    <app-data-table [ariaBusy]="loading">
+    <caption class="sr-only">{{ statusView === 'on' ? 'Enabled features' : 'Disabled features' }}</caption>
     <thead>
       <tr>
         <th scope="col">Feature</th>
@@ -37,7 +58,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let f of filtered">
+      <tr *ngFor="let f of filtered; trackBy: trackFeature">
         <td>
           <strong>{{ f.name }}</strong>
           <div><span class="sa-code">{{ f.code }}</span></div>
@@ -55,7 +76,8 @@
         </td>
       </tr>
     </tbody>
-  </app-data-table>
+    </app-data-table>
+  </section>
 </div>
 
 <app-modal-shell

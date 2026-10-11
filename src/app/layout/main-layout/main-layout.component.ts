@@ -31,6 +31,7 @@ import { GlobalFamilySearchService } from '@shared/services/global-family-search
 import { SupportSessionBannerComponent } from '@features/support-center/components/support-session-banner/support-session-banner.component';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { SubscriptionStatusBannerComponent } from '@shared/components/subscription-status-banner/subscription-status-banner.component';
+import { SubscriptionRestrictedModalComponent } from '@shared/components/subscription-restricted-modal/subscription-restricted-modal.component';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import { UserAvatarComponent, ImageViewerComponent } from '@shared/components';
@@ -54,6 +55,7 @@ import { SidebarNavSection } from '../sidebar-nav/sidebar-nav.model';
     NgComponentOutlet,
     SupportSessionBannerComponent,
     SubscriptionStatusBannerComponent,
+    SubscriptionRestrictedModalComponent,
     UserAvatarComponent,
     ImageViewerComponent,
     SidebarNavForestComponent,

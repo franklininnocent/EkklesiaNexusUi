@@ -10,19 +10,25 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { StatusBadgeComponent, StatusBadgeTone } from '@shared/components/status-badge/status-badge.component';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
+import { PlanCompareTableComponent } from '@features/subscriptions/components/plan-compare-table/plan-compare-table.component';
 import { PlanComparisonComponent } from '@features/subscriptions/components/plan-comparison/plan-comparison.component';
+import { PlanFeatureDetailsPanelComponent } from '@features/subscriptions/components/plan-feature-details-panel/plan-feature-details-panel.component';
+import { groupByFeatureCategory } from '@features/subscriptions/utils/subscription-feature-category.util';
+import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { TenantSubscriptionService } from '@features/subscriptions/services/tenant-subscription.service';
 import { subscriptionErrorMessage } from '@features/subscriptions/services/subscription-admin.service';
 import { BillingInterval, PublicPlanCard } from '@features/subscriptions/models/subscription-admin.models';
+import { PlanChangePreview } from '@features/subscriptions/models/subscription-admin.models';
 import {
   CurrentPlanIdentity,
+  FeatureCapabilitySection,
   TenantSubscriptionOverview,
   UpgradeRequest,
   UpgradeRequestStatus,
   UsageLevel,
   UsageRow,
 } from '@features/subscriptions/models/tenant-subscription.models';
-import { Subject, catchError, finalize, forkJoin, of, takeUntil } from 'rxjs';
+import { Subject, catchError, finalize, forkJoin, of, take, takeUntil } from 'rxjs';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 
 const FEATURE_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_]{1,63}$/;
@@ -59,6 +65,9 @@ export interface MySubscriptionSummary {
     CfCurrencyPipe,
     FormsModule,
     PlanComparisonComponent,
+    PlanCompareTableComponent,
+    PlanFeatureDetailsPanelComponent,
+    ModalShellComponent,
   ],
   templateUrl: './my-subscription.component.html',
   styleUrl: './my-subscription.component.scss',
@@ -88,6 +97,13 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   requestMessage = '';
   submitting = false;
   requestError: string | null = null;
+  comparisonError: string | null = null;
+  featuresPlan: PublicPlanCard | null = null;
+  featureCapabilitySections: FeatureCapabilitySection[] = [];
+  planChangePreview: PlanChangePreview | null = null;
+  planChangePreviewLoading = false;
+  planChangePreviewError: string | null = null;
+  private lastEntitlementPlanKey: string | null = null;
 
   ngOnInit(): void {
     const asked = this.route.snapshot.queryParamMap.get('request');
@@ -132,9 +148,15 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
 
   /** Plan, usage, catalog and requests are extras: if any fail, the lifecycle view still shows. */
   private loadPlanDetails(): void {
+    this.comparisonError = null;
     forkJoin({
       overview: this.subscriptions.overview().pipe(catchError(() => of(null))),
-      comparison: this.subscriptions.comparison().pipe(catchError(() => of(null))),
+      comparison: this.subscriptions.comparison().pipe(
+        catchError((err) => {
+          this.comparisonError = subscriptionErrorMessage(err, 'Could not load plan comparison.');
+          return of(null);
+        }),
+      ),
       requests: this.subscriptions.upgradeRequests().pipe(catchError(() => of([] as UpgradeRequest[]))),
     })
       .pipe(takeUntil(this.destroy$))
@@ -142,7 +164,21 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
         this.overview = overview;
         const snapshot = comparison ?? overview?.comparison ?? null;
         this.currentPlanIdentity = snapshot?.current_plan ?? null;
+        const planKey = `${this.currentPlanIdentity?.code ?? ''}|${this.currentPlanIdentity?.version_number ?? ''}`;
+        if (this.lastEntitlementPlanKey && planKey && planKey !== this.lastEntitlementPlanKey) {
+          this.entitlements.refresh().subscribe();
+        }
+        if (planKey) {
+          this.lastEntitlementPlanKey = planKey;
+        }
         this.plans = snapshot?.plans?.length ? snapshot.plans : [];
+        this.featureCapabilitySections =
+          snapshot?.feature_capability_sections?.length
+            ? snapshot.feature_capability_sections
+            : [];
+        if (snapshot?.plans?.length) {
+          this.comparisonError = null;
+        }
         this.requests = requests;
         this.cdr.markForCheck();
       });
@@ -169,8 +205,23 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     return !this.submitting && this.openRequest?.status !== 'PENDING';
   }
 
-  get enabledFeatures(): { code: string; name: string }[] {
-    return (this.overview?.entitlements ?? []).filter((e) => e.enabled && !e.is_core);
+  get enabledFeatures(): {
+    code: string;
+    name: string;
+    description?: string | null;
+    category: string;
+    is_core: boolean;
+  }[] {
+    return (this.overview?.entitlements ?? []).filter((e) => e.enabled);
+  }
+
+  get enabledFeatureGroups(): { label: string; items: { code: string; name: string; description?: string | null }[] }[] {
+    return groupByFeatureCategory(
+      this.enabledFeatures.map((e) => ({
+        ...e,
+        display_order: 0,
+      })),
+    ).map((g) => ({ label: g.label, items: g.items }));
   }
 
   get askedFeatureName(): string | null {
@@ -255,21 +306,79 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     }
   }
 
+  openPlanFeatures(plan: PublicPlanCard): void {
+    if (plan.coverage?.length) {
+      this.featuresPlan = plan;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.subscriptions
+      .comparison()
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: (snapshot) => {
+          const fresh = snapshot.plans.find((p) => p.code === plan.code) ?? plan;
+          this.plans = snapshot.plans.length ? snapshot.plans : this.plans;
+          this.featuresPlan = fresh;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.featuresPlan = plan;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  closePlanFeatures(): void {
+    this.featuresPlan = null;
+    this.cdr.markForCheck();
+  }
+
   choosePlan(plan: PublicPlanCard): void {
     if (plan.is_current || plan.primary_action === 'current') {
       return;
     }
     this.selectedPlan = plan;
     this.requestError = null;
+    this.planChangePreview = null;
+    this.planChangePreviewError = null;
     const intervals = plan.billing_intervals ?? [];
     this.requestInterval = intervals.includes('ANNUAL') ? 'ANNUAL' : intervals[0] ?? null;
+    this.loadPlanChangePreview(plan.code);
     this.cdr.markForCheck();
   }
 
   cancelRequest(): void {
     this.selectedPlan = null;
+    this.planChangePreview = null;
+    this.planChangePreviewError = null;
     this.requestError = null;
     this.cdr.markForCheck();
+  }
+
+  get usingSubscribedVersion(): boolean {
+    return !!this.currentPlanIdentity?.using_subscribed_version;
+  }
+
+  private loadPlanChangePreview(planCode: string): void {
+    this.planChangePreviewLoading = true;
+    this.planChangePreviewError = null;
+    this.subscriptions
+      .previewPlanChange(planCode)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (preview) => {
+          this.planChangePreview = preview;
+          this.planChangePreviewLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.planChangePreview = null;
+          this.planChangePreviewLoading = false;
+          this.planChangePreviewError = subscriptionErrorMessage(err, 'Could not load what would change on that plan.');
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   submitRequest(): void {
@@ -429,9 +538,9 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
           ? `Your end date has passed. Access continues until ${this.formatDate(summary.grace_ends_at)}. Contact your administrator to renew.`
           : 'Your end date has passed and you are in a grace period. Contact your administrator to renew.';
       case 'EXPIRED':
-        return 'Your subscription has ended. You can view, print, and download records, but you cannot save changes. Contact EkklesiaSoft or your administrator to renew.';
+        return 'Your subscription has ended. You can view, print, and download records, but you cannot save changes. Contact EkklesiaNexus or your administrator to renew.';
       case 'SUSPENDED':
-        return 'Subscription access is suspended. You can view records, but you cannot save changes. Contact EkklesiaSoft or your administrator.';
+        return 'Subscription access is suspended. You can view records, but you cannot save changes. Contact EkklesiaNexus or your administrator.';
       case 'TRIAL':
         return summary.trial_ends_at
           ? `You are on a trial until ${this.formatDate(summary.trial_ends_at)}.`

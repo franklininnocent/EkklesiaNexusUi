@@ -103,6 +103,19 @@ import {
         </div>
       </header>
 
+      <div class="cf-inline-alert reports-workbench__plan-notice" *ngIf="!catalogLoading && (!planBasicReports || (!planAdvancedReports && !advancedReports))" role="status">
+        <ng-container *ngIf="!planBasicReports">
+          Core stewardship report downloads need Basic Reports on your plan.
+        </ng-container>
+        <ng-container *ngIf="planBasicReports && !planAdvancedReports">
+          Follow-up and books reports need Advanced Reports (Standard and above).
+        </ng-container>
+        <ng-container *ngIf="planBasicReports && planAdvancedReports && !advancedReports">
+          Executive and board reports need Advanced Financial Reporting (Professional and above).
+        </ng-container>
+        <a routerLink="/settings/my-subscription">Compare plans</a>
+      </div>
+
       <div *ngIf="catalogLoading" class="cf-loading-block" role="status" aria-busy="true">
         <app-cf-brand-loader size="section" label="Loading available reports…" />
       </div>
@@ -627,7 +640,9 @@ import {
 })
 export class DonationsReportsWorkbenchComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @Input() canExport = false;
-  @Input() advancedReports = true;
+  @Input() advancedReports = false;
+  @Input() planAdvancedReports = false;
+  @Input() planBasicReports = true;
   @Input() exports: DonationReportExport[] = [];
   @Input() exportsLoading = false;
   @Output() refreshExports = new EventEmitter<void>();
@@ -874,7 +889,32 @@ export class DonationsReportsWorkbenchComponent implements OnInit, OnChanges, Af
   }
 
   get visibleCatalog(): DonationReportCatalogItem[] {
-    return this.catalog.filter((item) => !item.requires_advanced || this.advancedReports);
+    return this.catalog.filter((item) => {
+      if (item.requires_advanced && !this.advancedReports) {
+        return false;
+      }
+      if (this.requiresPlanAdvancedReports(item) && !this.planAdvancedReports) {
+        return false;
+      }
+      if (this.requiresPlanBasicReports(item) && !this.planBasicReports) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  private requiresPlanAdvancedReports(item: DonationReportCatalogItem): boolean {
+    if (item.requires_advanced) {
+      return false;
+    }
+    return item.category === 'follow_up' || item.category === 'books';
+  }
+
+  private requiresPlanBasicReports(item: DonationReportCatalogItem): boolean {
+    if (item.requires_advanced) {
+      return false;
+    }
+    return item.category === 'collect';
   }
 
   get hasSelectedReport(): boolean {

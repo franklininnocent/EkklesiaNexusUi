@@ -60,6 +60,30 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     visibility: 'subscription',
   },
   {
+    id: 'settings-marketing-website',
+    label: 'Web Management',
+    route: '/settings/marketing-website',
+    visibility: 'marketing-website',
+  },
+  {
+    id: 'settings-marketing-website-plans',
+    label: 'Website Subscription Plans',
+    route: '/settings/marketing-website/plans',
+    visibility: 'marketing-website',
+  },
+  {
+    id: 'settings-web-settings',
+    label: 'Web Settings',
+    route: '/settings/web-settings',
+    visibility: 'web-settings',
+  },
+  {
+    id: 'settings-contact-enquiries',
+    label: 'Contact Enquiries',
+    route: '/settings/contact-enquiries',
+    visibility: 'contact-enquiries',
+  },
+  {
     id: 'settings-support-access',
     label: 'Support access windows',
     route: '/settings/support-access',

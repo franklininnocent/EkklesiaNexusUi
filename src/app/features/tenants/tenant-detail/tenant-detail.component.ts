@@ -28,6 +28,7 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { DataTableComponent } from '@shared/components/data-table/data-table.component';
 import { TenantPlanPanelComponent } from '@features/subscriptions/components/tenant-plan-panel/tenant-plan-panel.component';
+import { TenantSubscriptionAccessPolicyEditorComponent } from '@features/settings/subscription/tenant-subscription-access-policy-editor.component';
 import { Subject, takeUntil } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { environment } from '@environments/environment';
@@ -61,6 +62,7 @@ type TenantDetailTab =
     UserAvatarComponent,
     ImageViewerComponent,
     TenantPlanPanelComponent,
+    TenantSubscriptionAccessPolicyEditorComponent,
   ],
   templateUrl: './tenant-detail.component.html',
   styleUrls: ['./tenant-detail.component.scss'],

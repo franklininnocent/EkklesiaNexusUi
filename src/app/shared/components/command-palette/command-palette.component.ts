@@ -148,9 +148,9 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
     const canDonations = this.authService.canAccessDonations(undefined, {
       hasActiveSupportSession: !!this.supportSessions.sessionId,
     });
-    const readOnly = this.subscriptionAccess.isReadOnly();
+    const blocksMutations = this.subscriptionAccess.blocksMutations();
     return this.actions.filter((action) => {
-      if (readOnly && (action.id === 'collect' || action.id === 'collection-day')) {
+      if (blocksMutations && (action.id === 'collect' || action.id === 'collection-day')) {
         return false;
       }
       if (action.donations && !canDonations) {

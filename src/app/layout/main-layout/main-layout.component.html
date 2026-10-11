@@ -14,7 +14,7 @@
     [class.mobile-open]="isMobileNavOpen"
   >
     <div class="sidebar-header">
-      <h2 class="sidebar-logo">{{ (currentTenant$ | async)?.name || 'EkklesiaSoft' }}</h2>
+      <h2 class="sidebar-logo">{{ (currentTenant$ | async)?.name || 'EkklesiaNexus' }}</h2>
       <button class="sidebar-toggle" (click)="toggleSidebar()" aria-label="Toggle sidebar">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
           <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -162,6 +162,7 @@
 
     <app-support-session-banner></app-support-session-banner>
     <app-subscription-status-banner></app-subscription-status-banner>
+    <app-subscription-restricted-modal></app-subscription-restricted-modal>
 
     <main class="page-content">
       <app-breadcrumb></app-breadcrumb>
@@ -170,7 +171,7 @@
 
     <footer class="footer">
       <div class="footer-content">
-        <p class="footer-text">All rights reserved © EkklesiaSoft {{ currentYear }}</p>
+        <p class="footer-text">All rights reserved © EkklesiaNexus {{ currentYear }}</p>
       </div>
     </footer>
   </div>

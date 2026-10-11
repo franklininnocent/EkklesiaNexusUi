@@ -15,7 +15,11 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { TabStripComponent, TabStripItem } from '@shared/components/tab-strip/tab-strip.component';
-import { Subject, takeUntil } from 'rxjs';
+import { of, Subject, takeUntil } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { Tenant } from '@core/models/tenant.model';
+import { TenantSubscriptionAccessPolicyEditorComponent } from './tenant-subscription-access-policy-editor.component';
 
 interface DurationOption {
   id?: number;
@@ -25,7 +29,7 @@ interface DurationOption {
   active: boolean;
 }
 
-type SubMgmtTab = 'settings' | 'duration';
+type SubMgmtTab = 'settings' | 'duration' | 'churches';
 
 @Component({
   selector: 'app-subscription-management',
@@ -40,6 +44,8 @@ type SubMgmtTab = 'settings' | 'duration';
     DataTableComponent,
     ActionBarComponent,
     ModalShellComponent,
+    NgSelectModule,
+    TenantSubscriptionAccessPolicyEditorComponent,
   ],
   templateUrl: './subscription-management.component.html',
   styleUrls: ['./subscription-management.component.scss'],
@@ -55,7 +61,8 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
 
   settingsForm = {
     grace_period_days: 7,
-    expiring_warning_days: 14
+    expiring_warning_days: 14,
+    view_only_allowance_days: 90,
   };
   settingsLoading = false;
   settingsSaving = false;
@@ -83,8 +90,16 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
   editingOption: DurationOption | null = null;
   deletingOption: DurationOption | null = null;
 
+  churchTenantId: number | null = null;
+  churchTenantIdInput = '';
+  churchSearchOptions: Tenant[] = [];
+  churchSearchLoading = false;
+  selectedChurch: Tenant | null = null;
+  readonly churchSearch$ = new Subject<string>();
+
   readonly tabs: { id: SubMgmtTab; label: string }[] = [
     { id: 'settings', label: 'Access settings' },
+    { id: 'churches', label: 'Church overrides' },
     { id: 'duration', label: 'Duration options' },
   ];
 
@@ -100,6 +115,34 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadSettings();
     this.loadDurationOptions();
+
+    this.churchSearch$
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        switchMap((term) => {
+          const q = term.trim();
+          if (q.length < 2) {
+            return of({ success: true, data: [] as Tenant[] });
+          }
+          this.churchSearchLoading = true;
+          this.cdr.markForCheck();
+          return this.tenantService.listTenants({ search: q, per_page: 15, page: 1 });
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (response) => {
+          this.churchSearchOptions = response?.success && response.data ? response.data : [];
+          this.churchSearchLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.churchSearchOptions = [];
+          this.churchSearchLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   ngOnDestroy(): void {
@@ -113,9 +156,33 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
   }
 
   onTabChange(tabId: string): void {
-    if (tabId === 'settings' || tabId === 'duration') {
+    if (tabId === 'settings' || tabId === 'duration' || tabId === 'churches') {
       this.setActiveTab(tabId);
     }
+  }
+
+  onChurchSelected(tenant: Tenant | null): void {
+    this.selectedChurch = tenant;
+    if (tenant?.id) {
+      this.churchTenantId = tenant.id;
+      this.churchTenantIdInput = String(tenant.id);
+      this.cdr.markForCheck();
+    }
+  }
+
+  loadChurchPolicy(): void {
+    if (this.selectedChurch?.id) {
+      this.churchTenantId = this.selectedChurch.id;
+      this.cdr.markForCheck();
+      return;
+    }
+    const id = parseInt(this.churchTenantIdInput.trim(), 10);
+    if (!id || id < 1) {
+      this.toastService.error('Search for a church or enter a valid tenant ID', 'Invalid selection');
+      return;
+    }
+    this.churchTenantId = id;
+    this.cdr.markForCheck();
   }
 
   durationRowActions(): ActionBarItem[] {
@@ -147,7 +214,8 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
           if (response.success && response.data) {
             this.settingsForm = {
               grace_period_days: response.data.grace_period_days,
-              expiring_warning_days: response.data.expiring_warning_days
+              expiring_warning_days: response.data.expiring_warning_days,
+              view_only_allowance_days: response.data.view_only_allowance_days ?? 90,
             };
             this.settingsLoaded = true;
           } else {
@@ -165,7 +233,11 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
   }
 
   saveSettings(): void {
-    if (this.settingsForm.grace_period_days < 0 || this.settingsForm.expiring_warning_days < 0) {
+    if (
+      this.settingsForm.grace_period_days < 0 ||
+      this.settingsForm.expiring_warning_days < 0 ||
+      this.settingsForm.view_only_allowance_days < 0
+    ) {
       this.toastService.error('Days cannot be negative', 'Check your entries');
       return;
     }
@@ -179,7 +251,8 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
           if (response.success && response.data) {
             this.settingsForm = {
               grace_period_days: response.data.grace_period_days,
-              expiring_warning_days: response.data.expiring_warning_days
+              expiring_warning_days: response.data.expiring_warning_days,
+              view_only_allowance_days: response.data.view_only_allowance_days ?? 90,
             };
             this.toastService.success('Access settings saved', 'Saved');
           } else {

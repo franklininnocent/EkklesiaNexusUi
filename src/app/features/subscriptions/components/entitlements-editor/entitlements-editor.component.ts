@@ -110,6 +110,7 @@ export class EntitlementsEditorComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) planId!: number;
   @Input({ required: true }) version!: PlanVersion;
   @Input() features: CatalogFeature[] = [];
+  @Input() implementedEntitlementCodes: string[] = [];
   @Input() readonly = true;
   @Output() saved = new EventEmitter<PlanVersion>();
   @Output() dirtyChange = new EventEmitter<boolean>();
@@ -160,6 +161,16 @@ export class EntitlementsEditorComponent implements OnChanges, OnDestroy {
 
   get overviewSummaryLabel(): string {
     return `Plan entitlement overview: ${this.overviewSummary}`;
+  }
+
+  /** Enabled boolean features that are not in the verified capability catalog (likely unimplemented). */
+  get unimplementedEnabledWarnings(): string[] {
+    const implemented = new Set(this.implementedEntitlementCodes.map((c) => c.toUpperCase()));
+    return this.rows
+      .filter((row) => row.enabled && !row.numeric && !row.feature.is_core)
+      .map((row) => row.feature.code.toUpperCase())
+      .filter((code) => !implemented.has(code))
+      .sort();
   }
 
   onSearchFromToolbar(value: string): void {

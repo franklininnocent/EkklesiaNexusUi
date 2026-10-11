@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Role, Permission } from '@core/models';
 import { RolesService } from '@core/services/roles.service';
 import { PermissionsService } from '@core/services/permissions.service';
@@ -40,7 +40,7 @@ interface AssignRoleTenantGroup {
 @Component({
   selector: 'app-roles-permissions',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginationComponent, SortableDirective, RoleFormModalComponent, AssignPermissionsModalComponent, PopeDetailsManagementComponent, PageHeaderComponent, ConfirmationModalComponent, ListToolbarComponent, AdvancedSearchPanelComponent, CfEmptyStateComponent, DataTableComponent, StatusBadgeComponent, UserAvatarComponent, ImageViewerComponent, CfBrandLoaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PaginationComponent, SortableDirective, RoleFormModalComponent, AssignPermissionsModalComponent, PopeDetailsManagementComponent, PageHeaderComponent, ConfirmationModalComponent, ListToolbarComponent, AdvancedSearchPanelComponent, CfEmptyStateComponent, DataTableComponent, StatusBadgeComponent, UserAvatarComponent, ImageViewerComponent, CfBrandLoaderComponent],
   templateUrl: './roles-permissions.component.html',
   styleUrl: './roles-permissions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -481,6 +481,14 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
   /**
    * Check if the current user can create roles
    */
+  hasRbacAdvanced(): boolean {
+    return this.entitlements.hasFeature('RBAC_ADVANCED');
+  }
+
+  showRbacPlanNotice(): boolean {
+    return this.entitlements.appliesToCurrentUser();
+  }
+
   canCreateRole(): boolean {
     if (this.isTenantMode) {
       return (

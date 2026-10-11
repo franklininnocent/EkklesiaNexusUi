@@ -1,7 +1,7 @@
 <section class="support-dashboard cf-page">
   <app-page-header
     title="Support System"
-    subtitle="Get help from the EkklesiaSoft Support Team and track your support requests."
+    subtitle="Get help from the EkklesiaNexus Support Team and track your support requests."
   >
     <app-list-toolbar
       searchPlaceholder="Search tickets…"
@@ -92,7 +92,7 @@
   <app-cf-empty-state
     *ngIf="!loading && !error && !items.length"
     title="No support tickets yet"
-    description="Create a ticket when you need help from the EkklesiaSoft team."
+    description="Create a ticket when you need help from the EkklesiaNexus team."
     actionLabel="New Support Ticket"
     (action)="openCreateModal()"
   ></app-cf-empty-state>

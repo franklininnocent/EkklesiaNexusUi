@@ -81,15 +81,15 @@ const SLICE_COLORS: Record<string, string> = {
       .exec-due-chart__layout {
         display: grid;
         grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
-        gap: 0.65rem;
+        gap: 0.45rem;
         align-items: center;
         pointer-events: auto;
       }
       .exec-due-chart__canvas-wrap {
         position: relative;
-        height: 9.5rem;
+        height: 7.5rem;
         width: 100%;
-        max-width: 9.5rem;
+        max-width: 7.5rem;
         margin: 0 auto;
         pointer-events: auto;
       }

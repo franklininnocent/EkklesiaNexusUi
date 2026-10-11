@@ -109,6 +109,11 @@ interface DashboardActiveFilterChip {
         </button>
       </app-page-header>
 
+      <div class="cf-inline-alert donations-dashboard__plan-notice" *ngIf="!hasFinancialDashboard" role="status">
+        Command center, diocese rollup, and collection forecast need Financial Dashboard on your plan.
+        <a routerLink="/settings/my-subscription">Compare plans</a>
+      </div>
+
       <div
         class="dashboard-active-filters"
         *ngIf="activeFilterChips.length"
@@ -815,6 +820,7 @@ export class DonationsDashboardComponent implements OnInit {
   error: string | null = null;
   executiveError: string | null = null;
   advancedReports = false;
+  hasFinancialDashboard = true;
   drillDownRequest: ReportDrillDownRequestPayload | null = null;
   activePreset: DashboardPeriodPreset = 'this_month';
   customFrom = '';
@@ -1169,6 +1175,7 @@ export class DonationsDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.entitlements.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.hasFinancialDashboard = this.entitlements.hasFeature('FINANCIAL_DASHBOARD');
       this.advancedReports = this.entitlements.hasFeature('ADVANCED_FINANCIAL_REPORTING');
       if (this.advancedReports) {
         this.loadExecutiveSummary();

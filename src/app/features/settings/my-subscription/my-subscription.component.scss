@@ -1,3 +1,31 @@
+.my-sub-feature-groups {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.my-sub-feature-group__title {
+  margin: 0 0 0.35rem;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cf-muted, var(--text-secondary));
+}
+
+.my-sub-compare-table-title {
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+
+#compare-plans app-plan-comparison {
+  margin-bottom: var(--spacing-md);
+}
+
+#compare-plans app-plan-compare-table {
+  display: block;
+  margin-top: var(--spacing-xs, 0.25rem);
+}
+
 .my-subscription {
   &.cf-page {
     display: flex;

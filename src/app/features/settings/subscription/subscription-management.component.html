@@ -63,6 +63,20 @@
           <small>Days after the end date when churches keep access with a warning. Use 0 for no grace.</small>
         </div>
         <div class="sub-mgmt-field">
+          <label for="view-only-allowance-days">Default view-only allowance (days) <span class="required" aria-hidden="true">*</span></label>
+          <input
+            id="view-only-allowance-days"
+            type="number"
+            min="0"
+            max="365"
+            [(ngModel)]="settingsForm.view_only_allowance_days"
+            name="view_only_allowance_days"
+            [disabled]="settingsSaving"
+            aria-required="true"
+          />
+          <small>Days after grace when churches may still view records (0 = lock immediately after grace).</small>
+        </div>
+        <div class="sub-mgmt-field">
           <label for="expiring-warning-days">Expiring warning (days) <span class="required" aria-hidden="true">*</span></label>
           <input
             id="expiring-warning-days"
@@ -87,6 +101,49 @@
           {{ settingsSaving ? 'Saving…' : 'Save access settings' }}
         </button>
       </div>
+    </article>
+  </div>
+
+  <!-- Church access overrides -->
+  <div
+    *ngIf="activeTab === 'churches'"
+    class="sub-mgmt-panel"
+    role="tabpanel"
+    id="sub-mgmt-panel-churches"
+    aria-labelledby="sub-mgmt-tab-churches">
+
+    <article class="cf-panel sub-mgmt-settings">
+      <header class="sub-mgmt-settings__header">
+        <h2>Per-church grace &amp; view-only overrides</h2>
+        <p>Enter a church tenant ID to preview effective dates and set overrides. Leave blank fields empty on reset to inherit global settings.</p>
+      </header>
+      <div class="sub-mgmt-settings__grid">
+        <div class="sub-mgmt-field">
+          <label for="church-search">Search church</label>
+          <ng-select
+            id="church-search"
+            [items]="churchSearchOptions"
+            bindLabel="name"
+            [loading]="churchSearchLoading"
+            [typeahead]="churchSearch$"
+            placeholder="Type church name…"
+            [(ngModel)]="selectedChurch"
+            (ngModelChange)="onChurchSelected($event)"
+            name="church_search">
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.name }} <span class="cf-muted">(#{{ item.id }})</span>
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="sub-mgmt-field">
+          <label for="church-tenant-id">Or tenant ID</label>
+          <input id="church-tenant-id" type="number" min="1" [(ngModel)]="churchTenantIdInput" name="church_tenant_id" />
+        </div>
+        <div class="sub-mgmt-settings__actions" style="align-self: end">
+          <button type="button" class="cf-btn cf-btn-primary" (click)="loadChurchPolicy()">Load policy</button>
+        </div>
+      </div>
+      <app-tenant-subscription-access-policy-editor *ngIf="churchTenantId" [tenantId]="churchTenantId"></app-tenant-subscription-access-policy-editor>
     </article>
   </div>
 

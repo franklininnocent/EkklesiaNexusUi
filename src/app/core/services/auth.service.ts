@@ -9,6 +9,7 @@ import { getCountryCallingCode, CountryCode } from 'libphonenumber-js';
 import { canViewMySubscription as canViewMySubscriptionAccess } from '@shared/utils/subscription-access.util';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { EntitlementService } from './entitlement.service';
+import { SubscriptionAccessService } from './subscription-access.service';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { ChurchCurrency } from '@core/models/church-currency.model';
 
@@ -40,6 +41,7 @@ export class AuthService {
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
+    this.beginReauthentication();
     return this.postWithFallback<AuthResponse>('/register', data)
       .pipe(
         tap(response => this.handleAuthSuccess(response))
@@ -47,6 +49,7 @@ export class AuthService {
   }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
+    this.beginReauthentication();
     return this.postWithFallback<AuthResponse>('/login', credentials)
       .pipe(
         tap(response => this.handleAuthSuccess(response))
@@ -299,6 +302,13 @@ export class AuthService {
   private getUserFromStorage(): User | null {
     const userStr = localStorage.getItem(environment.userKey);
     return userStr ? JSON.parse(userStr) : null;
+  }
+
+  /** Drop stale tenant user before login/register so subscription interceptor does not block auth APIs. */
+  private beginReauthentication(): void {
+    localStorage.removeItem(environment.userKey);
+    this.currentUserSubject.next(null);
+    this.injector.get(SubscriptionAccessService).clear();
   }
 
   private handleLogout(): void {
@@ -875,6 +885,72 @@ export class AuthService {
       'support.grants.view',
       'support.grants.manage',
     ]);
+  }
+
+  /** Website-wide Web Settings (platform Ekklesia operators). */
+  canAccessWebSettings(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.hasEkklesiaRole(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasAnyPermission(['web_settings.view', 'web_settings.update']);
+  }
+
+  canUpdateWebSettings(user: User | null = this.currentUserValue): boolean {
+    if (!this.canAccessWebSettings(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('web_settings.update');
+  }
+
+  canViewContactEnquiries(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.hasEkklesiaRole(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasAnyPermission([
+      'contact_enquiries.view',
+      'contact_enquiries.update',
+      'contact_enquiries.retry_email',
+      'contact_enquiries.delete',
+    ]);
+  }
+
+  canUpdateContactEnquiries(user: User | null = this.currentUserValue): boolean {
+    if (!this.canViewContactEnquiries(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('contact_enquiries.update');
+  }
+
+  canRetryContactEnquiryEmail(user: User | null = this.currentUserValue): boolean {
+    if (!this.canViewContactEnquiries(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('contact_enquiries.retry_email');
+  }
+
+  canDeleteContactEnquiries(user: User | null = this.currentUserValue): boolean {
+    if (!this.canViewContactEnquiries(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('contact_enquiries.delete');
   }
 
   /** Platform Application Access (/application-access) — security monitoring. */

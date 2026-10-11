@@ -8,7 +8,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
 import { finalize, takeUntil } from 'rxjs/operators';
@@ -21,13 +20,15 @@ import {
   PasswordRecoveryViewState,
 } from '@core/services/password-recovery.service';
 import { CfBusyLabelComponent } from '@shared/components/cf-busy-label/cf-busy-label.component';
+import { environment } from '@environments/environment';
+
+type LoginScreenView = PasswordRecoveryViewState | 'REQUEST_ACCOUNT';
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule,
     CfBusyLabelComponent,
   ],
   templateUrl: './login.component.html',
@@ -47,7 +48,11 @@ export class LoginComponent implements OnInit, OnDestroy {
   loading$: Observable<boolean>;
   error$: Observable<string | null>;
 
-  viewState: PasswordRecoveryViewState = 'LOGIN';
+  viewState: LoginScreenView = 'LOGIN';
+  readonly currentYear = new Date().getFullYear();
+  /** Public site contact section. Origin comes from the active environment. */
+  readonly contactSupportHref = `${environment.websiteUrl.replace(/\/+$/, '')}/#contact`;
+  passwordVisible = false;
   recoveryLoading = false;
   recoveryError: string | null = null;
   recoveryMessage: string | null = null;
@@ -83,6 +88,17 @@ export class LoginComponent implements OnInit, OnDestroy {
     } else {
       this.markFormGroupTouched(this.loginForm);
     }
+  }
+
+  togglePassword(): void {
+    this.passwordVisible = !this.passwordVisible;
+    this.cdr.markForCheck();
+  }
+
+  showRequestAccount(): void {
+    this.recoveryError = null;
+    this.viewState = 'REQUEST_ACCOUNT';
+    this.cdr.markForCheck();
   }
 
   showForgotPassword(): void {

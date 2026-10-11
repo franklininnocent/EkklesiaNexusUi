@@ -1,4 +1,16 @@
 <div class="sa-stack">
+  <p class="sa-muted sa-plan-catalog-intro">
+    Each plan defines what churches can use and how large they can grow. Churches stay on the version they were assigned until you migrate them.
+  </p>
+
+  <div class="cf-decision-strip sa-plan-catalog-website-strip" *ngIf="canPublishWebsitePricing" role="region" aria-label="Marketing website pricing">
+    <div class="cf-decision-strip__copy">
+      <strong>Public marketing website</strong>
+      <span>Activating a plan here does not change pricing on the website. Preview and publish from Website Subscription Plans.</span>
+    </div>
+    <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-primary">Website Subscription Plans</a>
+  </div>
+
   <div class="sa-toolbar">
     <div class="sa-toolbar__filters">
       <label class="cf-switch-field">
@@ -10,7 +22,10 @@
         <span class="cf-switch-field__copy"><span class="cf-switch-field__label">Show archived</span></span>
       </label>
     </div>
-    <button *ngIf="can.manage" type="button" class="cf-btn cf-btn-primary" (click)="openCreate()">New plan</button>
+    <div class="sa-toolbar__actions">
+      <a class="cf-btn cf-btn-secondary" [routerLink]="comparePlansLink">Compare plans</a>
+      <button *ngIf="can.manage" type="button" class="cf-btn cf-btn-primary" (click)="openCreate()">New plan</button>
+    </div>
   </div>
 
   <div *ngIf="loading && plans.length === 0" class="cf-loading-block cf-panel" role="status" aria-live="polite" aria-busy="true">
@@ -61,11 +76,21 @@
 
       <p class="sa-muted" *ngIf="plan.short_description">{{ plan.short_description }}</p>
 
+      <ul class="sa-plan-card__limits" *ngIf="plan.active_version?.limit_summary?.length">
+        <li *ngFor="let row of plan.active_version!.limit_summary!">{{ limitLabel(row) }}</li>
+      </ul>
+
       <div class="sa-plan-card__meta">
         <app-status-badge [label]="statusLabel(plan).label" [tone]="statusLabel(plan).tone"></app-status-badge>
         <span>{{ plan.tenant_count }} {{ plan.tenant_count === 1 ? 'church' : 'churches' }}</span>
         <span *ngIf="plan.active_version as v">Version {{ v.version_number }}</span>
         <span *ngIf="plan.active_version?.trial_days">{{ plan.active_version?.trial_days }}-day trial</span>
+      </div>
+
+      <div class="sa-plan-card__discover">
+        <button type="button" class="cf-btn cf-btn-secondary cf-btn--sm" (click)="openFeatures(plan)" [disabled]="!plan.active_version">
+          View features
+        </button>
       </div>
 
       <div class="sa-plan-card__actions">
@@ -205,5 +230,26 @@
     <button type="submit" form="sa-duplicate-plan-form" class="cf-btn cf-btn-primary" [disabled]="saving">
       {{ saving ? 'Duplicating…' : 'Duplicate plan' }}
     </button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="featuresPlan"
+  [title]="featuresPlan.name + ' — features'"
+  size="lg"
+  [loading]="featuresLoading"
+  loadingLabel="Loading features…"
+  (closeRequested)="closeFeatures()">
+  <p class="sa-muted" *ngIf="featuresPlan.active_version">
+    Version {{ featuresPlan.active_version.version_number }} (live catalog for this plan).
+  </p>
+  <div *ngIf="featuresError && !featuresLoading" class="cf-inline-alert" role="alert">
+    <p>{{ featuresError }}</p>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="openFeatures(featuresPlan)">Try again</button>
+  </div>
+  <app-plan-feature-details-panel *ngIf="featuresPreview && !featuresLoading" [preview]="featuresPreview"></app-plan-feature-details-panel>
+  <p *ngIf="!featuresLoading && !featuresError && !featuresPreview" class="sa-muted">No feature list is available for this plan yet.</p>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeFeatures()">Close</button>
   </ng-container>
 </app-modal-shell>

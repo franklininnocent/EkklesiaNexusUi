@@ -242,7 +242,7 @@
         <div>
           <h3>Pricing & trial</h3>
           <p class="sa-muted">
-            Prices are what the church is invoiced outside EkklesiaSoft. No payment is collected here.
+            Prices are what the church is invoiced outside EkklesiaNexus. No payment is collected here.
             <ng-container *ngIf="plan.pricing_type === 'CUSTOM'">This plan is quoted per church, so list prices are optional.</ng-container>
           </p>
           <p class="sa-muted" *ngIf="versionReadonly && canManageVersions && !draftVersion">
@@ -345,6 +345,7 @@
         [planId]="plan.id"
         [version]="selectedVersion"
         [features]="features"
+        [implementedEntitlementCodes]="implementedEntitlementCodes"
         [readonly]="versionReadonly"
         (dirtyChange)="entitlementsDirty = $event"
         (saved)="onEntitlementsSaved($event)">
@@ -414,6 +415,7 @@
               <input type="checkbox" name="is_public" [(ngModel)]="detailsForm.is_public" [disabled]="!canEditDetails || detailsSaving" />
               <span class="cf-switch-field__copy">
                 <span class="cf-switch-field__label">Show on public pricing</span>
+                <small>Turn off to keep this plan off the marketing website. Churches already on it are unchanged. After saving, refresh and publish the website draft.</small>
               </span>
             </label>
             <label class="cf-switch-field">

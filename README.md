@@ -1,4 +1,4 @@
-# EkklesiaSoft UI
+# EkklesiaNexus UI
 
 A large-scale, multi-tenant SaaS application built with Angular 20 (latest) and designed for enterprise-level scalability.
 
@@ -92,5 +92,5 @@ Frontend rollout and QA checklist for tenant roles/permissions UI:
 
 ## 📝 License
 
-Proprietary - EkklesiaSoft
+Proprietary - EkklesiaNexus
 

@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { Family } from '@core/models/family.model';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
-import { ToastService } from '@core/services/toast.service';
+import { SubscriptionRestrictionService } from '@core/services/subscription-restriction.service';
 
 export interface QuickCollectRecentFamily {
   id: string;
@@ -32,15 +32,15 @@ const MAX_RECENT = 6;
 @Injectable({ providedIn: 'root' })
 export class QuickCollectService {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
-  private readonly toast = inject(ToastService);
+  private readonly subscriptionRestriction = inject(SubscriptionRestrictionService);
   private readonly openSubject = new Subject<QuickCollectLaunchContext>();
   private pendingOpen: QuickCollectLaunchContext | null = null;
 
   readonly open$ = this.openSubject.asObservable();
 
   open(context: QuickCollectLaunchContext = {}): void {
-    if (this.subscriptionAccess.isReadOnly()) {
-      this.toast.warning('Read-only mode: renew subscription to collect payments.', 'Read-only');
+    if (this.subscriptionAccess.blocksMutations()) {
+      this.subscriptionRestriction.handleRestrictedAction();
       return;
     }
     const payload = { ...context };

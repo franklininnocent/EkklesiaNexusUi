@@ -61,9 +61,9 @@ describe('PlanComparisonComponent', () => {
     const fixture = create({ plans, currentCode: 'STARTER', requestedCode: 'ENTERPRISE', selectable: true, highlightFeature: 'CONTRIBUTION_PLANS' });
     const chosen: string[] = [];
     fixture.componentInstance.choose.subscribe((p) => chosen.push(p.code));
-    const buttons = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'));
-    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Request this plan']);
-    buttons[0].click();
+    const requestBtn = (fixture.nativeElement as HTMLElement).querySelector('button.cf-btn-primary, button.cf-btn-secondary:not(.cf-btn--sm)') as HTMLButtonElement;
+    expect(requestBtn?.textContent?.trim()).toBe('Request this plan');
+    requestBtn.click();
     expect(chosen).toEqual(['STANDARD']);
     expect(fixture.nativeElement.textContent).toContain('Includes what you asked about');
     expect(fixture.nativeElement.textContent).toContain('Request sent');
@@ -81,8 +81,8 @@ describe('PlanComparisonComponent', () => {
     expect(current.textContent).toContain('Your Current Plan');
     expect(current.textContent).toContain('Lifetime');
     expect(current.textContent).toContain('No end date');
-    expect(current.querySelector('button')).toBeNull();
     expect(current.textContent).not.toContain('Ask for a quote');
+    expect(current.textContent).toContain('View all features');
 
     const starter = fixture.nativeElement.querySelector('[data-plan="STARTER"]') as HTMLElement;
     expect(starter.getAttribute('data-current')).toBeNull();
@@ -103,6 +103,7 @@ describe('PlanComparisonComponent', () => {
     const fixture = create({ plans: renamed, currentCode: null, selectable: true });
     expect(fixture.nativeElement.querySelector('[data-plan="ENTERPRISE"]')?.textContent).toContain('Your Current Plan');
     expect(fixture.nativeElement.querySelector('[data-plan="STANDARD"]')?.textContent).not.toContain('Your Current Plan');
-    expect(fixture.nativeElement.querySelector('[data-plan="STANDARD"] button')?.textContent).toContain('Request this plan');
+    const standardCard = fixture.nativeElement.querySelector('[data-plan="STANDARD"]') as HTMLElement;
+    expect(standardCard.textContent).toContain('Request this plan');
   });
 });

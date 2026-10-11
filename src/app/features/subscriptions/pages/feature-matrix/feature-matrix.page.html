@@ -40,6 +40,7 @@
             <th scope="row">
               {{ f.name }}
               <span class="sa-muted" *ngIf="f.is_core"> · always included</span>
+              <p class="sa-matrix__desc sa-muted" *ngIf="f.description">{{ f.description }}</p>
             </th>
             <td class="sa-matrix__cell" *ngFor="let col of matrix.plans">
               <ng-container *ngIf="cell(col, f) as c">
@@ -50,5 +51,17 @@
         </ng-container>
       </tbody>
     </app-data-table>
+
+    <app-plan-feature-capability-sections
+      *ngIf="matrix.feature_capability_sections?.length"
+      [sections]="matrix.feature_capability_sections!" />
   </div>
+
+  <app-cf-empty-state
+    *ngIf="!loading && !error && matrix && matrix.plans.length === 0"
+    title="No plans to compare"
+    description="Create or restore at least one plan to compare features across versions."
+    icon="◎"
+    [hasActions]="false">
+  </app-cf-empty-state>
 </div>

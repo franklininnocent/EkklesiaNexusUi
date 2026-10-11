@@ -23,6 +23,7 @@ import {
 } from '../components/family-metric-chart/family-metric-chart.component';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
+import { CfSubscriptionGuardDirective } from '@shared/directives/cf-subscription-guard.directive';
 
 @Component({
   selector: 'app-family-dashboard-page',
@@ -38,6 +39,7 @@ import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-re
     MemberAgeDistributionChartComponent,
     FamilyMetricChartComponent,
     DisableWhenReadOnlyDirective,
+    CfSubscriptionGuardDirective,
   ],
   templateUrl: './family-dashboard.page.html',
   styleUrl: './family-dashboard.page.scss',

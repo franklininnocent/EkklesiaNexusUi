@@ -1,0 +1,45 @@
+<div class="hero-editor">
+  <p class="marketing-admin-callout hero-editor__intro">
+    Slogan and supporting line are locked to the product contract. Edit the hero body and image fields below, then
+    <strong>Apply hero to JSON</strong> before saving or publishing.
+  </p>
+
+  <div class="hero-editor__locked cf-panel">
+    <label class="marketing-admin-field">
+      <span>Headline (locked)</span>
+      <p class="marketing-admin-readonly">{{ contract.slogan }}</p>
+    </label>
+    <label class="marketing-admin-field">
+      <span>Supporting line (locked)</span>
+      <p class="marketing-admin-readonly">{{ contract.supportingLine }}</p>
+    </label>
+  </div>
+
+  <label class="marketing-admin-field" for="hero-description">
+    <span>Hero description</span>
+    <textarea
+      id="hero-description"
+      rows="4"
+      [ngModel]="model.description"
+      (ngModelChange)="patch('description', $event)"></textarea>
+  </label>
+
+  <label class="marketing-admin-field" for="hero-image">
+    <span>Hero image path</span>
+    <input
+      id="hero-image"
+      type="text"
+      [ngModel]="model.image"
+      (ngModelChange)="patch('image', $event)"
+      placeholder="/images/product/dashboard.png" />
+  </label>
+
+  <label class="marketing-admin-field" for="hero-alt">
+    <span>Hero image alt text</span>
+    <input
+      id="hero-alt"
+      type="text"
+      [ngModel]="model.imageAlt"
+      (ngModelChange)="patch('imageAlt', $event)" />
+  </label>
+</div>

@@ -12,7 +12,8 @@ import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { ActionBarIconComponent } from '@shared/components/action-bar/action-bar-icon.component';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
-import { CatalogPlan, PricingType } from '../../models/subscription-admin.models';
+import { CatalogPlan, PricingType, PublicPlanCard, VersionPreview } from '../../models/subscription-admin.models';
+import { PlanFeatureDetailsPanelComponent } from '../../components/plan-feature-details-panel/plan-feature-details-panel.component';
 import { SubscriptionAdminService, subscriptionErrorMessage } from '../../services/subscription-admin.service';
 import { subscriptionAdminCapabilities } from '../../services/subscription-admin-access';
 
@@ -31,6 +32,7 @@ const CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,63}$/;
     StatusBadgeComponent,
     ActionBarIconComponent,
     CfCurrencyPipe,
+    PlanFeatureDetailsPanelComponent,
   ],
   templateUrl: './plan-catalog.page.html',
   styleUrls: ['../../styles/subscription-admin.scss'],
@@ -46,6 +48,8 @@ export class PlanCatalogPage implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   readonly can = subscriptionAdminCapabilities(this.auth);
+  /** Super Admin — same gate as Settings → Website pricing. */
+  readonly canPublishWebsitePricing = this.auth.isSuperAdmin();
   readonly pricingTypes: { value: PricingType; label: string }[] = [
     { value: 'FIXED', label: 'Fixed price' },
     { value: 'CUSTOM', label: 'Custom (quoted per church)' },
@@ -64,6 +68,14 @@ export class PlanCatalogPage implements OnInit, OnDestroy {
 
   duplicateSource: CatalogPlan | null = null;
   duplicateForm = { code: '', name: '' };
+
+  readonly comparePlansLink = '/settings/subscription/matrix';
+
+  featuresPlan: CatalogPlan | null = null;
+  featuresPreview: VersionPreview | null = null;
+  featuresLoading = false;
+  featuresError: string | null = null;
+  private previewCache = new Map<string, VersionPreview>();
 
   ngOnInit(): void {
     this.load();
@@ -252,6 +264,97 @@ export class PlanCatalogPage implements OnInit, OnDestroy {
         },
         error: (err) => this.toast.error(subscriptionErrorMessage(err, 'Unable to delete the plan.'), 'Not deleted'),
       });
+  }
+
+  openFeatures(plan: CatalogPlan): void {
+    const version = plan.active_version;
+    if (!version?.id) {
+      this.toast.error('Publish a version before viewing features.', 'No version');
+      return;
+    }
+    this.featuresPlan = plan;
+    this.featuresError = null;
+    const cacheKey = `${plan.id}:${version.id}`;
+    const cached = this.previewCache.get(cacheKey);
+    if (cached) {
+      this.featuresPreview = cached;
+      this.featuresLoading = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    const embedded = this.previewFromDiscovery(plan);
+    if (embedded) {
+      this.previewCache.set(cacheKey, embedded);
+      this.featuresPreview = embedded;
+      this.featuresLoading = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.featuresPreview = null;
+    this.featuresLoading = true;
+    this.cdr.markForCheck();
+    this.api
+      .versionPreview(plan.id, version.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (preview) => {
+          this.previewCache.set(cacheKey, preview);
+          this.featuresPreview = preview;
+          this.featuresLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.featuresError = subscriptionErrorMessage(err, 'Unable to load plan features.');
+          this.featuresLoading = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  closeFeatures(): void {
+    this.featuresPlan = null;
+    this.featuresPreview = null;
+    this.featuresError = null;
+    this.featuresLoading = false;
+    this.cdr.markForCheck();
+  }
+
+  private previewFromDiscovery(plan: CatalogPlan): VersionPreview | null {
+    const version = plan.active_version;
+    const discovery = version?.discovery;
+    if (!version?.id || !discovery || (!discovery.modules?.length && !discovery.limits?.length)) {
+      return null;
+    }
+    const stubCard = {
+      code: plan.code,
+      name: plan.name,
+      short_description: plan.short_description,
+      badge_label: plan.badge_label,
+      is_featured: plan.is_featured,
+      pricing_type: plan.pricing_type,
+      currency_code: version.currency_code,
+      monthly_price: version.monthly_price,
+      annual_price: version.annual_price,
+      trial_days: version.trial_days,
+      billing_intervals: version.billing_intervals ?? [],
+      tax: { label: 'Tax', rate_percent: null, prices_include_tax: false },
+    } as PublicPlanCard;
+    return {
+      card: stubCard,
+      version: { id: version.id, version_number: version.version_number, status: version.status },
+      modules: discovery.modules,
+      limits: discovery.limits,
+    };
+  }
+
+  limitLabel(row: { name: string; unlimited: boolean; value: number | null }): string {
+    if (row.unlimited) {
+      return `${row.name}: Unlimited`;
+    }
+    if (row.value === null) {
+      return `${row.name}: Not configured`;
+    }
+    return `${row.name}: ${row.value.toLocaleString()}`;
   }
 
   restore(plan: CatalogPlan): void {

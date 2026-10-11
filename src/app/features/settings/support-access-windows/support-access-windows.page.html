@@ -1,7 +1,7 @@
 <section class="support-access-windows cf-page">
   <app-page-header
     title="Support access windows"
-    subtitle="Allow EkklesiaSoft support to help your parish during a time window you choose."
+    subtitle="Allow EkklesiaNexus support to help your parish during a time window you choose."
   ></app-page-header>
 
   <div class="cf-inline-alert cf-panel" *ngIf="!canView" role="alert">
@@ -132,7 +132,7 @@
       <app-cf-empty-state
         *ngIf="loaded && !loading && !rows.length"
         title="No support access windows yet"
-        description="Open a window above when you want EkklesiaSoft support to help your parish."
+        description="Open a window above when you want EkklesiaNexus support to help your parish."
       ></app-cf-empty-state>
 
       <app-data-table *ngIf="loaded && rows.length" [ariaBusy]="loading">

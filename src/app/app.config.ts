@@ -9,6 +9,7 @@ import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { routes } from './app.routes';
 import { authInterceptor } from '@core/interceptors/auth.interceptor';
 import { errorInterceptor } from '@core/interceptors/error.interceptor';
+import { subscriptionAccessInterceptor } from '@core/interceptors/subscription-access.interceptor';
 import { tenantInterceptor } from '@core/interceptors/tenant.interceptor';
 import { IdleMarkedPreloadStrategy } from '@core/routing/idle-marked-preload.strategy';
 import { environment } from '@environments/environment';
@@ -24,6 +25,7 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([
         authInterceptor,
         tenantInterceptor,
+        subscriptionAccessInterceptor,
         errorInterceptor
       ])
     ),

@@ -77,15 +77,15 @@ const FALLBACK_COLORS = ['#2563eb', '#14b8a6', '#84cc16', '#64748b'];
       .exec-sacrament-chart__layout {
         display: grid;
         grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
-        gap: 0.65rem;
+        gap: 0.45rem;
         align-items: center;
         pointer-events: auto;
       }
       .exec-sacrament-chart__canvas-wrap {
         position: relative;
-        height: 9.5rem;
+        height: 7.5rem;
         width: 100%;
-        max-width: 9.5rem;
+        max-width: 7.5rem;
         margin: 0 auto;
         pointer-events: auto;
       }
