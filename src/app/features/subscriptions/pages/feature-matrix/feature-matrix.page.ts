@@ -2,9 +2,12 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { DataTableComponent } from '@shared/components/data-table/data-table.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
+import { subscriptionFeatureCategoryLabel } from '../../utils/subscription-feature-category.util';
 import { FeatureMatrix, MatrixColumn, MatrixFeature } from '../../models/subscription-admin.models';
+import { PlanFeatureCapabilitySectionsComponent } from '../../components/plan-feature-capability-sections/plan-feature-capability-sections.component';
 import { SubscriptionAdminService, subscriptionErrorMessage } from '../../services/subscription-admin.service';
 
 const NUMERIC_TYPES = new Set(['LIMIT', 'QUOTA', 'USAGE']);
@@ -18,7 +21,14 @@ interface MatrixGroup {
 @Component({
   selector: 'app-feature-matrix-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, DataTableComponent, LoadingSkeletonComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    CfEmptyStateComponent,
+    DataTableComponent,
+    LoadingSkeletonComponent,
+    PlanFeatureCapabilitySectionsComponent,
+  ],
   templateUrl: './feature-matrix.page.html',
   styleUrls: ['../../styles/subscription-admin.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,7 +69,7 @@ export class FeatureMatrixPage implements OnInit, OnDestroy {
             byCategory.set(f.category, list);
           }
           this.groups = Array.from(byCategory.entries()).map(([category, features]) => ({
-            category: category.replace(/_/g, ' '),
+            category: subscriptionFeatureCategoryLabel(category),
             features,
           }));
           this.loading = false;

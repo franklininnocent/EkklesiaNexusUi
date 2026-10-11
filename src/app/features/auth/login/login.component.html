@@ -1,136 +1,255 @@
-<div class="auth-container">
-  <div class="auth-box">
-    <div class="auth-header">
-      <h1 class="auth-title">Welcome to EkklesiaSoft</h1>
-      <p class="auth-subtitle" *ngIf="viewState === 'LOGIN'">Sign in to your account to continue</p>
-      <p class="auth-subtitle" *ngIf="viewState === 'FORGOT_EMAIL'">Forgot Password</p>
-      <p class="auth-subtitle" *ngIf="viewState === 'FORGOT_SUCCESS'">Request Submitted</p>
-    </div>
+<div class="login-stage">
+  <div class="login-wash login-wash--left" aria-hidden="true"></div>
+  <div class="login-wash login-wash--peach" aria-hidden="true"></div>
+  <div class="login-wash login-wash--right" aria-hidden="true"></div>
 
-    <div class="auth-card">
-      <ng-container *ngIf="viewState === 'LOGIN'">
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-          <div class="form-group cf-form-field">
-            <label class="cf-form-field__label" for="login-email">
-              <span>Email Address</span>
-              <span class="cf-form-field__required" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              class="auth-native-input"
-              placeholder="Enter your email"
-              formControlName="email"
-              autocomplete="username"
-              aria-required="true"
-              [class.cf-form-field__control--invalid]="!!getErrorMessage('email')"
-              [attr.aria-invalid]="getErrorMessage('email') ? 'true' : null"
-              [attr.aria-describedby]="getErrorMessage('email') ? 'login-email-error' : null"
-            />
-            <p *ngIf="getErrorMessage('email') as message" id="login-email-error" class="cf-form-field__error">{{ message }}</p>
-          </div>
+  <div class="login-scene login-scene--left" aria-hidden="true">
+    <svg class="login-church" viewBox="0 0 240 560" fill="none">
+      <path d="M120 78 L158 214 H82 Z" fill="#F7EEE4"/>
+      <path d="M120 48 V86 M106 64 H134" stroke="#E7D6C2" stroke-width="6" stroke-linecap="round"/>
+      <rect x="96" y="214" width="48" height="72" fill="#FBF6EE"/>
+      <path d="M104 236 h8 v16 h-8z M128 236 h8 v16 h-8z" fill="#E8D5C0"/>
+      <path d="M36 300 L120 248 L204 300 V540 H36 Z" fill="#F4E8D8"/>
+      <path d="M104 332 v48 a16 16 0 0 0 32 0 v-48 z" fill="#EAD9C6"/>
+      <path d="M58 368 h20 v30 H58z M162 368 h20 v30 h-20z" fill="#EAD9C6"/>
+      <path d="M58 412 h20 v26 H58z M162 412 h20 v26 h-20z" fill="#E4D0BA"/>
+      <path d="M104 456 h32 v84 h-32z" fill="#E3CDB4"/>
+    </svg>
 
-          <div class="form-group cf-form-field">
-            <label class="cf-form-field__label" for="login-password">
-              <span>Password</span>
-              <span class="cf-form-field__required" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="login-password"
-              type="password"
-              class="auth-native-input"
-              placeholder="Enter your password"
-              formControlName="password"
-              autocomplete="current-password"
-              aria-required="true"
-              [class.cf-form-field__control--invalid]="!!getErrorMessage('password')"
-              [attr.aria-invalid]="getErrorMessage('password') ? 'true' : null"
-              [attr.aria-describedby]="getErrorMessage('password') ? 'login-password-error' : null"
-            />
-            <p *ngIf="getErrorMessage('password') as message" id="login-password-error" class="cf-form-field__error">{{ message }}</p>
-          </div>
+    <svg class="login-dove login-dove--steeple" viewBox="0 0 240 150" fill="none">
+      <path fill="url(#loginGoldA)" d="M18 96c8-2 22-28 34-52 10 6 16 22 14 40 18-16 34-38 46-58 6 20 8 36 2 52 22-6 48-4 70 10-16 8-28 22-34 28-22 8-48 4-66-2-8 16-28 26-48 22-14-4-22-16-18-40z"/>
+      <path fill="url(#loginGoldA2)" d="M36 90c6-22 16-44 28-60-2 22 2 38 12 52-16 2-28 6-40 8z"/>
+      <path fill="#F8E8B4" d="M168 78c22-2 40-8 52-16-18 14-36 18-54 16 1-0 2 0 2 0z"/>
+      <path fill="#E3BC62" d="M156 86c8 6 14 16 12 26-10-6-16-16-12-26z"/>
+      <circle cx="186" cy="70" r="2.1" fill="#7A5424"/>
+      <path d="M214 18 v22 M204 28 h20" stroke="#F3E6D0" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>
 
-          <div class="forgot-password-row">
-            <button type="button" class="auth-link auth-link-button" (click)="showForgotPassword()">
-              Forgot Password?
-            </button>
-          </div>
+    <svg class="login-dove login-dove--hero" viewBox="0 0 420 280" fill="none">
+      <path fill="url(#loginGoldB)" d="M24 176c18-6 40-48 58-92 16 12 28 40 22 70 30-28 58-66 78-102 10 36 14 64 4 92 40-10 86-6 124 18-28 14-50 40-60 50-40 16-86 8-118-4-14 28-50 46-86 40-24-6-38-28-22-72z"/>
+      <path fill="url(#loginGoldB2)" d="M58 168c12-40 30-78 50-108-4 40 6 68 22 92-30 4-50 12-72 16z"/>
+      <path fill="url(#loginGoldB3)" d="M78 188c16-22 34-52 44-84 4 28 16 48 34 62-24 6-48 14-78 22z"/>
+      <path fill="#F6E3A6" d="M300 146c40-4 74-16 96-32-34 26-66 34-100 30z"/>
+      <path fill="#E2B85A" d="M286 162c16 12 26 32 22 50-18-12-30-30-22-50z"/>
+      <circle cx="334" cy="128" r="3.4" fill="#7A5424"/>
+    </svg>
 
-          <div *ngIf="error$ | async as error" class="error-banner" role="alert" aria-live="polite">
-            {{ error }}
-          </div>
+    <span class="login-spark login-spark--a"></span>
+    <span class="login-spark login-spark--b"></span>
+    <span class="login-spark login-spark--c"></span>
+    <span class="login-tile login-tile--peach"></span>
+    <span class="login-tile login-tile--mint"></span>
+  </div>
 
-          <ng-container *ngIf="{ busy: (loading$ | async) ?? false } as state">
-            <button
-              type="submit"
-              class="cf-btn cf-btn-primary auth-submit"
-              [disabled]="state.busy"
-              [attr.aria-busy]="state.busy"
-            >
-              <span *ngIf="state.busy" class="cf-spinner" aria-hidden="true"></span>
-              Sign In
-            </button>
-          </ng-container>
-        </form>
-      </ng-container>
+  <div class="login-scene login-scene--right" aria-hidden="true">
+    <svg class="login-chevron" viewBox="0 0 160 220" fill="none">
+      <path d="M10 40 H150 L120 70 H10 Z" fill="rgba(255,255,255,0.28)"/>
+      <path d="M10 88 H150 L118 122 H10 Z" fill="rgba(255,236,228,0.45)"/>
+      <path d="M10 146 H140 L112 178 H10 Z" fill="rgba(255,255,255,0.22)"/>
+    </svg>
+    <svg class="login-church login-church--right" viewBox="0 0 180 220" fill="none">
+      <path d="M90 28 L132 92 H48 Z" fill="rgba(255,248,240,0.72)"/>
+      <path d="M90 8 V34 M78 20 H102" stroke="rgba(255,248,240,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M58 92 H122 V200 H58 Z" fill="rgba(255,246,236,0.55)"/>
+      <path d="M78 132 v28 a12 12 0 0 0 24 0 v-28 z" fill="rgba(214,196,230,0.45)"/>
+    </svg>
+    <span class="login-dots"></span>
+    <span class="login-spark login-spark--d"></span>
+    <span class="login-spark login-spark--e"></span>
+    <span class="login-spark login-spark--f"></span>
+  </div>
 
-      <ng-container *ngIf="viewState === 'FORGOT_EMAIL'">
-        <form [formGroup]="forgotEmailForm" (ngSubmit)="submitForgotEmail()">
-          <p class="auth-description">
-            Enter the email address associated with your account.
+  <p class="login-watermark" aria-hidden="true">
+    <span class="login-watermark__bc">BC</span>
+    <span class="login-watermark__name">EKKLESIA<span>NEXUS</span></span>
+  </p>
+
+  <main class="login-center">
+    <div class="login-stack">
+      <div class="login-pane login-pane--back" aria-hidden="true"></div>
+      <div class="login-pane login-pane--left" aria-hidden="true"></div>
+      <div class="login-pane login-pane--right" aria-hidden="true"></div>
+
+      <section class="login-card" [attr.aria-labelledby]="viewState === 'LOGIN' ? 'login-welcome' : 'login-view-title'">
+        <div class="login-badge">
+          <img src="/brand/ekklesia-circular-badge.png" alt="" width="256" height="256" />
+        </div>
+
+        <p class="login-brand">EkklesiaNexus</p>
+
+        <ng-container *ngIf="viewState === 'LOGIN'">
+          <h1 id="login-welcome" class="login-welcome">Welcome</h1>
+          <p class="login-lead">
+            The Next Generation of Church Management System.
           </p>
 
-          <div class="form-group cf-form-field">
-            <label class="cf-form-field__label" for="recovery-email">
-              <span>Email Address</span>
-              <span class="cf-form-field__required" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="recovery-email"
-              type="email"
-              class="auth-native-input"
-              placeholder="Enter your email"
-              formControlName="email"
-              autocomplete="email"
-              aria-required="true"
-              [class.cf-form-field__control--invalid]="!!getForgotEmailError()"
-              [attr.aria-invalid]="getForgotEmailError() ? 'true' : null"
-              [attr.aria-describedby]="getForgotEmailError() ? 'recovery-email-error' : null"
-            />
-            <p *ngIf="getForgotEmailError() as message" id="recovery-email-error" class="cf-form-field__error">{{ message }}</p>
-          </div>
+          <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <div class="login-field">
+              <label class="login-label" for="login-email">
+                Email <span aria-hidden="true">*</span>
+              </label>
+              <div class="login-control" [class.login-control--invalid]="!!getErrorMessage('email')">
+                <svg class="login-control__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M6.2 18.2c1.2-2.6 3.2-3.8 5.8-3.8s4.6 1.2 5.8 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                <input
+                  id="login-email"
+                  type="email"
+                  formControlName="email"
+                  autocomplete="username"
+                  aria-required="true"
+                  [attr.aria-invalid]="getErrorMessage('email') ? 'true' : null"
+                  [attr.aria-describedby]="getErrorMessage('email') ? 'login-email-error' : null"
+                />
+              </div>
+              <p *ngIf="getErrorMessage('email') as message" id="login-email-error" class="login-error" role="alert">{{ message }}</p>
+            </div>
 
-          <div *ngIf="recoveryError" class="error-banner" role="alert" aria-live="polite">
-            {{ recoveryError }}
-          </div>
+            <div class="login-field">
+              <label class="login-label" for="login-password">
+                Password <span aria-hidden="true">*</span>
+              </label>
+              <div class="login-control" [class.login-control--invalid]="!!getErrorMessage('password')">
+                <svg class="login-control__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="6" y="10.5" width="12" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M8.5 10.5 V8.2a3.5 3.5 0 0 1 7 0 v2.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                <input
+                  id="login-password"
+                  [type]="passwordVisible ? 'text' : 'password'"
 
-          <button
-            type="submit"
-            class="cf-btn cf-btn-primary auth-submit"
-            [disabled]="recoveryLoading"
-            [attr.aria-busy]="recoveryLoading"
-          >
-            <span *ngIf="recoveryLoading" class="cf-spinner" aria-hidden="true"></span>
-            Submit Request
-          </button>
+                  formControlName="password"
+                  autocomplete="current-password"
+                  aria-required="true"
+                  [attr.aria-invalid]="getErrorMessage('password') ? 'true' : null"
+                  [attr.aria-describedby]="getErrorMessage('password') ? 'login-password-error' : null"
+                />
+                <button
+                  type="button"
+                  class="login-reveal"
+                  (click)="togglePassword()"
+                  [attr.aria-pressed]="passwordVisible"
+                  [attr.aria-label]="passwordVisible ? 'Hide password' : 'Show password'"
+                >
+                  <svg *ngIf="!passwordVisible" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                    <circle cx="12" cy="12" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M5 18 L19 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <svg *ngIf="passwordVisible" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                    <circle cx="12" cy="12" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                  </svg>
+                </button>
+              </div>
+              <p *ngIf="getErrorMessage('password') as message" id="login-password-error" class="login-error" role="alert">{{ message }}</p>
+            </div>
 
-          <div class="auth-footer">
-            <button type="button" class="auth-link auth-link-button" (click)="backToLogin()">
-              Back to Login
+            <div class="login-forgot">
+              <button type="button" class="login-link" (click)="showForgotPassword()">Forgot Password?</button>
+            </div>
+
+            <div *ngIf="error$ | async as error" class="login-banner" role="alert" aria-live="polite">{{ error }}</div>
+
+            <ng-container *ngIf="{ busy: (loading$ | async) ?? false } as state">
+              <button type="submit" class="login-submit" [disabled]="state.busy" [attr.aria-busy]="state.busy">
+                <app-cf-busy-label [busy]="state.busy" busyLabel="Signing in">Sign In</app-cf-busy-label>
+              </button>
+            </ng-container>
+          </form>
+
+          <p class="login-signup">
+            <span>New here?</span>
+            <button type="button" class="login-link" (click)="showRequestAccount()">Request an Account</button>
+          </p>
+          <p class="login-support">
+            <a class="login-link" [href]="contactSupportHref">Contact Support</a>
+          </p>
+        </ng-container>
+
+        <ng-container *ngIf="viewState === 'FORGOT_EMAIL'">
+          <h1 id="login-view-title" class="login-welcome login-welcome--compact">Forgot Password</h1>
+          <p class="login-lead">Enter the email address associated with your account.</p>
+          <form class="login-form" [formGroup]="forgotEmailForm" (ngSubmit)="submitForgotEmail()">
+            <div class="login-field">
+              <label class="login-label" for="recovery-email">
+                Email <span aria-hidden="true">*</span>
+              </label>
+              <div class="login-control" [class.login-control--invalid]="!!getForgotEmailError()">
+                <svg class="login-control__icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M6.2 18.2c1.2-2.6 3.2-3.8 5.8-3.8s4.6 1.2 5.8 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                <input
+                  id="recovery-email"
+                  type="email"
+                  formControlName="email"
+                  autocomplete="email"
+                  aria-required="true"
+                  aria-label="Email address for password recovery"
+                  [attr.aria-invalid]="getForgotEmailError() ? 'true' : null"
+                  [attr.aria-describedby]="getForgotEmailError() ? 'recovery-email-error' : null"
+                />
+              </div>
+              <p *ngIf="getForgotEmailError() as message" id="recovery-email-error" class="login-error" role="alert">{{ message }}</p>
+            </div>
+            <div *ngIf="recoveryError" class="login-banner" role="alert" aria-live="polite">{{ recoveryError }}</div>
+            <button type="submit" class="login-submit" [disabled]="recoveryLoading" [attr.aria-busy]="recoveryLoading">
+              <app-cf-busy-label [busy]="recoveryLoading" busyLabel="Submitting">Submit Request</app-cf-busy-label>
             </button>
-          </div>
-        </form>
-      </ng-container>
+            <p class="login-support">
+              <button type="button" class="login-link" (click)="backToLogin()">Back to Login</button>
+            </p>
+          </form>
+        </ng-container>
 
-      <ng-container *ngIf="viewState === 'FORGOT_SUCCESS'">
-        <p class="auth-description" role="status">
-          {{ recoveryMessage }}
-        </p>
+        <ng-container *ngIf="viewState === 'FORGOT_SUCCESS'">
+          <h1 id="login-view-title" class="login-welcome login-welcome--compact">Request Submitted</h1>
+          <p class="login-lead" role="status">{{ recoveryMessage }}</p>
+          <button type="button" class="login-submit" (click)="backToLogin()">Back to Login</button>
+        </ng-container>
 
-        <button type="button" class="cf-btn cf-btn-primary auth-submit" (click)="backToLogin()">
-          Back to Login
-        </button>
-      </ng-container>
+        <ng-container *ngIf="viewState === 'REQUEST_ACCOUNT'">
+          <h1 id="login-view-title" class="login-welcome login-welcome--compact">Request an Account</h1>
+          <p class="login-lead">
+            Community accounts are issued by your parish or diocese administrator.
+            Ask your administrator to create your verified credentials.
+          </p>
+          <button type="button" class="login-submit" (click)="backToLogin()">Back to Sign In</button>
+        </ng-container>
+      </section>
     </div>
-  </div>
+  </main>
+
+  <footer class="login-footer">
+    © {{ currentYear }} EkklesiaNexus. All Rights Reserved. | The Next Generation of Church Management System | Enterprise-Grade Security Guaranteed
+  </footer>
+
+  <svg class="login-defs" aria-hidden="true" width="0" height="0">
+    <defs>
+      <linearGradient id="loginGoldA" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#F8E7B0"/>
+        <stop offset="45%" stop-color="#E4C16A"/>
+        <stop offset="100%" stop-color="#C9963C"/>
+      </linearGradient>
+      <linearGradient id="loginGoldA2" x1="1" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F3D98A"/>
+        <stop offset="100%" stop-color="#D7AE52"/>
+      </linearGradient>
+      <linearGradient id="loginGoldB" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#F7E4A8"/>
+        <stop offset="40%" stop-color="#E2BE62"/>
+        <stop offset="100%" stop-color="#C89238"/>
+      </linearGradient>
+      <linearGradient id="loginGoldB2" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stop-color="#E8C56E"/>
+        <stop offset="100%" stop-color="#F8E7B4"/>
+      </linearGradient>
+      <linearGradient id="loginGoldB3" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F1D48A"/>
+        <stop offset="100%" stop-color="#D4A44A"/>
+      </linearGradient>
+    </defs>
+  </svg>
 </div>

@@ -1,4 +1,4 @@
-import { BillingInterval, PricingType, TaxBreakdown } from './subscription-admin.models';
+import { BillingInterval, PricingType, PublicPlanCard, TaxBreakdown } from './subscription-admin.models';
 
 export type UsageLevel = 'ok' | 'notice' | 'warning' | 'critical' | 'at_limit' | 'over_limit';
 
@@ -48,12 +48,61 @@ export interface SubmitUpgradeRequestPayload {
 }
 
 export interface TenantPlanSummary {
+  id?: number | null;
   code: string | null;
   key: string | null;
   name: string | null;
   pricing_type: PricingType | string | null;
   is_legacy: boolean;
   version_number: number | null;
+}
+
+export type ComparisonPrimaryAction = 'current' | 'request' | 'quote';
+
+export interface CurrentPlanIdentity {
+  matched: boolean;
+  source: 'tenant_subscription' | 'tenant_plan_key' | 'unmatched' | string;
+  id: number | null;
+  code: string | null;
+  key: string | null;
+  name: string | null;
+  pricing_type: PricingType | string | null;
+  is_legacy: boolean;
+  status: string | null;
+  is_public: boolean;
+  is_archived: boolean;
+  listed_in_catalog: boolean;
+  version_id: number | null;
+  version_number: number | null;
+  using_subscribed_version?: boolean;
+  subscribed_version_number?: number | null;
+  catalog_version_number?: number | null;
+  subscription_status: string | null;
+  subscription_ends_at: string | null;
+  is_lifetime: boolean;
+}
+
+export interface PlanCapabilityRow {
+  label: string;
+  entitlement: string;
+  customer_note: string;
+}
+
+export type RbacCapabilityRow = PlanCapabilityRow;
+
+export interface FeatureCapabilitySection {
+  id: string;
+  title: string;
+  intro: string;
+  rows: PlanCapabilityRow[];
+}
+
+export interface TenantPlanComparison {
+  current_plan: CurrentPlanIdentity;
+  current_plan_listed: boolean;
+  plans: PublicPlanCard[];
+  rbac_capability_comparison?: PlanCapabilityRow[];
+  feature_capability_sections?: FeatureCapabilitySection[];
 }
 
 export interface TenantSubscriptionOverview {
@@ -80,7 +129,15 @@ export interface TenantSubscriptionOverview {
     starts_at: string | null;
   } | null;
   pending_change: { plan_code: string | null; plan_name: string | null; scheduled_for: string | null } | null;
-  entitlements: { code: string; name: string; category: string; enabled: boolean; is_core: boolean }[];
+  entitlements: {
+    code: string;
+    name: string;
+    description?: string | null;
+    category: string;
+    enabled: boolean;
+    is_core: boolean;
+  }[];
   usage: UsageRow[];
   engine_mode: string;
+  comparison?: TenantPlanComparison;
 }

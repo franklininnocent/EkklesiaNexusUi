@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { NotificationInboxService } from '../../services/notification-inbox.service';
 
 @Component({
@@ -13,7 +13,7 @@ import { NotificationInboxService } from '../../services/notification-inbox.serv
 export class NotificationBellComponent {
   readonly inbox = inject(NotificationInboxService);
 
-  badgeLabel(): string {
+  readonly badgeLabel = computed(() => {
     const count = this.inbox.unreadCount();
     if (count <= 0) {
       return 'Notifications';
@@ -22,15 +22,15 @@ export class NotificationBellComponent {
       return 'Notifications, 99 plus unread';
     }
     return `Notifications, ${count} unread`;
-  }
+  });
 
-  badgeText(): string {
+  readonly badgeText = computed(() => {
     const count = this.inbox.unreadCount();
     if (count <= 0) {
       return '';
     }
     return count > 99 ? '99+' : String(count);
-  }
+  });
 
   toggle(): void {
     this.inbox.togglePopover();

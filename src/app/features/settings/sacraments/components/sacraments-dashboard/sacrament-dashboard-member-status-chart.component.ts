@@ -12,7 +12,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import {
   MEMBER_STATUS_COLORS,
   resolveDemographicsColor,

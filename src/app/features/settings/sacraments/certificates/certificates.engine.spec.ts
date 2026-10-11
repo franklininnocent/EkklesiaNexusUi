@@ -157,14 +157,14 @@ describe('mapProjectionToCertificateData', () => {
     expect((data as unknown as Record<string, unknown>)['canonical_annotations']).toBeUndefined();
   });
 
-  it('builds matrimony parish residence from church_address fallback', () => {
+  it('maps matrimony party address and parish separately', () => {
     const data = mapProjectionToCertificateData({
       sacrament: {
         type_code: 'MATRIMONY',
         date_administered: '2026-08-10',
         marriage_groom_full_name: 'Rohan Francis',
+        marriage_groom_address: '12 Beach Road, Kadayal, 629252',
         marriage_groom_church_name: 'Sacred Heart Church',
-        marriage_groom_church_address: 'Kadayal',
       },
       participants: [],
       church: {
@@ -176,7 +176,8 @@ describe('mapProjectionToCertificateData', () => {
     });
     expect(data?.sacramentType).toBe('HOLY_MATRIMONY');
     if (data?.sacramentType === 'HOLY_MATRIMONY') {
-      expect(data.groom?.parishResidence).toBe('Sacred Heart Church, Kadayal');
+      expect(data.groom?.residenceAddress).toBe('12 Beach Road, Kadayal, 629252');
+      expect(data.groom?.parishResidence).toBe('Sacred Heart Church');
       expect(data.church.diocese).toBe('Diocese of Kuzhithurai');
     }
   });

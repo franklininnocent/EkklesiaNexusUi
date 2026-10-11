@@ -45,6 +45,8 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { resolveMediaDisplaySrc } from '@core/utils/media-url.util';
 import { SubscriptionAdminService } from '@features/subscriptions/services/subscription-admin.service';
 import { subscriptionAdminCapabilities } from '@features/subscriptions/services/subscription-admin-access';
+import { cfFormatDate } from '@shared/utils/cf-intl.util';
+import { trackByEntityId, trackByIndex } from '@shared/utils/cf-track-by.util';
 
 export type TenantListView = 'table' | 'card';
 
@@ -95,6 +97,8 @@ export class TenantManagerComponent implements OnInit, OnDestroy {
   readonly selectedTenantIds = signal<Set<number>>(new Set());
 
   readonly pageSizeOptions: number[] = [10, 20, 50, 100];
+  readonly trackByTenant = trackByEntityId<Tenant>;
+  readonly trackByIndex = trackByIndex;
 
   archdioceses: Diocese[] = [];
   /** Plan key → display name, loaded from the subscription catalog. */
@@ -698,18 +702,11 @@ export class TenantManagerComponent implements OnInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    return cfFormatDate(dateString) || dateString;
   }
 
   formatShortDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-    });
+    return cfFormatDate(dateString, 'monthYear') || dateString;
   }
 
   isInTrial(tenant: Tenant): boolean {

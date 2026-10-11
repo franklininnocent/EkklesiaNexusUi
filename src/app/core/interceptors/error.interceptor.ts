@@ -6,6 +6,8 @@ import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
+import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { SubscriptionRestrictionService } from '@core/services/subscription-restriction.service';
 
 function isSupportSessionAuthFailure(message: string): boolean {
   const normalized = message.toLowerCase();
@@ -42,6 +44,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const supportSessions = inject(SupportSessionService);
   const dialogs = inject(ConfirmationDialogService);
+  const subscriptionAccess = inject(SubscriptionAccessService);
+  const subscriptionRestriction = inject(SubscriptionRestrictionService);
 
   const showPlanLimitDialog = (message: string, limit: unknown, usage: unknown): void => {
     if (planLimitDialogOpen) return;
@@ -102,6 +106,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             } else if (code === 'ENTITLEMENT_LIMIT_REACHED') {
               errorMessage = error.error?.message || 'Your current plan limit has been reached.';
               showPlanLimitDialog(errorMessage, error.error?.limit, error.error?.current_usage);
+            } else if (
+              code === 'SUBSCRIPTION_VIEW_ONLY' ||
+              code === 'SUBSCRIPTION_LOCKED'
+            ) {
+              subscriptionAccess.refresh().subscribe();
+              subscriptionRestriction.handleRestrictedAction(
+                code === 'SUBSCRIPTION_LOCKED' ? 'locked' : 'view_only'
+              );
+              errorMessage = error.error?.message || 'Subscription access is restricted.';
             } else if (reason === 'subscription_blocked' || code === 'SUBSCRIPTION_READ_ONLY' || code === 'SUBSCRIPTION_EXPIRED') {
               errorMessage =
                 error.error?.message ||

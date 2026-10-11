@@ -14,7 +14,7 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 
 export interface SacramentDashboardMetricRadialRing {

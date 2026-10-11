@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { SETTINGS_ROUTES } from './settings.routes';
 import { rbacGuard } from '@core/guards/rbac.guard';
+import { entitlementGuard } from '@core/guards/entitlement.guard';
 import { AuthService } from '@core/services/auth.service';
 import { of } from 'rxjs';
 
@@ -19,6 +20,8 @@ describe('SETTINGS_ROUTES + rbacGuard integration', () => {
   it('registers rbacGuard on roles-permissions route', () => {
     const rolesRoute = SETTINGS_ROUTES.find(route => route.path === 'roles-permissions');
     expect(rolesRoute?.canActivate).toContain(rbacGuard);
+    expect(rolesRoute?.canActivate).toContain(entitlementGuard);
+    expect(rolesRoute?.data?.['feature']).toBe('RBAC_BASIC');
   });
 
   it('allows navigation to roles-permissions for tenant admin', async () => {

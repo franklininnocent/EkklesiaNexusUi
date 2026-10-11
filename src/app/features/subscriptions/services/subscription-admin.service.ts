@@ -175,8 +175,19 @@ export class SubscriptionAdminService {
       .pipe(map((r) => r.data));
   }
 
+  listFeatureCatalog(): Observable<{ features: CatalogFeature[]; implementedEntitlementCodes: string[] }> {
+    return this.http
+      .get<ApiEnvelope<CatalogFeature[]> & { implemented_entitlement_codes?: string[] }>(`${this.base}/features`)
+      .pipe(
+        map((r) => ({
+          features: r.data,
+          implementedEntitlementCodes: (r.implemented_entitlement_codes ?? []).map((c) => c.toUpperCase()),
+        })),
+      );
+  }
+
   listFeatures(): Observable<CatalogFeature[]> {
-    return this.http.get<ApiEnvelope<CatalogFeature[]>>(`${this.base}/features`).pipe(map((r) => r.data));
+    return this.listFeatureCatalog().pipe(map((r) => r.features));
   }
 
   createFeature(value: FeatureFormValue): Observable<CatalogFeature> {

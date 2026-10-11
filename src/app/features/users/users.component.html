@@ -28,8 +28,7 @@
     aria-live="polite"
     aria-busy="true"
   >
-    <p class="cf-loading-block__label">Loading users…</p>
-    <app-loading-skeleton type="table" [rows]="5" [columns]="5"></app-loading-skeleton>
+    <app-loading-skeleton label="Loading users…" type="table" [rows]="5" [columns]="5"></app-loading-skeleton>
   </div>
 
   <div *ngIf="error && !loading" class="cf-inline-alert cf-panel" role="alert">
@@ -39,7 +38,7 @@
 
   <ng-container *ngIf="!error && (!loading || allUsers.length)">
     <div class="cf-panel users__panel" *ngIf="users.length">
-      <app-data-table>
+      <app-data-table [loading]="loading" loadingLabel="Loading users…">
         <thead>
           <tr>
             <th
@@ -78,7 +77,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of users">
+          <tr *ngFor="let user of users; trackBy: trackByUser">
             <td>
               <div class="users__name-cell">
                 <app-user-avatar
@@ -99,7 +98,7 @@
             <td>
               <div class="users__roles">
                 <app-status-badge
-                  *ngFor="let role of getRoles(user); let i = index"
+                  *ngFor="let role of getRoles(user); let i = index; trackBy: trackByIndex"
                   [label]="role"
                   [tone]="roleTone(i, role)"
                 ></app-status-badge>

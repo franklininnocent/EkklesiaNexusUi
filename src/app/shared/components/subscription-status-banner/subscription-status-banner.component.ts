@@ -34,7 +34,12 @@ export class SubscriptionStatusBannerComponent implements OnInit, OnDestroy {
     });
 
     this.access.snapshot$.pipe(takeUntil(this.destroy$)).subscribe((snap) => {
-      this.snapshot = snap && this.access.shouldShowBanner ? snap : null;
+      const show =
+        snap &&
+        (this.access.shouldShowBanner ||
+          snap.access_mode === 'view_only' ||
+          snap.is_view_only === true);
+      this.snapshot = show ? snap : null;
       this.cdr.markForCheck();
     });
   }
@@ -45,17 +50,26 @@ export class SubscriptionStatusBannerComponent implements OnInit, OnDestroy {
   }
 
   message(status: string): string {
+    const snap = this.snapshot;
+    if (snap?.access_mode === 'view_only' || snap?.is_view_only) {
+      return 'Your subscription and grace period have expired. You can continue viewing your existing records, but operational actions are restricted. Renew your subscription to restore full access.';
+    }
     switch (status) {
       case 'EXPIRING':
         return 'Your subscription is ending soon. Ask your administrator to renew access.';
       case 'GRACE_PERIOD':
         return 'Your subscription end date has passed. You are in a grace period. Contact your administrator to renew.';
       case 'EXPIRED':
-        return 'Your subscription has ended. You can view, print, and download records, but you cannot save changes. Contact EkklesiaSoft or your administrator to renew.';
+        return 'Your subscription has ended. You can view records, but you cannot save changes. Contact EkklesiaNexus or your administrator to renew.';
       case 'SUSPENDED':
-        return 'Subscription access is suspended. You can view records, but you cannot save changes. Contact EkklesiaSoft or your administrator.';
+        return 'Subscription access is suspended. You can view records, but you cannot save changes. Contact EkklesiaNexus or your administrator.';
       default:
         return '';
     }
+  }
+
+  isViewOnlyBanner(): boolean {
+    const s = this.snapshot;
+    return !!s && (s.access_mode === 'view_only' || s.is_view_only === true);
   }
 }

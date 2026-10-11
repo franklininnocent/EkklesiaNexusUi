@@ -1,7 +1,7 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withPreloading } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
@@ -9,7 +9,9 @@ import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { routes } from './app.routes';
 import { authInterceptor } from '@core/interceptors/auth.interceptor';
 import { errorInterceptor } from '@core/interceptors/error.interceptor';
+import { subscriptionAccessInterceptor } from '@core/interceptors/subscription-access.interceptor';
 import { tenantInterceptor } from '@core/interceptors/tenant.interceptor';
+import { IdleMarkedPreloadStrategy } from '@core/routing/idle-marked-preload.strategy';
 import { environment } from '@environments/environment';
 import { metaReducers, reducers } from '@core/store';
 import { AuthEffects } from '@core/store/auth/auth.effects';
@@ -18,21 +20,25 @@ import { TenantEffects } from '@core/store/tenant/tenant.effects';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(routes, withPreloading(IdleMarkedPreloadStrategy)),
     provideHttpClient(
       withInterceptors([
         authInterceptor,
         tenantInterceptor,
+        subscriptionAccessInterceptor,
         errorInterceptor
       ])
     ),
-    provideAnimations(),
+    provideAnimationsAsync(),
     provideStore(reducers, { metaReducers }),
     provideEffects([AuthEffects, TenantEffects]),
-    provideStoreDevtools({
-      maxAge: 25,
-      logOnly: environment.production
-    })
+    ...(environment.enableDevTools
+      ? [
+          provideStoreDevtools({
+            maxAge: 25,
+            logOnly: environment.production,
+          }),
+        ]
+      : []),
   ]
 };
-

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { CfBrandLoaderComponent } from '../cf-brand-loader/cf-brand-loader.component';
 
 /**
  * DataTable
@@ -10,18 +11,25 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
  * treatment. Consumers project their own `<thead>`/`<tbody>` exactly as
  * before; `<th>`/`<td>` styling and the fixed-width actions column
  * (`.cf-table__actions-col`) continue to come from the global tokens.
+ *
+ * For large lists, add `trackBy` on projected `*ngFor` rows using
+ * `trackByEntityId` from `@shared/utils/cf-track-by.util`.
  */
+export { trackByEntityId, trackByIndex } from '@shared/utils/cf-track-by.util';
 @Component({
   selector: 'app-data-table',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CfBrandLoaderComponent],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataTableComponent {
   /** Adds a pointer cursor + hover background to body rows. */
   @Input() clickableRows = false;
   /** Reflected as `aria-busy` on the `<table>` while data is refreshing. */
   @Input() ariaBusy = false;
+  /** When true, shows brand loader overlay while keeping table chrome visible. */
+  @Input() loading = false;
+  @Input() loadingLabel = 'Loading';
 }

@@ -26,7 +26,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
   imports: [CommonModule, FormsModule],
   templateUrl: './list-toolbar.component.html',
   styleUrl: './list-toolbar.component.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListToolbarComponent implements OnInit, OnDestroy {
   @Input() showSearch = true;

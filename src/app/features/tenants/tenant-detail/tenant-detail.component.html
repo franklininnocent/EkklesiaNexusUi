@@ -266,6 +266,11 @@
 
         <app-tenant-plan-panel *ngIf="tenantId" [tenantId]="tenantId" (planChanged)="onPlanPanelChanged()"></app-tenant-plan-panel>
 
+        <div class="tenant-detail__card" *ngIf="tenantId">
+          <h3>Access policy overrides</h3>
+          <app-tenant-subscription-access-policy-editor [tenantId]="tenantId"></app-tenant-subscription-access-policy-editor>
+        </div>
+
         <div class="tenant-detail__grid tenant-detail__grid--2">
           <div class="tenant-detail__card">
             <h3>Subscription state</h3>
@@ -299,7 +304,9 @@
 
         <ng-container *ngIf="canViewSubscriptionAuditHistory">
         <h3 class="tenant-detail__subheading">Subscription history</h3>
-        <div *ngIf="auditsLoading" class="cf-loading-block"><p>Loading history…</p></div>
+        <div *ngIf="auditsLoading" class="cf-loading-block">
+          <app-cf-brand-loader size="section" label="Loading history…" />
+        </div>
         <div *ngIf="auditsError" class="cf-inline-alert" role="alert">
           <p>{{ auditsError }}</p>
           <button type="button" class="cf-btn cf-btn--sm" (click)="loadSubscriptionAudits(true)">Retry</button>

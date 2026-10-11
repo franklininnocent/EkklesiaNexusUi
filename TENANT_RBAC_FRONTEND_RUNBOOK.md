@@ -281,6 +281,18 @@ npm run e2e:subscription-expired
 
 Re-run the seeder after renewal tests to restore expired dates.
 
+### Subscription view-only / locked (enforcement on)
+
+After `TENANT_SUBSCRIPTION_VIEW_ONLY_LOCKED_ENFORCEMENT=true` on the target API:
+
+```bash
+cd EkklesiaSoftApi
+php artisan db:seed --class=Modules\\Tenants\\Database\\Seeders\\SubscriptionEnforcementE2eSeeder
+php artisan tenants:subscription-enforcement-smoke --require-enforcement
+```
+
+Playwright storage for `e2e-view-only-admin@example.test` and `e2e-locked-admin@example.test` (password `password`). See `docs/platform/subscription-view-only-deployment.md` and `npm run e2e:subscription-enforcement`.
+
 ## 15) Release sign-off checklist
 
 - [ ] Guard and route access validated for all user contexts

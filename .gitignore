@@ -29,13 +29,14 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
+/.angular/
 .sass-cache/
 /connect.lock
 /coverage
 /libpeerconnection.log
 testem.log
 /typings
+*.tsbuildinfo
 
 # System files
 .DS_Store
@@ -43,5 +44,12 @@ Thumbs.db
 
 # Environment files
 .env
-.env.local
+.env.*
+!.env.example
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 

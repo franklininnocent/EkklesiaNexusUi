@@ -4,8 +4,10 @@ import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay } from 'rxjs/operators';
 import { environment } from '@environments/environment';
 import { PublicPlanCard } from '../models/subscription-admin.models';
+import { PlanChangePreview } from '../models/subscription-admin.models';
 import {
   SubmitUpgradeRequestPayload,
+  TenantPlanComparison,
   TenantSubscriptionOverview,
   UpgradeRequest,
   UsageRow,
@@ -42,6 +44,22 @@ export class TenantSubscriptionService {
   overview(): Observable<TenantSubscriptionOverview> {
     return this.http
       .get<ApiEnvelope<TenantSubscriptionOverview>>(`${this.base}/tenant/subscription/overview`)
+      .pipe(map((res) => res.data));
+  }
+
+  /** Authenticated comparison catalog with this church's current plan flagged by the API. */
+  comparison(): Observable<TenantPlanComparison> {
+    return this.http
+      .get<ApiEnvelope<TenantPlanComparison>>(`${this.base}/tenant/subscription/comparison`)
+      .pipe(map((res) => res.data));
+  }
+
+  previewPlanChange(planCode: string): Observable<PlanChangePreview & { requires_staff_approval?: boolean; plan_changes_immediately?: boolean }> {
+    return this.http
+      .post<ApiEnvelope<PlanChangePreview & { requires_staff_approval?: boolean; plan_changes_immediately?: boolean }>>(
+        `${this.base}/tenant/subscription/preview-plan-change`,
+        { plan_code: planCode },
+      )
       .pipe(map((res) => res.data));
   }
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Role, Permission } from '@core/models';
 import { RolesService } from '@core/services/roles.service';
 import { PermissionsService } from '@core/services/permissions.service';
@@ -22,6 +22,7 @@ import { PopeDetailsManagementComponent } from '../ecclesiastical/pope-details/p
 import { ListToolbarComponent } from '@shared/components/list-toolbar/list-toolbar.component';
 import { AdvancedSearchPanelComponent, SearchField, ActiveFilter } from '@shared/components/advanced-search-panel/advanced-search-panel.component';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
+import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { DataTableComponent } from '@shared/components/data-table/data-table.component';
 import { StatusBadgeComponent, StatusBadgeTone } from '@shared/components/status-badge/status-badge.component';
 import { UserAvatarComponent, ImageViewerComponent } from '@shared/components';
@@ -39,7 +40,7 @@ interface AssignRoleTenantGroup {
 @Component({
   selector: 'app-roles-permissions',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginationComponent, SortableDirective, RoleFormModalComponent, AssignPermissionsModalComponent, PopeDetailsManagementComponent, PageHeaderComponent, ConfirmationModalComponent, ListToolbarComponent, AdvancedSearchPanelComponent, CfEmptyStateComponent, DataTableComponent, StatusBadgeComponent, UserAvatarComponent, ImageViewerComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PaginationComponent, SortableDirective, RoleFormModalComponent, AssignPermissionsModalComponent, PopeDetailsManagementComponent, PageHeaderComponent, ConfirmationModalComponent, ListToolbarComponent, AdvancedSearchPanelComponent, CfEmptyStateComponent, DataTableComponent, StatusBadgeComponent, UserAvatarComponent, ImageViewerComponent, CfBrandLoaderComponent],
   templateUrl: './roles-permissions.component.html',
   styleUrl: './roles-permissions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -49,7 +50,7 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
 
   activeTab: 'roles' | 'permissions' | 'assign' | 'users' | 'pope' = 'roles';
   hasEkklesiaRole = false; // For backward compatibility
-  hasSuperAdminAccess = false; // For Pope tab - SuperAdmin only
+  canManagePopeDetails = false;
   isTenantMode = false;
   
   // Roles filter state
@@ -279,17 +280,10 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Check if user has SuperAdmin access for Pope tab
-   * CRITICAL SECURITY: Pope section is SuperAdmin only
+   * Pope details are limited to Ekklesia roles.
    */
   private updateSuperAdminAccess(user: any): void {
-    if (!user) {
-      this.hasSuperAdminAccess = false;
-      return;
-    }
-
-    // Only SuperAdmin can access Pope section
-    this.hasSuperAdminAccess = this.authService.isSuperAdmin();
+    this.canManagePopeDetails = !!user && this.authService.hasEkklesiaRole(user);
   }
 
   private updateTenantMode(user: any): void {
@@ -311,6 +305,9 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
   // Tab Management
   selectTab(tab: 'roles' | 'permissions' | 'assign' | 'users' | 'pope'): void {
     if (tab === 'pope') {
+      if (!this.canManagePopeDetails) {
+        return;
+      }
       this.activeTab = tab;
       return;
     }
@@ -484,6 +481,14 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
   /**
    * Check if the current user can create roles
    */
+  hasRbacAdvanced(): boolean {
+    return this.entitlements.hasFeature('RBAC_ADVANCED');
+  }
+
+  showRbacPlanNotice(): boolean {
+    return this.entitlements.appliesToCurrentUser();
+  }
+
   canCreateRole(): boolean {
     if (this.isTenantMode) {
       return (

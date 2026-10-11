@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
+import { EntitlementService } from '@core/services/entitlement.service';
 import { DonationsService } from '../../services/donations.service';
 import {
   DioceseRollupDashboard,
@@ -10,14 +11,23 @@ import {
 @Injectable({ providedIn: 'root' })
 export class CommandCenterDataService {
   private readonly donationsService = inject(DonationsService);
+  private readonly entitlements = inject(EntitlementService);
 
   loadCommandCenter(period = 'month'): Observable<FinancialCommandCenterPayload | null> {
+    if (!this.entitlements.hasFeature('FINANCIAL_DASHBOARD')) {
+      return of(null);
+    }
+
     return this.donationsService.getCommandCenter(period).pipe(
       map((response) => response.data ?? null)
     );
   }
 
   loadRollup(): Observable<DioceseRollupDashboard | null> {
+    if (!this.entitlements.hasFeature('FINANCIAL_DASHBOARD')) {
+      return of(null);
+    }
+
     return this.donationsService.getDioceseRollup().pipe(
       map((response) => response.data ?? null)
     );

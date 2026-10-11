@@ -10,7 +10,10 @@ export type SettingsNavVisibilityKey =
   | 'support-access'
   | 'forgot-password-requests'
   | 'data-export'
-  | 'default-seeds';
+  | 'default-seeds'
+  | 'web-settings'
+  | 'contact-enquiries'
+  | 'marketing-website';
 
 function isSuperAdminCard(user: User, auth: AuthService): boolean {
   if (user.is_admin === true || user.is_super_admin === true) {
@@ -58,6 +61,12 @@ export function isSettingsNavItemVisible(
       );
     case 'forgot-password-requests':
       return auth.canViewPasswordRecoveryRequests(user);
+    case 'web-settings':
+      return auth.canAccessWebSettings(user);
+    case 'contact-enquiries':
+      return auth.canViewContactEnquiries(user);
+    case 'marketing-website':
+      return auth.isSuperAdmin(user);
     default:
       return false;
   }

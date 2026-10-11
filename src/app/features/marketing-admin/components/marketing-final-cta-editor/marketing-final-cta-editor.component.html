@@ -1,0 +1,20 @@
+<section class="marketing-structure">
+  <h3 class="marketing-structure__heading">Final call to action</h3>
+  <p class="marketing-structure__hint">Powers the gradient CTA band and the demo section on the homepage.</p>
+  <label class="marketing-structure__field">
+    <span>Headline</span>
+    <input type="text" [(ngModel)]="model.title" (ngModelChange)="emit()" maxlength="120" />
+  </label>
+  <label class="marketing-structure__field">
+    <span>Description</span>
+    <textarea rows="3" [(ngModel)]="model.description" (ngModelChange)="emit()" maxlength="500"></textarea>
+  </label>
+  <label class="marketing-structure__field">
+    <span>Button label</span>
+    <input type="text" [(ngModel)]="model.ctaLabel" (ngModelChange)="emit()" maxlength="64" />
+  </label>
+  <label class="marketing-structure__field">
+    <span>Button link</span>
+    <input type="text" [(ngModel)]="model.ctaHref" (ngModelChange)="emit()" maxlength="128" placeholder="#contact" />
+  </label>
+</section>

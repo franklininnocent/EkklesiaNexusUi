@@ -15,6 +15,13 @@
       Read-only version — start a new draft to edit features or limits.
     </p>
 
+    <div class="cf-inline-alert cf-inline-alert--warning" *ngIf="!readonly && unimplementedEnabledWarnings.length" role="status">
+      <p>
+        These enabled features are not in the verified capability catalog and may be unimplemented:
+        <strong>{{ unimplementedEnabledWarnings.join(', ') }}</strong>
+      </p>
+    </div>
+
     <div class="sa-entitlements-chrome__toolbar" role="region" aria-label="Feature list controls">
       <div class="sa-entitlements-chrome__version">
         <ng-content></ng-content>

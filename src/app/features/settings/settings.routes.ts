@@ -4,6 +4,7 @@ import { rbacGuard } from '@core/guards/rbac.guard';
 import { tenantAdminGuard } from '@core/guards/tenant-admin.guard';
 import { subscriptionViewGuard } from '@core/guards/subscription-view.guard';
 import { entitlementGuard } from '@core/guards/entitlement.guard';
+import { marketingSuperAdminGuard } from '@features/marketing-admin/guards/marketing-super-admin.guard';
 
 function redirectLegacyRegisterQuery(route: ActivatedRouteSnapshot): boolean | UrlTree {
   const router = inject(Router);
@@ -21,7 +22,8 @@ export const SETTINGS_ROUTES: Routes = [
   },
   {
     path: 'roles-permissions',
-    canActivate: [rbacGuard],
+    canActivate: [rbacGuard, entitlementGuard],
+    data: { feature: 'RBAC_BASIC' },
     loadComponent: () => import('./roles-permissions/roles-permissions.component').then(m => m.RolesPermissionsComponent)
   },
   {
@@ -69,6 +71,12 @@ export const SETTINGS_ROUTES: Routes = [
     loadChildren: () => import('@features/subscriptions/subscriptions.routes').then(m => m.SUBSCRIPTION_ADMIN_ROUTES)
   },
   {
+    path: 'marketing-website',
+    canActivate: [marketingSuperAdminGuard],
+    loadChildren: () =>
+      import('@features/marketing-admin/marketing-admin.routes').then((m) => m.MARKETING_ADMIN_ROUTES),
+  },
+  {
     path: 'my-subscription',
     canActivate: [subscriptionViewGuard],
     loadComponent: () => import('./my-subscription/my-subscription.component').then(m => m.MySubscriptionComponent)
@@ -99,6 +107,16 @@ export const SETTINGS_ROUTES: Routes = [
     data: { breadcrumbLabel: 'Recommended defaults' },
     loadComponent: () =>
       import('./default-seeds/default-seeds.page').then((m) => m.DefaultSeedsPage),
+  },
+  {
+    path: 'web-settings',
+    loadChildren: () =>
+      import('@features/web-settings/web-settings.routes').then((m) => m.WEB_SETTINGS_ROUTES),
+  },
+  {
+    path: 'contact-enquiries',
+    loadChildren: () =>
+      import('@features/web-settings/web-settings.routes').then((m) => m.CONTACT_ENQUIRIES_ROUTES),
   },
   {
     path: 'notifications',

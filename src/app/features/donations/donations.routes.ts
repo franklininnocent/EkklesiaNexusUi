@@ -1,55 +1,134 @@
 import { Routes } from '@angular/router';
 import { entitlementGuard } from '@core/guards/entitlement.guard';
-import { StewardshipWorkspaceShellComponent } from './components/stewardship-workspace-shell/stewardship-workspace-shell.component';
-import { DonationsCampaignsComponent } from './pages/donations-campaigns.component';
-import { DonationsCategoriesComponent } from './pages/donations-categories.component';
-import { DonationsDashboardComponent } from './pages/donations-dashboard.component';
-import { DonationsDonorsComponent } from './pages/donations-donors.component';
-import { DonationsDuesComponent } from './pages/donations-dues.component';
-import { DonationsHistoryComponent } from './pages/donations-history.component';
-import { DonationsPaymentsComponent } from './pages/donations-payments.component';
-import { DonationsPlansComponent } from './pages/donations-plans.component';
-import { DonationsProjectInstallmentsComponent } from './pages/donations-project-installments.component';
-import { DonationsProjectsComponent } from './pages/donations-projects.component';
-import { DonationsRecurringComponent } from './pages/donations-recurring.component';
-import { DonationsReportsComponent } from './pages/donations-reports.component';
-import { DonationsRegisterComponent } from './pages/donations-register.component';
-import { DonationsReceiptsComponent } from './pages/donations-receipts.component';
-import { DonationsSettingsComponent } from './pages/donations-settings.component';
-import { DonationsNotificationsComponent } from './pages/donations-notifications.component';
-import { DonationsDownloadHistoryComponent } from './pages/donations-download-history.component';
-import { DonationsExpensesComponent } from './pages/donations-expenses.component';
-import { CollectionDayComponent } from './pages/collection-day.component';
-import { TodaysCollectionsComponent } from './pages/today-collections.component';
-import { DonationsApprovalsComponent } from './pages/donations-approvals.component';
 
 export const DONATIONS_ROUTES: Routes = [
   {
     path: '',
-    component: StewardshipWorkspaceShellComponent,
+    loadComponent: () =>
+      import('./components/stewardship-workspace-shell/stewardship-workspace-shell.component').then(
+        (m) => m.StewardshipWorkspaceShellComponent
+      ),
     children: [
-      { path: '', component: DonationsDashboardComponent },
-      { path: 'plans', component: DonationsPlansComponent, canActivate: [entitlementGuard], data: { feature: 'CONTRIBUTION_PLANS' } },
-      { path: 'dues', component: DonationsDuesComponent },
-      { path: 'projects', component: DonationsProjectsComponent },
-      { path: 'projects/:id', component: DonationsProjectsComponent },
-      { path: 'campaigns', component: DonationsCampaignsComponent },
-      { path: 'project-installments', component: DonationsProjectInstallmentsComponent },
-      { path: 'payments', component: DonationsPaymentsComponent },
-      { path: 'collection-day', component: CollectionDayComponent },
-      { path: 'today-collections', component: TodaysCollectionsComponent },
-      { path: 'receipts', component: DonationsReceiptsComponent },
-      { path: 'register', component: DonationsRegisterComponent },
-      { path: 'donors', component: DonationsDonorsComponent },
-      { path: 'categories', component: DonationsCategoriesComponent },
-      { path: 'recurring', component: DonationsRecurringComponent },
-      { path: 'approvals', component: DonationsApprovalsComponent },
-      { path: 'history', component: DonationsHistoryComponent, canActivate: [entitlementGuard], data: { feature: 'AUDIT_LOG' } },
-      { path: 'reports', component: DonationsReportsComponent },
-      { path: 'expenses', component: DonationsExpensesComponent },
-      { path: 'settings', component: DonationsSettingsComponent },
-      { path: 'notifications', component: DonationsNotificationsComponent },
-      { path: 'download-history', component: DonationsDownloadHistoryComponent }
-    ]
-  }
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/donations-dashboard.component').then((m) => m.DonationsDashboardComponent),
+      },
+      {
+        path: 'plans',
+        loadComponent: () =>
+          import('./pages/donations-plans.component').then((m) => m.DonationsPlansComponent),
+        canActivate: [entitlementGuard],
+        data: { feature: 'CONTRIBUTION_PLANS' },
+      },
+      {
+        path: 'dues',
+        loadComponent: () =>
+          import('./pages/donations-dues.component').then((m) => m.DonationsDuesComponent),
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./pages/donations-projects.component').then((m) => m.DonationsProjectsComponent),
+      },
+      {
+        path: 'projects/:id',
+        loadComponent: () =>
+          import('./pages/donations-projects.component').then((m) => m.DonationsProjectsComponent),
+      },
+      {
+        path: 'campaigns',
+        loadComponent: () =>
+          import('./pages/donations-campaigns.component').then((m) => m.DonationsCampaignsComponent),
+      },
+      {
+        path: 'project-installments',
+        loadComponent: () =>
+          import('./pages/donations-project-installments.component').then(
+            (m) => m.DonationsProjectInstallmentsComponent
+          ),
+      },
+      {
+        path: 'payments',
+        loadComponent: () =>
+          import('./pages/donations-payments.component').then((m) => m.DonationsPaymentsComponent),
+      },
+      {
+        path: 'collection-day',
+        loadComponent: () =>
+          import('./pages/collection-day.component').then((m) => m.CollectionDayComponent),
+      },
+      {
+        path: 'today-collections',
+        loadComponent: () =>
+          import('./pages/today-collections.component').then((m) => m.TodaysCollectionsComponent),
+      },
+      {
+        path: 'receipts',
+        loadComponent: () =>
+          import('./pages/donations-receipts.component').then((m) => m.DonationsReceiptsComponent),
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./pages/donations-register.component').then((m) => m.DonationsRegisterComponent),
+      },
+      {
+        path: 'donors',
+        loadComponent: () =>
+          import('./pages/donations-donors.component').then((m) => m.DonationsDonorsComponent),
+      },
+      {
+        path: 'categories',
+        loadComponent: () =>
+          import('./pages/donations-categories.component').then((m) => m.DonationsCategoriesComponent),
+      },
+      {
+        path: 'recurring',
+        loadComponent: () =>
+          import('./pages/donations-recurring.component').then((m) => m.DonationsRecurringComponent),
+      },
+      {
+        path: 'approvals',
+        loadComponent: () =>
+          import('./pages/donations-approvals.component').then((m) => m.DonationsApprovalsComponent),
+      },
+      {
+        path: 'history',
+        loadComponent: () =>
+          import('./pages/donations-history.component').then((m) => m.DonationsHistoryComponent),
+        canActivate: [entitlementGuard],
+        data: { feature: 'AUDIT_LOG' },
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('./pages/donations-reports.component').then((m) => m.DonationsReportsComponent),
+      },
+      {
+        path: 'expenses',
+        loadComponent: () =>
+          import('./pages/donations-expenses.component').then((m) => m.DonationsExpensesComponent),
+      },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./pages/donations-settings.component').then((m) => m.DonationsSettingsComponent),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./pages/donations-notifications.component').then(
+            (m) => m.DonationsNotificationsComponent
+          ),
+      },
+      {
+        path: 'download-history',
+        loadComponent: () =>
+          import('./pages/donations-download-history.component').then(
+            (m) => m.DonationsDownloadHistoryComponent
+          ),
+      },
+    ],
+  },
 ];

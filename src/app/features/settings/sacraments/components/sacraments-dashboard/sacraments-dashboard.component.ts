@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterModule } from '@angular/router';
-import { catchError, distinctUntilChanged, filter, map, of, skip } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, map, of, skip, switchMap } from 'rxjs';
 import { BCCService } from '@core/services/bcc.service';
 import { AuthService } from '@core/services/auth.service';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
@@ -72,9 +72,10 @@ export class SacramentsDashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   loading = false;
+  loadingGaps = false;
   error: string | null = null;
   summary: SacramentDashboardSummary | null = null;
-  periodPreset: PeriodPreset = 'all';
+  periodPreset: PeriodPreset = 'ytd';
   bccs: BCC[] = [];
   loadingBccs = false;
   selectedBccId: string | null = null;
@@ -134,21 +135,48 @@ export class SacramentsDashboardComponent implements OnInit {
     }
 
     this.loading = true;
+    this.loadingGaps = true;
     this.error = null;
 
+    const params = this.dashboardParams();
+
     this.sacramentService
-      .getDashboardSummary(this.dashboardParams())
+      .getDashboardSummary({ ...params, include_gaps: false })
       .pipe(
+        switchMap((response) => {
+          if (!response?.success || !response.data) {
+            return of({ summary: null as SacramentDashboardSummary | null });
+          }
+
+          const base = response.data;
+
+          return this.sacramentService
+            .getDashboardSummary({
+              ...params,
+              include_gaps: true,
+              gaps_only: true,
+            })
+            .pipe(
+              map((gapsResponse) => ({
+                summary: {
+                  ...base,
+                  gaps: gapsResponse?.success ? gapsResponse.data?.gaps : undefined,
+                } as SacramentDashboardSummary,
+              })),
+              catchError(() => of({ summary: base }))
+            );
+        }),
         catchError((err: Error) => {
           this.error = err.message || 'Failed to load sacrament dashboard.';
-          return of(null);
+          return of({ summary: null as SacramentDashboardSummary | null });
         }),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe((response) => {
+      .subscribe(({ summary }) => {
         this.loading = false;
-        if (response?.success && response.data) {
-          this.summary = response.data;
+        this.loadingGaps = false;
+        if (summary) {
+          this.summary = summary;
         }
         this.cdr.markForCheck();
       });
@@ -340,10 +368,6 @@ export class SacramentsDashboardComponent implements OnInit {
     });
   }
 
-  openRecord(id: number): void {
-    void this.router.navigate(['/sacraments/view', id]);
-  }
-
   get demographicsTypeOptions() {
     return this.summary?.demographics.gender_by_type ?? [];
   }
@@ -357,13 +381,13 @@ export class SacramentsDashboardComponent implements OnInit {
   }
 
   openFamilies(): void {
-    void this.router.navigate(['/families'], {
+    void this.router.navigate(['/families/list'], {
       queryParams: this.selectedBccId ? { bcc_id: this.selectedBccId } : {},
     });
   }
 
   openFamiliesMissing(sacramentCode: string): void {
-    void this.router.navigate(['/families'], {
+    void this.router.navigate(['/families/list'], {
       queryParams: {
         missing_sacrament: sacramentCode,
         ...(this.selectedBccId ? { bcc_id: this.selectedBccId } : {}),
@@ -372,7 +396,7 @@ export class SacramentsDashboardComponent implements OnInit {
   }
 
   openMembersProgression(progression: SacramentDashboardProgressionKey): void {
-    void this.router.navigate(['/members'], {
+    void this.router.navigate(['/members/list'], {
       queryParams: {
         progression,
         ...(this.selectedBccId ? { bcc_id: this.selectedBccId } : {}),
@@ -454,7 +478,7 @@ export class SacramentsDashboardComponent implements OnInit {
       changed = true;
     }
 
-    const nextPeriod = this.isPeriodPreset(period) ? period : 'all';
+    const nextPeriod = this.isPeriodPreset(period) ? period : 'ytd';
     if (nextPeriod !== this.periodPreset) {
       this.periodPreset = nextPeriod;
       changed = true;

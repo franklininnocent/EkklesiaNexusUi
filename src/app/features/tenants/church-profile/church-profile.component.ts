@@ -30,6 +30,8 @@ import { PhoneInputComponent } from '@shared/components/phone-input/phone-input.
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { BishopAvatarComponent } from '@shared/components/bishop-avatar/bishop-avatar.component';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
+import { CfLoadingContainerComponent } from '@shared/components/cf-loading-container/cf-loading-container.component';
+import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { ChurchLeaderWorkspaceComponent } from './components/church-leader-workspace/church-leader-workspace.component';
 import { ChurchLeaderDetailComponent } from './components/church-leader-detail/church-leader-detail.component';
@@ -42,7 +44,7 @@ import { Subject, of } from 'rxjs';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
-import { resolveMediaDisplaySrc } from '@core/utils/media-url.util';
+import { MEDIA_LOGO_MAX_BYTES, resolveMediaDisplaySrc, validateMediaImageFile } from '@core/utils/media-url.util';
 import { BishopPhotoSource } from '@core/utils/bishop-photo.util';
 import { LeadershipPersonSummary } from '@core/models/church/leadership-governance.model';
 
@@ -74,6 +76,7 @@ import {
   ChurchStatusMetric,
 } from '@core/models/church';
 import { partitionParishClergyAssignments } from './utils/leadership-role-query.util';
+import { cfFormatDate } from '@shared/utils/cf-intl.util';
 
 type ChurchProfileTab = 'profile' | 'leadership' | 'statistics' | 'social' | 'diocesan-bishop';
 
@@ -102,6 +105,8 @@ interface ProfileLeaderCard {
     PageHeaderComponent,
     BishopAvatarComponent,
     CfCurrencyPipe,
+    CfLoadingContainerComponent,
+    CfBrandLoaderComponent,
   ],
   templateUrl: './church-profile.component.html',
   styleUrl: './church-profile.component.scss',
@@ -132,6 +137,12 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   extendedProfile: ChurchProfile | null = null;
   diocesanLeadership: DiocesanLeadership | null = null;
   popeDetails: PopeDetails | null = null;
+  logoImagePreview: string | null = null;
+  logoImageFile: File | null = null;
+  uploadingLogo = false;
+  logoImageFailed = false;
+  patronImageFailed = false;
+  popeImageFailed = false;
   // Patron Image Upload State
   patronImagePreview: string | null = null;
   patronImageFile: File | null = null;
@@ -465,6 +476,8 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
    */
   closeGeneralModal(): void {
     this.showGeneralModal = false;
+    this.logoImageFile = null;
+    this.logoImagePreview = null;
     if (this.editingSections.general || this.editingSections.contact) {
       // Cancel both sections to restore and disable fields
       this.cancelEditSection('general');
@@ -574,10 +587,10 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
 
             // Upload patron image if selected (before disabling fields)
-            if (this.patronImageFile) {
-              this.uploadPatronImageFile();
+            if (this.patronImageFile || this.logoImageFile) {
+              this.uploadPendingProfileImages();
             }
-            
+
             // Disable the fields for both sections
             const sectionFields = [
               'denomination_id', 'archdiocese_id', 'bishop_id', 'founded_year',
@@ -587,8 +600,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
               this.profileForm.get(field)?.disable({ emitEvent: false });
             });
 
-            // If no patron image to upload, close modal
-            if (!this.patronImageFile) {
+            if (!this.patronImageFile && !this.logoImageFile) {
               this.toastService.success('General & Contact Information updated successfully!', 'Success');
               if (this.showGeneralModal) {
                 this.showGeneralModal = false;
@@ -997,6 +1009,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
         next: (response: TenantResponse) => {
           if (response.success && response.data) {
             this.churchProfile = response.data;
+            this.logoImageFailed = false;
           }
           this.cdr.markForCheck();
         },
@@ -1167,6 +1180,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this.extendedProfile = response.data;
+          this.patronImageFailed = false;
 
           // Debug: Log patron image data
           if (this.extendedProfile) {
@@ -1213,6 +1227,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success) {
           this.popeDetails = response.data;
+          this.popeImageFailed = false;
         }
       },
       error: (err: Error) => {
@@ -1249,26 +1264,171 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   /**
    * Handle pope image error - try fallback
    */
-  handlePopeImageError(event: any): void {
-    const img = event.target;
-    const resolved = resolveMediaDisplaySrc(this.popeDetails?.pope_image_url);
-
-    if (resolved && img.src !== resolved) {
-      img.src = resolved;
-      return;
-    }
-
-    img.style.display = 'none';
-    console.warn('Failed to load pope image:', img.src);
+  handlePopeImageError(): void {
+    this.popeImageFailed = true;
+    this.cdr.markForCheck();
   }
 
   /**
    * Signed display URL for patron image (private storage).
    */
-  getTenantLogoUrl(): string {
-    const raw = this.churchProfile?.logo_full_url || this.churchProfile?.logo_url || null;
-    return resolveMediaDisplaySrc(raw) ?? '';
+  getTenantLogoUrl(): string | null {
+    const candidates = [this.churchProfile?.logo_full_url, this.churchProfile?.logo_url];
+    for (const raw of candidates) {
+      const resolved = resolveMediaDisplaySrc(raw);
+      if (!resolved) {
+        continue;
+      }
+      if (
+        resolved.startsWith('/api/') ||
+        resolved.startsWith('http://') ||
+        resolved.startsWith('https://') ||
+        resolved.startsWith('data:') ||
+        resolved.startsWith('blob:')
+      ) {
+        return resolved;
+      }
+    }
+    return null;
   }
+
+  showLogoImage(): boolean {
+    return !this.logoImageFailed && !!this.getTenantLogoUrl();
+  }
+
+  showPatronImage(): boolean {
+    return !this.patronImageFailed && !!this.getPatronImageUrl();
+  }
+
+  showPopeImage(): boolean {
+    return !this.popeImageFailed && !!this.getPopeImageUrl();
+  }
+
+  handleLogoImageError(): void {
+    this.logoImageFailed = true;
+    this.cdr.markForCheck();
+  }
+
+  onChurchLogoSelected(event: Event, uploadNow = false): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) {
+      return;
+    }
+
+    const validationError = validateMediaImageFile(file, MEDIA_LOGO_MAX_BYTES);
+    if (validationError) {
+      this.toastService.error(validationError, 'Error');
+      return;
+    }
+
+    this.logoImageFile = file;
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      this.logoImagePreview = typeof e.target?.result === 'string' ? e.target.result : null;
+      this.cdr.markForCheck();
+    };
+    reader.readAsDataURL(file);
+
+    if (uploadNow) {
+      this.uploadChurchLogoFile();
+    }
+  }
+
+  private uploadPendingProfileImages(): void {
+    if (this.logoImageFile) {
+      this.uploadChurchLogoFile(() => {
+        if (this.patronImageFile) {
+          this.uploadPatronImageFile();
+        }
+      });
+      return;
+    }
+
+    if (this.patronImageFile) {
+      this.uploadPatronImageFile();
+    }
+  }
+
+  private uploadChurchLogoFile(onSuccess?: () => void): void {
+    if (!this.guardWrite('upload images')) {
+      return;
+    }
+    if (!this.logoImageFile) {
+      onSuccess?.();
+      return;
+    }
+
+    this.uploadingLogo = true;
+    this.tenantService.uploadChurchLogo(this.logoImageFile)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.uploadingLogo = false;
+          if (response.success && this.churchProfile) {
+            this.logoImageFile = null;
+            this.logoImagePreview = null;
+            this.logoImageFailed = false;
+            this.churchProfile = {
+              ...this.churchProfile,
+              logo_full_url: response.data.logo_full_url,
+            };
+            this.toastService.success('Church logo updated.', 'Success');
+            this.loadChurchProfile();
+            onSuccess?.();
+            if (!this.patronImageFile && this.showGeneralModal) {
+              this.showGeneralModal = false;
+            }
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.uploadingLogo = false;
+          this.toastService.error('Failed to upload the church logo. Please try again.', 'Error');
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  removeChurchLogo(): void {
+    if (!this.guardWrite('delete images')) {
+      return;
+    }
+    if (this.logoImageFile || this.logoImagePreview) {
+      this.logoImageFile = null;
+      this.logoImagePreview = null;
+      return;
+    }
+    if (!this.getTenantLogoUrl()) {
+      return;
+    }
+
+    this.uploadingLogo = true;
+    this.tenantService.deleteChurchLogo()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.uploadingLogo = false;
+          if (response.success && this.churchProfile) {
+            this.logoImageFailed = false;
+            this.churchProfile = {
+              ...this.churchProfile,
+              logo_url: null,
+              logo_full_url: null,
+            };
+            this.toastService.success('Church logo removed.', 'Success');
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.uploadingLogo = false;
+          this.toastService.error('Failed to remove the church logo. Please try again.', 'Error');
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
 
   getPatronImageUrl(_size: '128x128' | '300x300' | 'original' = '300x300'): string | null {
     return resolveMediaDisplaySrc(this.extendedProfile?.patron_image_url);
@@ -1277,7 +1437,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   /**
    * Handle patron image file selection
    */
-  onPatronImageSelected(event: Event): void {
+  onPatronImageSelected(event: Event): boolean {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
@@ -1286,13 +1446,13 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
         this.toastService.error('Invalid file type. Please upload JPG, PNG, or WEBP image.', 'Error');
-        return;
+        return false;
       }
 
       // Validate file size (3MB max)
       if (file.size > 3 * 1024 * 1024) {
         this.toastService.error('File size exceeds 3MB limit.', 'Error');
-        return;
+        return false;
       }
 
       this.patronImageFile = file;
@@ -1303,7 +1463,10 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
         this.patronImagePreview = e.target.result;
       };
       reader.readAsDataURL(file);
+      return true;
     }
+
+    return false;
   }
 
   /**
@@ -1326,9 +1489,9 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
           
           // Update extended profile with new image data
           if (this.extendedProfile) {
-            this.extendedProfile.patron_image_path = response.data.patron_image_path;
             this.extendedProfile.patron_image_url = response.data.patron_image_url;
           }
+          this.patronImageFailed = false;
 
           this.toastService.success('Patron image uploaded successfully!', 'Success');
           
@@ -1359,13 +1522,18 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   /**
    * Handle patron image error - try fallback
    */
-  handlePatronImageError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    img.style.display = 'none';
-    console.warn('Failed to load patron image:', {
-      attemptedUrl: img.src,
-      patron_image_url: this.extendedProfile?.patron_image_url,
-    });
+  handlePatronImageError(): void {
+    this.patronImageFailed = true;
+    this.cdr.markForCheck();
+  }
+
+  onHeroPatronSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const accepted = this.onPatronImageSelected(event);
+    input.value = '';
+    if (accepted) {
+      this.uploadPatronImageFile();
+    }
   }
 
   /**
@@ -2661,7 +2829,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
     if (!dateString) return 'Not specified';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      return cfFormatDate(date) || dateString;
     } catch {
       return dateString;
     }

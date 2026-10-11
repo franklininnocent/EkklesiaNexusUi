@@ -133,6 +133,38 @@
     align-items: center;
     gap: var(--cf-space-3);
   }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cf-space-2);
+  }
+}
+
+.sa-plan-catalog-website-strip {
+  margin-bottom: var(--cf-space-4, 1rem);
+}
+
+.sa-plan-catalog-intro {
+  margin: 0;
+}
+
+.sa-plan-card__limits {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--cf-text-sm);
+  color: var(--cf-muted, var(--text-secondary));
+}
+
+.sa-plan-card__discover {
+  margin-top: 0.25rem;
+}
+
+.sa-matrix__desc {
+  margin: 0.2rem 0 0;
+  font-weight: 400;
+  font-size: var(--cf-text-sm);
 }
 
 .sa-title-block {
@@ -903,14 +935,46 @@
 
 .sa-matrix {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 
-  th,
-  td {
-    white-space: nowrap;
+  table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 48rem;
+  }
+
+  thead th:first-child,
+  tbody th[scope='row'] {
+    width: 28%;
+    min-width: 10rem;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--cf-panel-bg, #fff);
+  }
+
+  thead th:first-child {
+    z-index: 3;
+    background: var(--cf-slate-50, var(--gray-50));
+  }
+
+  thead th:not(:first-child) {
+    width: calc(72% / 4);
+    white-space: normal;
+    vertical-align: top;
   }
 
   td.sa-matrix__cell {
     text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .sa-category {
+    white-space: normal;
   }
 }
 

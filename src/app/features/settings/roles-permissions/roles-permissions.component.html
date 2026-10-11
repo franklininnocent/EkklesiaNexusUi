@@ -5,6 +5,24 @@
     subtitle="Manage roles and permissions for your organization">
   </app-page-header>
 
+  <div
+    *ngIf="isTenantMode && showRbacPlanNotice()"
+    class="cf-inline-alert rp-plan-notice"
+    role="status">
+    <div>
+      <strong *ngIf="hasRbacAdvanced()">Advanced Roles &amp; Permissions</strong>
+      <strong *ngIf="!hasRbacAdvanced()">Roles &amp; Permissions (standard)</strong>
+      <p *ngIf="!hasRbacAdvanced()">
+        Your plan includes viewing roles, the permission catalog, and assigning staff to existing parish roles.
+        Creating custom roles or changing which permissions a role has requires Advanced Roles &amp; Permissions.
+        <a routerLink="/settings/my-subscription">Compare plans</a>
+      </p>
+      <p *ngIf="hasRbacAdvanced()">
+        Your plan includes custom parish roles and editing which permissions each role has, in addition to standard role assignment.
+      </p>
+    </div>
+  </div>
+
   <!-- Tabs Navigation -->
   <div class="tabs-container">
     <div class="tabs">
@@ -22,7 +40,8 @@
         <span class="tab-icon">🔐</span>
         <span class="tab-text">Permissions ({{ totalPermissions }})</span>
       </button>
-      <button 
+      <button
+        *ngIf="canAssignPermissions()"
         class="tab-item" 
         [class.active]="isActiveTab('assign')"
         (click)="selectTab('assign')">
@@ -38,7 +57,7 @@
         <span class="tab-text">User Role Assignments</span>
       </button>
       <button 
-        *ngIf="hasSuperAdminAccess"
+        *ngIf="canManagePopeDetails"
         class="tab-item" 
         [class.active]="isActiveTab('pope')"
         (click)="selectTab('pope')">
@@ -145,8 +164,7 @@
 
       <!-- Loading State -->
       <div *ngIf="loadingRoles" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading roles...</p>
+        <app-cf-brand-loader size="section" label="Loading roles and permissions" [showLabel]="true" />
       </div>
 
       <!-- Error State -->
@@ -469,8 +487,7 @@
 
       <!-- Loading State -->
       <div *ngIf="loadingPermissions" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading permissions...</p>
+        <app-cf-brand-loader size="section" label="Loading roles and permissions" [showLabel]="true" />
       </div>
 
       <!-- Error State -->
@@ -721,8 +738,7 @@
 
           <!-- Loading State -->
           <div class="loading-state" *ngIf="loadingRoles">
-            <div class="loading-spinner"></div>
-            <p>Loading roles...</p>
+            <app-cf-brand-loader size="section" label="Loading roles and permissions" [showLabel]="true" />
           </div>
         </div>
 
@@ -758,8 +774,7 @@
       </section>
 
       <div *ngIf="loadingTenantUsers" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading users...</p>
+        <app-cf-brand-loader size="section" label="Loading roles and permissions" [showLabel]="true" />
       </div>
 
       <div *ngIf="tenantUsersError && !loadingTenantUsers" class="error-container">
@@ -871,7 +886,7 @@
 
   <!-- Pope Details Tab -->
   <!-- CRITICAL SECURITY: Pope Details tab is SuperAdmin only -->
-  <div class="tab-content" *ngIf="activeTab === 'pope' && hasSuperAdminAccess">
+  <div class="tab-content" *ngIf="activeTab === 'pope' && canManagePopeDetails">
     <div class="cf-panel rp-card">
       <app-pope-details-management [embedded]="true"></app-pope-details-management>
     </div>

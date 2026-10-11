@@ -1,0 +1,144 @@
+<section class="contact-enquiries cf-page">
+  <app-page-header
+    title="Contact Enquiries"
+    subtitle="Public website contact form submissions and email delivery status."
+    backLink="/settings"
+    backLabel="Settings"
+    [titleMetaCount]="total"
+  >
+    <app-list-toolbar
+      *ngIf="canView"
+      searchPlaceholder="Search name, email, phone, or reference…"
+      [searchValue]="search"
+      [filterCount]="drawerFilterCount"
+      (searchChange)="onSearchChange($event)"
+      (filtersOpened)="showFilters = true"
+    >
+      <button type="button" class="cf-btn" [disabled]="loading" (click)="reload()">Refresh</button>
+    </app-list-toolbar>
+  </app-page-header>
+
+  <div class="cf-inline-alert cf-panel" *ngIf="!canView" role="alert">
+    <p>You do not have permission to view contact enquiries.</p>
+  </div>
+
+  <ng-container *ngIf="canView">
+    <div class="cf-filter-chips" *ngIf="hasActiveFilters">
+      <span *ngIf="search.trim()">Search: {{ search }}</span>
+      <span *ngIf="enquiryStatus">Status: {{ statusLabel(enquiryStatus) }}</span>
+      <span *ngIf="deliveryStatus">Delivery: {{ statusLabel(deliveryStatus) }}</span>
+      <button type="button" class="cf-btn" (click)="onClearAdvancedSearch(); search = ''; reload()">Clear filters</button>
+    </div>
+
+    <div class="cf-inline-alert cf-panel" *ngIf="error" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="reload()">Try again</button>
+    </div>
+    <div class="cf-inline-alert cf-panel" *ngIf="success" role="status"><p>{{ success }}</p></div>
+
+    <div class="cf-loading-block cf-panel" *ngIf="loading && !loaded">
+      <app-loading-skeleton label="Loading enquiries…" type="table" [rows]="6" [columns]="7"></app-loading-skeleton>
+    </div>
+
+    <ng-container *ngIf="loaded">
+      <div class="cf-panel" *ngIf="rows.length">
+        <app-data-table [clickableRows]="true" [ariaBusy]="loading">
+          <thead>
+            <tr>
+              <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('reference_number')">Reference</button></th>
+              <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('full_name')">Name</button></th>
+              <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('email')">Email</button></th>
+              <th scope="col">Phone</th>
+              <th scope="col">Subject</th>
+              <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('created_at')">Submitted</button></th>
+              <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('enquiry_status')">Status</button></th>
+              <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('delivery_status')">Email</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of rows; trackBy: trackById" (click)="openDetail(row)">
+              <td>{{ row.reference_number }}</td>
+              <td>{{ row.full_name }}</td>
+              <td>{{ row.email }}</td>
+              <td>{{ row.phone || '—' }}</td>
+              <td>{{ row.subject || '—' }}</td>
+              <td>{{ row.submitted_at | cfDate: 'datetime' }}</td>
+              <td><app-status-badge [label]="statusLabel(row.enquiry_status)" [tone]="enquiryTone(row.enquiry_status)"></app-status-badge></td>
+              <td><app-status-badge [label]="statusLabel(row.delivery_status)" [tone]="deliveryTone(row.delivery_status)"></app-status-badge></td>
+            </tr>
+          </tbody>
+        </app-data-table>
+        <div class="contact-enquiries__pager">
+          <span>{{ total }} enquiries</span>
+          <button type="button" class="cf-btn" [disabled]="page <= 1 || loading" (click)="changePage(-1)">Previous</button>
+          <span>Page {{ page }} of {{ lastPage }}</span>
+          <button type="button" class="cf-btn" [disabled]="page >= lastPage || loading" (click)="changePage(1)">Next</button>
+        </div>
+      </div>
+
+      <app-cf-empty-state
+        *ngIf="!rows.length"
+        [title]="hasActiveFilters ? 'No enquiries match your filters' : 'No contact enquiries yet'"
+        [description]="hasActiveFilters ? 'Try clearing search or filters.' : 'When someone submits the public contact form, it will appear here.'"
+      ></app-cf-empty-state>
+    </ng-container>
+  </ng-container>
+
+  <app-advanced-search-panel
+    *ngIf="canView"
+    mode="sidepanel"
+    [fields]="searchFields"
+    [isExpanded]="showFilters"
+    (search)="onAdvancedSearch($event)"
+    (clear)="onClearAdvancedSearch()"
+    (close)="showFilters = false"
+  ></app-advanced-search-panel>
+
+  <app-modal-shell *ngIf="detailOpen && selected" title="Enquiry details" size="md" (closeRequested)="closeDetail()">
+    <dl class="contact-enquiries__detail">
+      <div><dt>Reference</dt><dd>{{ selected.reference_number }}</dd></div>
+      <div><dt>Name</dt><dd>{{ selected.full_name }}</dd></div>
+      <div><dt>Email</dt><dd>{{ selected.email }}</dd></div>
+      <div><dt>Phone</dt><dd>{{ selected.phone || '—' }}</dd></div>
+      <div><dt>Organisation</dt><dd>{{ selected.organisation || '—' }}</dd></div>
+      <div><dt>Subject</dt><dd>{{ selected.subject || '—' }}</dd></div>
+      <div><dt>Submitted</dt><dd>{{ selected.submitted_at | cfDate: 'datetime' }}</dd></div>
+      <div>
+        <dt>Status</dt>
+        <dd><app-status-badge [label]="statusLabel(selected.enquiry_status)" [tone]="enquiryTone(selected.enquiry_status)"></app-status-badge></dd>
+      </div>
+      <div>
+        <dt>Email delivery</dt>
+        <dd><app-status-badge [label]="statusLabel(selected.delivery_status)" [tone]="deliveryTone(selected.delivery_status)"></app-status-badge></dd>
+      </div>
+      <div *ngIf="selected.last_delivery_error"><dt>Delivery note</dt><dd>{{ selected.last_delivery_error }}</dd></div>
+      <div class="contact-enquiries__message"><dt>Message</dt><dd>{{ selected.message }}</dd></div>
+    </dl>
+    <ul class="contact-enquiries__events" *ngIf="selected.delivery_events?.length">
+      <li *ngFor="let event of selected.delivery_events">
+        {{ event.created_at_label }} — {{ statusLabel(event.status) }}
+        <span *ngIf="event.detail"> ({{ event.detail }})</span>
+      </li>
+    </ul>
+    <div modalFooter class="contact-enquiries__actions" *ngIf="canUpdate || canRetry || canDelete">
+      <button type="button" class="cf-btn" *ngIf="canUpdate" [disabled]="processing" (click)="markRead(selected, selected.enquiry_status === 'unread')">
+        {{ selected.enquiry_status === 'unread' ? 'Mark read' : 'Mark unread' }}
+      </button>
+      <button type="button" class="cf-btn" *ngIf="canUpdate" [disabled]="processing" (click)="setStatus(selected, 'in_progress')">In progress</button>
+      <button type="button" class="cf-btn" *ngIf="canUpdate" [disabled]="processing" (click)="setStatus(selected, 'closed')">Close</button>
+      <button type="button" class="cf-btn" *ngIf="canRetry && selected.can_retry_email" [disabled]="processing" (click)="retry(selected)">Retry email</button>
+      <button type="button" class="cf-btn" *ngIf="canDelete" [disabled]="processing" (click)="requestDelete(selected)">Delete</button>
+    </div>
+  </app-modal-shell>
+
+  <app-confirmation-modal
+    [show]="confirmOpen"
+    title="Delete this enquiry?"
+    message="This removes the visitor’s message from the enquiry list. This cannot be undone."
+    confirmText="Delete"
+    confirmButtonClass="btn-danger"
+    (confirmed)="onConfirmDelete($event)"
+    (cancelled)="confirmOpen = false; pendingDelete = null"
+    (closed)="confirmOpen = false; pendingDelete = null"
+  ></app-confirmation-modal>
+</section>

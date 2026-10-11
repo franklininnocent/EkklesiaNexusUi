@@ -56,6 +56,10 @@
                 <span class="cert-spouse-field__label">{{ terms.motherLabel }}</span>
                 <span class="cert-spouse-field__value">{{ brideSpouse?.motherName }}</span>
               </div>
+              <div class="cert-spouse-field" *ngIf="brideSpouse?.residenceAddress">
+                <span class="cert-spouse-field__label">{{ terms.partyAddressLabel }}</span>
+                <span class="cert-spouse-field__value">{{ brideSpouse?.residenceAddress }}</span>
+              </div>
               <div class="cert-spouse-field" *ngIf="brideSpouse?.parishResidence">
                 <span class="cert-spouse-field__label">{{ terms.parishResidenceLabel }}</span>
                 <span class="cert-spouse-field__value">{{ brideSpouse?.parishResidence }}</span>
@@ -72,6 +76,10 @@
               <div class="cert-spouse-field" *ngIf="groomSpouse?.motherName">
                 <span class="cert-spouse-field__label">{{ terms.motherLabel }}</span>
                 <span class="cert-spouse-field__value">{{ groomSpouse?.motherName }}</span>
+              </div>
+              <div class="cert-spouse-field" *ngIf="groomSpouse?.residenceAddress">
+                <span class="cert-spouse-field__label">{{ terms.partyAddressLabel }}</span>
+                <span class="cert-spouse-field__value">{{ groomSpouse?.residenceAddress }}</span>
               </div>
               <div class="cert-spouse-field" *ngIf="groomSpouse?.parishResidence">
                 <span class="cert-spouse-field__label">{{ terms.parishResidenceLabel }}</span>

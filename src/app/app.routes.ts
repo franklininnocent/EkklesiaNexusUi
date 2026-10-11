@@ -12,12 +12,10 @@ import { massIntentionsGuard } from '@core/guards/mass-intentions.guard';
 import { massIntentionsUrlGuard } from '@core/guards/mass-intentions-url.guard';
 import { entitlementGuard } from '@core/guards/entitlement.guard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
-import { FamilyListComponent } from './features/family-management/components/family-list/family-list';
-import { FamilyDetail } from './features/family-management/components/family-detail/family-detail';
-import { FamilyBreadcrumbResolver } from './features/family-management/resolvers/family-breadcrumb.resolver';
 import { bccGuard } from './core/guards/bcc.guard';
 import { supportGuard } from './core/guards/support.guard';
 import { parishResourceGuard } from './core/guards/parish-resource.guard';
+import { subscriptionLockedGuard } from './core/guards/subscription-locked.guard';
 
 export const routes: Routes = [
   {
@@ -30,6 +28,11 @@ export const routes: Routes = [
     loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES)
   },
   {
+    path: 'loader-demo',
+    loadComponent: () =>
+      import('./shared/pages/loader-demo/loader-demo.page').then((m) => m.LoaderDemoPageComponent),
+  },
+  {
     path: 'verify/certificate/:token',
     loadComponent: () =>
       import('./features/settings/sacraments/certificates/verify/certificate-verify-page.component').then(
@@ -40,10 +43,18 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [authGuard, forcePasswordChangeGuard],
+    canActivate: [authGuard, forcePasswordChangeGuard, subscriptionLockedGuard],
     children: [
       {
+        path: 'subscription-locked',
+        loadComponent: () =>
+          import('./features/settings/subscription-locked/subscription-locked.page').then(
+            (m) => m.SubscriptionLockedPageComponent
+          ),
+      },
+      {
         path: 'dashboard',
+        data: { preload: true },
         loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES)
       },
       {
@@ -55,11 +66,13 @@ export const routes: Routes = [
       },
       {
         path: 'notifications',
+        data: { preload: true },
         loadChildren: () =>
           import('./features/notifications/notifications.routes').then((m) => m.NOTIFICATIONS_ROUTES),
       },
       {
         path: 'profile',
+        data: { preload: true },
         loadChildren: () => import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES)
       },
       {
@@ -116,13 +129,9 @@ export const routes: Routes = [
       {
         path: 'families',
         canActivate: [parishResourceGuard],
-        component: FamilyListComponent
-      },
-      {
-        path: 'families/:id',
-        canActivate: [parishResourceGuard],
-        component: FamilyDetail,
-        resolve: { breadcrumbLabel: FamilyBreadcrumbResolver }
+        data: { preload: true },
+        loadChildren: () =>
+          import('./features/family-management/family.routes').then((m) => m.FAMILY_ROUTES),
       },
       {
         path: 'bccs',
@@ -132,6 +141,7 @@ export const routes: Routes = [
       {
         path: 'members',
         canActivate: [parishResourceGuard],
+        data: { preload: true },
         loadChildren: () => import('./features/members/members.routes').then(m => m.MEMBERS_ROUTES)
       },
       {
@@ -203,12 +213,13 @@ export const routes: Routes = [
       },
       {
         path: 'families',
-        component: FamilyListComponent
+        loadChildren: () =>
+          import('./features/family-management/family.routes').then((m) => m.FAMILY_ROUTES),
       },
       {
-        path: 'families/:id',
-        component: FamilyDetail,
-        resolve: { breadcrumbLabel: FamilyBreadcrumbResolver }
+        path: 'members',
+        canActivate: [parishResourceGuard],
+        loadChildren: () => import('./features/members/members.routes').then((m) => m.MEMBERS_ROUTES),
       },
       {
         path: 'bccs',

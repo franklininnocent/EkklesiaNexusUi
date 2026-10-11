@@ -12,6 +12,8 @@ import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.
 import { ListToolbarComponent } from '@shared/components/list-toolbar/list-toolbar.component';
 import { AdvancedSearchPanelComponent, SearchField, ActiveFilter } from '@shared/components/advanced-search-panel/advanced-search-panel.component';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
+import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
+import { CfLoadingContainerComponent } from '@shared/components/cf-loading-container/cf-loading-container.component';
 import { filter, take } from 'rxjs/operators';
 
 interface PermissionGroup {
@@ -34,7 +36,9 @@ type AssignmentFilter = '' | 'all' | 'assigned' | 'not_assigned';
     ModalShellComponent,
     ListToolbarComponent,
     AdvancedSearchPanelComponent,
-    CfEmptyStateComponent
+    CfEmptyStateComponent,
+    CfBrandLoaderComponent,
+    CfLoadingContainerComponent,
   ],
   templateUrl: './assign-permissions-modal.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -746,7 +750,7 @@ export class AssignPermissionsModalComponent implements OnInit, OnChanges {
   getModuleRiskLevel(module: string): 'high' | 'medium' | 'low' {
     const normalizedModule = module.toLowerCase();
     const highRiskModules = ['users', 'churchsettings', 'settings'];
-    const mediumRiskModules = ['donations', 'reports', 'attendance', 'families'];
+    const mediumRiskModules = ['donations', 'reports', 'families'];
 
     if (highRiskModules.includes(normalizedModule)) {
       return 'high';
@@ -925,7 +929,6 @@ export class AssignPermissionsModalComponent implements OnInit, OnChanges {
       members: 'Members',
       families: 'Families',
       events: 'Events',
-      attendance: 'Attendance',
       donations: 'Finance',
       reports: 'Reports',
       roles: 'Roles',

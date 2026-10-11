@@ -23,8 +23,10 @@ describe('SettingsComponent (role-based visibility)', () => {
     hasEkklesiaRole: jest.Mock<boolean, [any?]>;
     isPlatformActor: jest.Mock<boolean, [any?]>;
     hasTenantPermission: jest.Mock<boolean, [string]>;
-    isSuperAdmin: jest.Mock<boolean, []>;
+    isSuperAdmin: jest.Mock<boolean, [any?]>;
     canViewPasswordRecoveryRequests: jest.Mock<boolean, [any?]>;
+    canAccessWebSettings: jest.Mock<boolean, [any?]>;
+    canViewContactEnquiries: jest.Mock<boolean, [any?]>;
   };
 
   const createComponentWithUser = (user: any | null) => {
@@ -55,6 +57,18 @@ describe('SettingsComponent (role-based visibility)', () => {
       hasTenantPermission: jest.fn().mockReturnValue(true),
       isSuperAdmin: jest.fn().mockReturnValue(false),
       canViewPasswordRecoveryRequests: jest.fn().mockReturnValue(false),
+      canAccessWebSettings: jest.fn().mockImplementation((targetUser: any) => {
+        if (!targetUser) return false;
+        return ['SuperAdmin', 'EkklesiaAdmin'].includes(targetUser.role_name || targetUser.role?.name || '')
+          || targetUser.is_super_admin === true
+          || targetUser.is_admin === true;
+      }),
+      canViewContactEnquiries: jest.fn().mockImplementation((targetUser: any) => {
+        if (!targetUser) return false;
+        return ['SuperAdmin', 'EkklesiaAdmin'].includes(targetUser.role_name || targetUser.role?.name || '')
+          || targetUser.is_super_admin === true
+          || targetUser.is_admin === true;
+      }),
     };
 
     TestBed.configureTestingModule({
@@ -246,6 +260,8 @@ describe('SettingsComponent (role-based visibility)', () => {
       hasTenantPermission: jest.fn().mockReturnValue(true),
       isSuperAdmin: jest.fn().mockReturnValue(false),
       canViewPasswordRecoveryRequests: jest.fn().mockReturnValue(false),
+      canAccessWebSettings: jest.fn().mockReturnValue(true),
+      canViewContactEnquiries: jest.fn().mockReturnValue(true),
     };
 
     TestBed.configureTestingModule({
@@ -274,6 +290,27 @@ describe('SettingsComponent (role-based visibility)', () => {
     expect(visible.find(s => s.title === 'Tenants')).toBeDefined();
     expect(visible.find(s => s.title === 'Ecclesiastical Data')).toBeDefined();
     expect(visible.find(s => s.title === 'Sacrament Settings')).toBeUndefined();
+  });
+
+  it('shows Web Management only to strict Super Admin, not EkklesiaAdmin', () => {
+    createComponentWithUser(null);
+    authServiceMock.isSuperAdmin.mockImplementation((user?: { is_super_admin?: boolean; role_name?: string }) => {
+      if (!user) return false;
+      return user.is_super_admin === true || user.role_name === 'SuperAdmin';
+    });
+    const webMgmt = { title: 'Web Management', requiresStrictSuperAdmin: true } as any;
+    expect(component.shouldDisplaySection(webMgmt, ekklesiaAdmin as any)).toBe(false);
+    expect(component.shouldDisplaySection(webMgmt, superAdminByFlag as any)).toBe(true);
+  });
+
+  it('shows Web Settings and Contact Enquiries to Ekklesia admin but not tenant users', () => {
+    createComponentWithUser(null);
+    const tenantVisible = component.getVisibleSections(tenantUser as any);
+    const ekklesiaVisible = component.getVisibleSections(ekklesiaAdmin as any);
+    expect(tenantVisible.find(s => s.title === 'Web Settings')).toBeUndefined();
+    expect(tenantVisible.find(s => s.title === 'Contact Enquiries')).toBeUndefined();
+    expect(ekklesiaVisible.find(s => s.title === 'Web Settings')).toBeDefined();
+    expect(ekklesiaVisible.find(s => s.title === 'Contact Enquiries')).toBeDefined();
   });
 });
 

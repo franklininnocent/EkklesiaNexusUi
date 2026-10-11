@@ -13,7 +13,7 @@ import {
   ViewChildren,
   inject,
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { SacramentDashboardAgeBucket } from '../../models/sacrament-dashboard.model';
 
 /** Green → yellow → red progression by age bracket (youngest inner ring). */

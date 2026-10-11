@@ -14,7 +14,7 @@ import {
   ViewChild,
   inject
 } from '@angular/core';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { cfFormatMoney } from '@shared/utils/cf-intl.util';
 import { CollectionTrendPoint } from '../models/donation.model';

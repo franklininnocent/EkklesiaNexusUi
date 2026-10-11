@@ -29,6 +29,7 @@ import { MigrateTenantsDialogComponent } from '../../components/migrate-tenants-
 import { PlanTenantsPanelComponent } from '../../components/plan-tenants-panel/plan-tenants-panel.component';
 import { VersionReviewDialogComponent } from '../../components/version-review-dialog/version-review-dialog.component';
 import { isSubscriptionAdminLayoutV2 } from '../../config/subscription-admin-layout.config';
+import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 
 type EditorTab = 'details' | 'versions' | 'pricing' | 'features' | 'churches';
 
@@ -54,6 +55,7 @@ interface TermsForm {
   selector: 'app-plan-editor-page',
   standalone: true,
   imports: [
+    CfDatePipe,
     CommonModule,
     FormsModule,
     RouterModule,
@@ -98,6 +100,7 @@ export class PlanEditorPage implements OnInit, OnDestroy {
   planId = 0;
   plan: CatalogPlan | null = null;
   features: CatalogFeature[] = [];
+  implementedEntitlementCodes: string[] = [];
   loading = true;
   error: string | null = null;
   private requestedTab: EditorTab | null = null;
@@ -204,12 +207,15 @@ export class PlanEditorPage implements OnInit, OnDestroy {
     this.loading = initial || !this.plan;
     this.error = null;
     this.cdr.markForCheck();
-    const features$: Observable<CatalogFeature[]> = this.features.length ? of(this.features) : this.api.listFeatures();
+    const features$ = this.features.length
+      ? of({ features: this.features, implementedEntitlementCodes: this.implementedEntitlementCodes })
+      : this.api.listFeatureCatalog();
     forkJoin({ plan: this.api.getPlan(this.planId), features: features$ })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ plan, features }) => {
-          this.features = features;
+          this.features = features.features;
+          this.implementedEntitlementCodes = features.implementedEntitlementCodes;
           this.applyPlan(plan, initial);
           this.loading = false;
           this.cdr.markForCheck();

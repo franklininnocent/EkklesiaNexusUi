@@ -69,11 +69,8 @@ function spouseFrom(
     str(affiliation['parish_name']) ||
     str(dict['affiliation_parish_name']) ||
     str(sacrament[`${prefix}church_name`]);
-  const address =
-    str(snapshot['address']) ||
-    str(sacrament[`${prefix}address`]) ||
-    str(sacrament[`${prefix}church_address`]);
-  const residence = [parish, address].filter(Boolean).join(', ');
+  const residenceAddress =
+    str(snapshot['address']) || str(sacrament[`${prefix}address`]) || null;
   const statusParts = [str(snapshot['baptismal_status_label']), str(snapshot['ecclesial_affiliation_label'])].filter(
     Boolean
   );
@@ -83,7 +80,8 @@ function spouseFrom(
     ecclesialAffiliationLabel: str(snapshot['ecclesial_affiliation_label']),
     fatherName: str(snapshot['father_name']) || str(sacrament[`${prefix}father_name`]),
     motherName: str(snapshot['mother_name']) || str(sacrament[`${prefix}mother_name`]),
-    parishResidence: residence || null,
+    residenceAddress,
+    parishResidence: parish || null,
   };
 }
 

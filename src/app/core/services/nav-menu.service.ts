@@ -42,7 +42,9 @@ export type NavMenuId =
   | 'settings-support-access'
   | 'settings-forgot-password-requests'
   | 'settings-data-export'
-  | 'settings-default-seeds';
+  | 'settings-default-seeds'
+  | 'settings-web-settings'
+  | 'settings-contact-enquiries';
 
 type NavAudience = 'ekklesia' | 'tenant' | 'both';
 
@@ -57,12 +59,12 @@ export class NavMenuService {
   private static readonly SUPPORT_PARISH_WORKSPACE_LINKS: readonly SupportParishWorkspaceLink[] = [
     { id: 'church-profile', label: 'Church Profile', route: '/church-profile' },
     { id: 'families', label: 'Families', route: '/families' },
-    { id: 'members', label: 'Members', route: '/members' },
-    { id: 'bccs', label: 'BCCs', route: '/bccs' },
+    { id: 'members', label: 'Members', route: '/members/list' },
+    { id: 'bccs', label: 'BCCs', route: '/bccs/list' },
     { id: 'donations', label: 'Donations', route: '/donations' },
     { id: 'ministries', label: 'Ministries', route: '/ministries' },
     { id: 'sacraments', label: 'Sacraments', route: '/sacraments' },
-    { id: 'mass-intentions', label: 'Mass intentions', route: '/mass-intentions' },
+    { id: 'mass-intentions', label: 'Holy Mass', route: '/mass-intentions' },
     { id: 'users', label: 'Users', route: '/users' },
     { id: 'roles-permissions', label: 'Roles & Permissions', route: '/settings/roles-permissions' },
   ];
@@ -73,6 +75,7 @@ export class NavMenuService {
     'mass-intentions': 'MASS_INTENTIONS',
     'ministries-audit': 'AUDIT_LOG',
     'settings-data-export': 'IMPORT_EXPORT',
+    'roles-permissions': 'RBAC_BASIC',
   };
 
   private readonly auth = inject(AuthService);
@@ -204,6 +207,8 @@ export class NavMenuService {
       'forgot-password-requests',
       'data-export',
       'default-seeds',
+      'web-settings',
+      'contact-enquiries',
     ];
     return allowed.includes(key) ? key : null;
   }

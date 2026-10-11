@@ -25,6 +25,7 @@ const CATHOLIC_BAPTISM: LiturgicalTerminology = {
   nameAsRecordedLabel: 'Name as recorded',
   baptismalStatusLabel: 'Baptismal status',
   parishResidenceLabel: 'Parish / residence',
+  partyAddressLabel: 'Address',
   witness1Label: 'Witness 1',
   witness2Label: 'Witness 2',
   dateOfBirthLabel: 'Date of birth',
@@ -42,6 +43,8 @@ const CATHOLIC_MATRIMONY: LiturgicalTerminology = {
   ministerLabel: 'Celebrant',
   fatherLabel: "Father's Name",
   motherLabel: "Mother's Name",
+  partyAddressLabel: 'Address',
+  parishResidenceLabel: 'Parish',
   certificateNumberLabel: 'Certificate No.',
 };
 

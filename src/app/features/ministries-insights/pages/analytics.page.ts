@@ -13,7 +13,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
-import { Chart } from 'chart.js/auto';
+import { Chart } from '@shared/charts/ekklesia-chart';
 import {
   AdvancedSearchPanelComponent,
   SearchField,
@@ -38,11 +38,13 @@ import {
 } from '../models/ministries-insights.model';
 import { AuthService } from '@core/services/auth.service';
 import { insightsFeatureLabel, insightsStatusLabel } from '../utils/insights-labels';
+import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 
 @Component({
   selector: 'app-ministries-insights-analytics-page',
   standalone: true,
   imports: [
+    CfDatePipe,
     CommonModule,
     RouterModule,
     AdvancedSearchPanelComponent,

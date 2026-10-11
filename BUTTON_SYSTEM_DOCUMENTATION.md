@@ -4,7 +4,7 @@
 
 ## Overview
 
-This document describes the comprehensive, enterprise-level button system implemented across the entire EkklesiaSoft application. All buttons follow consistent design, styling, animations, and behavior to ensure a professional, cohesive user experience.
+This document describes the comprehensive, enterprise-level button system implemented across the entire EkklesiaNexus application. All buttons follow consistent design, styling, animations, and behavior to ensure a professional, cohesive user experience.
 
 ## Design Principles
 

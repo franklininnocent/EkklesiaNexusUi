@@ -4,20 +4,30 @@ import { catchError, map, tap, filter, switchMap } from 'rxjs/operators';
 import { TenantService } from './tenant.service';
 import { AuthService } from './auth.service';
 
-export type SubscriptionAccessMode = 'full' | 'read_only';
+export type SubscriptionAccessMode = 'full' | 'read_only' | 'view_only' | 'locked';
 
 export interface SubscriptionAccessSnapshot {
   status: string;
+  effective_status?: string;
   access_mode?: SubscriptionAccessMode;
   is_read_only?: boolean;
+  is_view_only?: boolean;
+  is_locked?: boolean;
   allows_gated_access: boolean;
   gated_modules?: string[];
   subscription_ends_at?: string | null;
   grace_ends_at?: string | null;
+  view_only_ends_at?: string | null;
+  grandfather_until?: string | null;
   days_until_end?: number | null;
   grace_period_days?: number;
+  view_only_allowance_days?: number;
+  grace_period_inherited?: boolean;
+  view_only_allowance_inherited?: boolean;
+  renewal_available?: boolean;
   expiring_warning_days?: number;
   write_policy?: string;
+  view_only_locked_enforcement?: boolean;
   plan?: { code: string | null; key: string | null; name: string | null; is_legacy: boolean } | null;
   /** Changes whenever the church's effective features change; drives EntitlementService refetch. */
   entitlements_version?: string;
@@ -39,6 +49,7 @@ export class SubscriptionAccessService {
   readonly snapshotSignal = signal<SubscriptionAccessSnapshot | null>(null);
   readonly loadingSignal = signal(false);
 
+  /** Suspended / inactive read-only (buttons may stay disabled). */
   readonly isReadOnly = computed(() => {
     const snap = this.snapshotSignal();
     const user = this.authService.currentUserValue;
@@ -48,7 +59,33 @@ export class SubscriptionAccessService {
     if (!snap) {
       return true;
     }
-    return snap.access_mode === 'read_only' || snap.is_read_only === true;
+    return snap.access_mode === 'read_only';
+  });
+
+  readonly isViewOnly = computed(() => {
+    const snap = this.snapshotSignal();
+    return snap?.access_mode === 'view_only' || snap?.is_view_only === true;
+  });
+
+  readonly isLocked = computed(() => {
+    const snap = this.snapshotSignal();
+    const user = this.authService.currentUserValue;
+    if (!user?.tenant_id || !snap) {
+      return false;
+    }
+    return snap.access_mode === 'locked' || snap.is_locked === true;
+  });
+
+  readonly blocksMutations = computed(() => {
+    const user = this.authService.currentUserValue;
+    if (!user?.tenant_id) {
+      return false;
+    }
+    const snap = this.snapshotSignal();
+    if (!snap) {
+      return true;
+    }
+    return snap.access_mode !== 'full';
   });
 
   readonly canViewGatedModules = computed(() => {
@@ -72,7 +109,14 @@ export class SubscriptionAccessService {
   }
 
   get shouldShowBanner(): boolean {
-    const status = this.snapshotSubject.value?.status;
+    const snap = this.snapshotSubject.value;
+    if (!snap) {
+      return false;
+    }
+    if (snap.access_mode === 'view_only' || snap.is_view_only) {
+      return true;
+    }
+    const status = snap.status;
     return !!status && WARN_STATUSES.has(status);
   }
 

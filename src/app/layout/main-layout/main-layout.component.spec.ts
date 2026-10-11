@@ -10,7 +10,11 @@ import { NavMenuService } from '@core/services/nav-menu.service';
 import { ApplicationContextService } from '@core/services/application-context.service';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { EntitlementService } from '@core/services/entitlement.service';
+import { NotificationInboxService } from '@features/notifications/services/notification-inbox.service';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
+import { QuickCollectService } from '@features/donations/services/quick-collect.service';
+import { CommandPaletteService } from '@shared/services/command-palette.service';
+import { GlobalFamilySearchService } from '@shared/services/global-family-search.service';
 
 describe('MainLayoutComponent (RBAC visibility)', () => {
   let component: MainLayoutComponent;
@@ -82,6 +86,41 @@ describe('MainLayoutComponent (RBAC visibility)', () => {
             snapshot$: snapshotSelection.asObservable(),
             ensureLoaded: jest.fn(),
             clear: jest.fn(),
+            isReadOnly: jest.fn().mockReturnValue(false),
+          },
+        },
+        {
+          provide: NotificationInboxService,
+          useValue: {
+            isPopoverOpen: () => false,
+            unreadCount: () => 0,
+          },
+        },
+        {
+          provide: QuickCollectService,
+          useValue: {
+            open$: of(null),
+            open: jest.fn(),
+          },
+        },
+        {
+          provide: CommandPaletteService,
+          useValue: {
+            open$: of(undefined),
+            close$: of(undefined),
+            isOpen: false,
+            toggle: jest.fn(),
+            open: jest.fn(),
+            close: jest.fn(),
+          },
+        },
+        {
+          provide: GlobalFamilySearchService,
+          useValue: {
+            mount$: of(undefined),
+            requestMount: jest.fn(),
+            consumePendingMount: jest.fn().mockReturnValue(false),
+            consumePendingFocus: jest.fn().mockReturnValue(false),
           },
         },
         {

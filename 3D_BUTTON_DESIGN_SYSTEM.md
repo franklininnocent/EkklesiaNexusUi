@@ -499,7 +499,7 @@ Focus states are visible and accessible:
 
 ---
 
-**Maintained by**: EkklesiaSoft Development Team  
+**Maintained by**: EkklesiaNexus Development Team  
 **Last Updated**: October 26, 2025  
 **Status**: Production Ready ✅
 

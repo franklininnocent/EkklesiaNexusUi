@@ -1,9 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, Subject, map, tap } from 'rxjs';
+import { Observable, Subject, map, of, tap } from 'rxjs';
+import { EntitlementService } from '@core/services/entitlement.service';
 import { newIdempotencyKey } from '../utils/local-date-only';
 import { environment } from '@environments/environment';
 import {
+  BulkDueActionResult,
   ContributionDue,
   ContributionPlan,
   ContributionPlanAssignment,
@@ -26,6 +28,7 @@ import {
   DonationEntry,
   DonationFamilyFinancialProfile,
   DonationFamilySummary,
+  CollectPaymentContext,
   FinancialAiResponse,
   ReceiptOcrResult,
   UpiPaymentIntent,
@@ -47,12 +50,16 @@ import {
   PlanRevisionHistory,
   ProjectDashboard,
   ProjectFamilyAssignment,
+  ProjectFamilyProgressQuery,
+  ProjectFamilyProgressResponse,
   ProjectInstallmentDue,
+  ProjectInstallmentGenerationResult,
   RecurringDonationSchedule
 } from '../models/donation.model';
 
 @Injectable({ providedIn: 'root' })
 export class DonationsService {
+  private readonly entitlements = inject(EntitlementService);
   private baseUrl = `${environment.apiUrl}/tenant/donations`;
   private readonly ledgerMutatedSubject = new Subject<void>();
   readonly ledgerMutated$ = this.ledgerMutatedSubject.asObservable();
@@ -223,6 +230,9 @@ export class DonationsService {
   }
 
   getCollectionForecast(months = 3): Observable<{ success: boolean; data: CollectionForecast }> {
+    if (!this.entitlements.hasFeature('FINANCIAL_DASHBOARD')) {
+      return of({ success: true, data: {} as CollectionForecast });
+    }
     const params = new HttpParams().set('months', String(months));
     return this.http.get<{ success: boolean; data: CollectionForecast }>(`${this.baseUrl}/dashboard/forecast`, { params });
   }
@@ -301,6 +311,25 @@ export class DonationsService {
     );
   }
 
+  getCollectContext(params: {
+    family_id?: string;
+    project_id?: string;
+    campaign_id?: string;
+    due_id?: string;
+    installment_id?: string;
+  }): Observable<{ success: boolean; data: CollectPaymentContext }> {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        httpParams = httpParams.set(key, value);
+      }
+    });
+    return this.http.get<{ success: boolean; data: CollectPaymentContext }>(
+      `${this.baseUrl}/payments/collect-context`,
+      { params: httpParams }
+    );
+  }
+
   getFunds(): Observable<{ success: boolean; data: Array<{ id: string; name: string; code: string }> }> {
     return this.http.get<{ success: boolean; data: Array<{ id: string; name: string; code: string }> }>(`${this.baseUrl}/funds`);
   }
@@ -369,14 +398,22 @@ export class DonationsService {
     );
   }
 
-  getDues(filters: Record<string, string | boolean> = {}): Observable<{ success: boolean; data: PaginatedResponse<ContributionDue> }> {
+  getDues(filters: Record<string, string | boolean> = {}): Observable<{
+    success: boolean;
+    data: PaginatedResponse<ContributionDue>;
+    meta?: { overdue_family_count?: number };
+  }> {
     let params = new HttpParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         params = params.set(key, String(value));
       }
     });
-    return this.http.get<{ success: boolean; data: PaginatedResponse<ContributionDue> }>(`${this.baseUrl}/dues`, { params });
+    return this.http.get<{
+      success: boolean;
+      data: PaginatedResponse<ContributionDue>;
+      meta?: { overdue_family_count?: number };
+    }>(`${this.baseUrl}/dues`, { params });
   }
 
   waiveDue(dueId: string, reason?: string): Observable<{ success: boolean; message: string }> {
@@ -391,6 +428,23 @@ export class DonationsService {
     return this.http.post<{ success: boolean; message: string }>(`${this.baseUrl}/dues/${dueId}/remind`, {});
   }
 
+  bulkWaiveDues(
+    dueIds: string[],
+    reason?: string
+  ): Observable<{ success: boolean; message: string; data: BulkDueActionResult }> {
+    return this.http.post<{ success: boolean; message: string; data: BulkDueActionResult }>(
+      `${this.baseUrl}/dues/bulk-waive`,
+      { due_ids: dueIds, reason }
+    );
+  }
+
+  bulkRemindDues(dueIds: string[]): Observable<{ success: boolean; message: string; data: BulkDueActionResult }> {
+    return this.http.post<{ success: boolean; message: string; data: BulkDueActionResult }>(
+      `${this.baseUrl}/dues/bulk-remind`,
+      { due_ids: dueIds }
+    );
+  }
+
   getProjects(): Observable<{ success: boolean; data: DonationProject[] }> {
     return this.http.get<{ success: boolean; data: DonationProject[] }>(`${this.baseUrl}/projects`);
   }
@@ -401,6 +455,16 @@ export class DonationsService {
 
   getProjectDashboard(projectId: string): Observable<{ success: boolean; data: ProjectDashboard }> {
     return this.http.get<{ success: boolean; data: ProjectDashboard }>(`${this.baseUrl}/projects/${projectId}/dashboard`);
+  }
+
+  getProjectFamilyProgress(projectId: string, query: ProjectFamilyProgressQuery = {}): Observable<ProjectFamilyProgressResponse> {
+    let params = new HttpParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, String(value));
+      }
+    });
+    return this.http.get<ProjectFamilyProgressResponse>(`${this.baseUrl}/projects/${projectId}/family-progress`, { params });
   }
 
   createProject(payload: Record<string, unknown>): Observable<{ success: boolean; message: string; data: DonationProject }> {
@@ -418,8 +482,11 @@ export class DonationsService {
     );
   }
 
-  generateProjectInstallments(projectId: string, payload: Record<string, unknown> = {}): Observable<{ success: boolean; message: string; data: ProjectInstallmentDue[] }> {
-    return this.http.post<{ success: boolean; message: string; data: ProjectInstallmentDue[] }>(
+  generateProjectInstallments(
+    projectId: string,
+    payload: { mode?: 'generate' | 'regenerate'; confirm?: boolean; reason?: string; family_ids?: string[] } = {}
+  ): Observable<{ success: boolean; message: string; data: ProjectInstallmentGenerationResult | ProjectInstallmentDue[] }> {
+    return this.http.post<{ success: boolean; message: string; data: ProjectInstallmentGenerationResult | ProjectInstallmentDue[] }>(
       `${this.baseUrl}/projects/${projectId}/generate-installments`,
       payload
     );
