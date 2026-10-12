@@ -22,6 +22,7 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { BccSubNavComponent } from '../bcc-sub-nav/bcc-sub-nav.component';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
+import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 
 @Component({
   selector: 'app-bcc-list',
@@ -42,6 +43,7 @@ import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-re
     LoadingSkeletonComponent,
     BccSubNavComponent,
     DisableWhenReadOnlyDirective,
+    CfActionIconComponent,
   ],
   templateUrl: './bcc-list.html',
   styleUrls: ['./bcc-list.scss'],

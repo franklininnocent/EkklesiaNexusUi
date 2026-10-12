@@ -151,6 +151,30 @@ export function buildAppSidebarSections(): SidebarNavSection[] {
   ];
 }
 
+/** Starter plan: sacraments module home is the register list, not the analytics dashboard. */
+export function adjustSidebarForStarterPlan(
+  sections: SidebarNavSection[],
+  isStarter: boolean,
+): SidebarNavSection[] {
+  if (!isStarter) {
+    return sections;
+  }
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => {
+      if (item.id !== 'sacraments' || !item.children?.length) {
+        return item;
+      }
+      return {
+        ...item,
+        route: '/sacraments/register',
+        activePath: '/sacraments',
+        children: item.children.filter((child) => child.id !== 'sacraments-dashboard'),
+      };
+    }),
+  }));
+}
+
 export function filterSidebarSections(
   sections: SidebarNavSection[],
   isVisible: (menuId: string) => boolean,

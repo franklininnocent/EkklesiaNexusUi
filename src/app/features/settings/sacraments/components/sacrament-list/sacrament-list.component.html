@@ -3,7 +3,7 @@
     title="Parish Sacrament Register"
     subtitle="Baptisms, marriages, confirmations, and other sacramental records for this parish."
   >
-    <a routerLink="/sacraments" class="cf-btn">Dashboard</a>
+    <a *ngIf="showSacramentsDashboard" routerLink="/sacraments" class="cf-btn">Dashboard</a>
     <app-list-toolbar
       searchPlaceholder="Search by recipient, type, minister, or certificate…"
       [searchValue]="searchTerm"
@@ -156,7 +156,13 @@
                   [tone]="statusTone(sacrament.status)"
                 ></app-status-badge>
               </td>
-              <td>{{ sacrament.certificate_number || 'None' }}</td>
+              <td>
+                {{
+                  supportsSacramentCertificate(sacrament)
+                    ? (sacrament.certificate_number || 'None')
+                    : '—'
+                }}
+              </td>
               <td>{{ registrySummary(sacrament) }}</td>
               <td class="cf-table__actions-cell" (click)="$event.stopPropagation()">
                 <div class="sacrament-list__row-overflow">
@@ -186,6 +192,7 @@
                       View details
                     </button>
                     <button
+                      *ngIf="supportsSacramentCertificate(sacrament)"
                       type="button"
                       role="menuitem"
                       class="sacrament-list__overflow-item"
@@ -585,6 +592,7 @@
           Void
         </button>
         <button
+          *ngIf="detailSacrament && supportsSacramentCertificate(detailSacrament)"
           type="button"
           class="cf-btn"
           (click)="viewCertificate(detailSacrament!); closeDetailModal()"

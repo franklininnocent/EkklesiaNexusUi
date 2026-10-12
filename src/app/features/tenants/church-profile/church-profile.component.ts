@@ -33,6 +33,11 @@ import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
 import { CfLoadingContainerComponent } from '@shared/components/cf-loading-container/cf-loading-container.component';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
+import { SectionCardComponent } from '@shared/components/section-card/section-card.component';
+import { DataTableComponent, trackByEntityId } from '@shared/components/data-table/data-table.component';
+import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
+import { EditIconButtonComponent } from '@shared/components/edit-icon-button/edit-icon-button.component';
+import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import { ChurchLeaderWorkspaceComponent } from './components/church-leader-workspace/church-leader-workspace.component';
 import { ChurchLeaderDetailComponent } from './components/church-leader-detail/church-leader-detail.component';
 import { ChurchLeadershipGovernanceComponent } from './components/church-leadership-governance/church-leadership-governance.component';
@@ -107,6 +112,11 @@ interface ProfileLeaderCard {
     CfCurrencyPipe,
     CfLoadingContainerComponent,
     CfBrandLoaderComponent,
+    SectionCardComponent,
+    DataTableComponent,
+    CfEmptyStateComponent,
+    EditIconButtonComponent,
+    CfActionIconComponent,
   ],
   templateUrl: './church-profile.component.html',
   styleUrl: './church-profile.component.scss',
@@ -2388,6 +2398,25 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   // ===============================================================
   // STATISTICS MANAGEMENT
   // ===============================================================
+
+  readonly trackByStatisticId = trackByEntityId<ChurchStatistic>;
+
+  formatStatisticPeriod(stat: ChurchStatistic): string {
+    if (stat.period?.trim()) {
+      return stat.period.trim();
+    }
+    if (stat.month) {
+      return `${stat.year}/${stat.month}`;
+    }
+    return `${stat.year} (Annual)`;
+  }
+
+  formatOptionalCount(value: number | null | undefined): string {
+    if (value === null || value === undefined) {
+      return '—';
+    }
+    return String(value);
+  }
 
   /**
    * Open new statistic modal

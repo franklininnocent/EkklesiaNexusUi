@@ -1,6 +1,7 @@
 import { Routes, Router, ActivatedRouteSnapshot, UrlTree } from '@angular/router';
 import { inject } from '@angular/core';
 import { tenantReadOnlyBlockGuard } from '@core/guards/tenant-read-only.guard';
+import { sacramentsDashboardGuard } from './guards/sacraments-dashboard.guard';
 
 /**
  * Legacy /create and /edit/:id redirect to the registry list, which opens
@@ -22,6 +23,7 @@ function redirectLegacySacramentForm(route: ActivatedRouteSnapshot): UrlTree {
 export const SACRAMENTS_ROUTES: Routes = [
   {
     path: '',
+    canActivate: [sacramentsDashboardGuard],
     loadComponent: () =>
       import('./components/sacraments-dashboard/sacraments-dashboard.component').then(
         (m) => m.SacramentsDashboardComponent
@@ -63,7 +65,7 @@ export const SACRAMENTS_ROUTES: Routes = [
   },
   {
     path: 'view/:id',
-    data: { breadcrumbLabel: 'Record' },
+    data: { breadcrumbLabel: 'Record', pageTitle: 'Sacrament record' },
     loadComponent: () =>
       import('./components/sacrament-detail/sacrament-detail.component').then(
         (m) => m.SacramentDetailComponent

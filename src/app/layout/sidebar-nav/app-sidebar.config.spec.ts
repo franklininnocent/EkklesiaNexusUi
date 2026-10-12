@@ -1,4 +1,4 @@
-import { buildAppSidebarSections, filterSidebarSections } from './app-sidebar.config';
+import { adjustSidebarForStarterPlan, buildAppSidebarSections, filterSidebarSections } from './app-sidebar.config';
 import { STEWARDSHIP_WORKSPACES } from '@features/donations/config/stewardship-workspaces.config';
 import { CHURCH_PROFILE_TAB_LINKS } from '@features/tenants/church-profile/config/church-profile-nav.config';
 
@@ -76,6 +76,15 @@ describe('app-sidebar.config', () => {
 
     expect(families?.route).toBe('/families');
     expect(families?.children?.map((child) => child.id)).toEqual(['families-dashboard', 'families-list']);
+  });
+
+  it('hides sacraments dashboard and points module home to register for Starter', () => {
+    const sections = adjustSidebarForStarterPlan(buildAppSidebarSections(), true);
+    const parish = sections.find((section) => section.id === 'parish');
+    const sacraments = parish?.items.find((item) => item.id === 'sacraments');
+
+    expect(sacraments?.route).toBe('/sacraments/register');
+    expect(sacraments?.children?.map((child) => child.id)).toEqual(['sacraments-register']);
   });
 
   it('filters items by menu visibility', () => {
