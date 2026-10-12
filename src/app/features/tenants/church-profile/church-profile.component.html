@@ -403,90 +403,84 @@
       <!-- STATISTICS TAB -->
       <!-- ====================================================================== -->
       <div *ngIf="activeTab === 'statistics'" class="tab-pane statistics-pane">
-        
-        <div class="section-card">
-          <div class="section-header">
-            <h2>📊 Church Statistics</h2>
-            <div class="header-right">
-              <button 
-                *ngIf="canEdit"
-                class="cf-btn cf-btn-primary" 
-                (click)="openNewStatisticModal()"
-                type="button"
-                title="Add new statistic">
-                <span class="btn-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                  </svg>
-                </span>
-                <span>Add Record</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Statistics Table -->
-          <div *ngIf="statistics.length > 0" class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Period</th>
-                  <th>Membership</th>
-                  <th>Attendance</th>
-                  <th>Baptisms</th>
-                  <th>Marriages</th>
-                  <th>Tithes</th>
-                  <th *ngIf="canEdit">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let stat of statistics">
-                  <td><strong>{{ stat.period || (stat.year + '/' + (stat.month || 'Annual')) }}</strong></td>
-                  <td>{{ stat.membership_count || 'N/A' }}</td>
-                  <td>{{ stat.weekly_attendance || 'N/A' }}</td>
-                  <td>{{ stat.baptisms || 0 }}</td>
-                  <td>{{ stat.marriages || 0 }}</td>
-                  <td>{{ stat.tithes_offerings ? (stat.tithes_offerings | cfCurrency) : 'N/A' }}</td>
-                  <td *ngIf="canEdit">
-                    <div class="action-buttons">
-                      <button class="btn-3d-mini btn-3d-edit" (click)="openEditStatisticModal(stat)" title="Edit">
-                        ✏️
-                      </button>
-                      <button class="btn-3d-mini btn-3d-delete" (click)="deleteStatistic(stat)" title="Delete">
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Empty State -->
-          <div *ngIf="statistics.length === 0" class="empty-state">
-            <span class="empty-icon">📊</span>
-            <h3>No Statistics Recorded</h3>
-            <p>Track membership, attendance, and church metrics over time.</p>
-            <button 
+        <app-section-card title="Church Statistics">
+          <div sectionActions>
+            <button
               *ngIf="canEdit"
-              class="cf-btn cf-btn-primary" 
-              (click)="openNewStatisticModal()"
               type="button"
-              title="Add first statistic">
-              <span class="btn-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="16"></line>
-                  <line x1="8" y1="12" x2="16" y2="12"></line>
-                </svg>
-              </span>
-              <span>Add First Record</span>
+              class="cf-btn cf-btn-primary"
+              (click)="openNewStatisticModal()"
+            >
+              Add Record
             </button>
           </div>
 
-        </div>
+          <app-data-table *ngIf="statistics.length > 0" [clickableRows]="false">
+            <thead>
+              <tr>
+                <th scope="col">Period</th>
+                <th scope="col" class="statistics-pane__num-col">Membership</th>
+                <th scope="col" class="statistics-pane__num-col">Attendance</th>
+                <th scope="col" class="statistics-pane__num-col">Baptisms</th>
+                <th scope="col" class="statistics-pane__num-col">Marriages</th>
+                <th scope="col" class="statistics-pane__num-col">Tithes</th>
+                <th *ngIf="canEdit" scope="col" class="cf-table__actions-col">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let stat of statistics; trackBy: trackByStatisticId">
+                <td class="statistics-pane__period-cell">
+                  <strong>{{ formatStatisticPeriod(stat) }}</strong>
+                </td>
+                <td class="statistics-pane__num-col">{{ formatOptionalCount(stat.membership_count) }}</td>
+                <td class="statistics-pane__num-col">{{ formatOptionalCount(stat.weekly_attendance) }}</td>
+                <td class="statistics-pane__num-col">{{ stat.baptisms ?? 0 }}</td>
+                <td class="statistics-pane__num-col">{{ stat.marriages ?? 0 }}</td>
+                <td class="statistics-pane__num-col">
+                  {{ stat.tithes_offerings != null ? (stat.tithes_offerings | cfCurrency) : '—' }}
+                </td>
+                <td *ngIf="canEdit" class="cf-table__actions-cell">
+                  <div class="cf-row-actions statistics-pane__row-actions">
+                    <app-edit-icon-button
+                      size="sm"
+                      [ariaLabel]="'Edit statistics for ' + formatStatisticPeriod(stat)"
+                      [title]="'Edit statistics for ' + formatStatisticPeriod(stat)"
+                      (clicked)="openEditStatisticModal(stat)"
+                    />
+                    <button
+                      type="button"
+                      class="cf-btn cf-btn-icon cf-btn--sm cf-btn-danger"
+                      (click)="deleteStatistic(stat)"
+                      [attr.aria-label]="'Delete statistics for ' + formatStatisticPeriod(stat)"
+                      [attr.title]="'Delete statistics for ' + formatStatisticPeriod(stat)"
+                    >
+                      <app-cf-action-icon name="trash" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </app-data-table>
 
+          <app-cf-empty-state
+            *ngIf="statistics.length === 0"
+            icon="📊"
+            title="No Statistics Recorded"
+            description="Track membership, attendance, and church metrics over time."
+            [hasActions]="canEdit"
+          >
+            <button
+              *ngIf="canEdit"
+              type="button"
+              class="cf-btn cf-btn-primary"
+              (click)="openNewStatisticModal()"
+            >
+              Add First Record
+            </button>
+          </app-cf-empty-state>
+        </app-section-card>
       </div>
 
       <!-- ====================================================================== -->

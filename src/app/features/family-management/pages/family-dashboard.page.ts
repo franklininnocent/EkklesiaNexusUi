@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject } from 'rxjs';
+import { distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ListToolbarComponent } from '@shared/components/list-toolbar/list-toolbar.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
@@ -43,6 +44,7 @@ import { CfSubscriptionGuardDirective } from '@shared/directives/cf-subscription
   ],
   templateUrl: './family-dashboard.page.html',
   styleUrl: './family-dashboard.page.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FamilyDashboardPageComponent implements OnDestroy {
   private readonly chartPalette = ['#0d9488', '#2563eb', '#ea580c', '#16a34a', '#7c3aed', '#db2777'];
@@ -51,6 +53,7 @@ export class FamilyDashboardPageComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroy$ = new Subject<void>();
+  private bccsLoaded = false;
 
   /** Shared canvas height for the family-size, gender, and household bar charts. */
   readonly distributionChartHeight = 176;
@@ -148,22 +151,35 @@ export class FamilyDashboardPageComponent implements OnDestroy {
 
   constructor() {
     this.initializeSearchFields();
-    this.bccService.getBCCs({ status: 'active', per_page: 200 }).subscribe({
-      next: (res) => {
-        this.bccs.set(res.data ?? []);
-        this.syncBccFieldOptions();
+    this.route.queryParamMap
+      .pipe(
+        map((params) =>
+          [
+            params.get('bcc_id') ?? '',
+            params.get('status') ?? '',
+            params.get('period') ?? '12m',
+            params.get('from') ?? '',
+            params.get('to') ?? '',
+            params.get('refresh') ?? '',
+          ].join('|')
+        ),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((serialized) => {
+        const parts = serialized.split('|');
+        this.bccId = parts[0] ?? '';
+        this.status = parts[1] ?? '';
+        this.period = parts[2] ?? '12m';
+        this.customFrom = parts[3] ?? '';
+        this.customTo = parts[4] ?? '';
+        const refresh = parts[5] === '1';
+        if (this.bccId) {
+          this.ensureBccOptionsLoaded();
+        }
         this.syncSearchFieldValues();
-      },
-    });
-    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      this.bccId = params.get('bcc_id') ?? '';
-      this.status = params.get('status') ?? '';
-      this.period = params.get('period') ?? '12m';
-      this.customFrom = params.get('from') ?? '';
-      this.customTo = params.get('to') ?? '';
-      this.syncSearchFieldValues();
-      this.load(params.get('refresh') === '1');
-    });
+        this.load(refresh);
+      });
   }
 
   ngOnDestroy(): void {
@@ -182,6 +198,7 @@ export class FamilyDashboardPageComponent implements OnDestroy {
       from: this.period === 'custom' ? this.customFrom || undefined : undefined,
       to: this.period === 'custom' ? this.customTo || undefined : undefined,
       refresh,
+      scope: 'ui',
     }).subscribe({
       next: (res) => {
         this.summary.set(res.data ?? null);
@@ -213,9 +230,24 @@ export class FamilyDashboardPageComponent implements OnDestroy {
   }
 
   openAdvancedSearch(): void {
+    this.ensureBccOptionsLoaded();
     this.syncBccFieldOptions();
     this.syncSearchFieldValues();
     this.showAdvancedSearch = true;
+  }
+
+  private ensureBccOptionsLoaded(): void {
+    if (this.bccsLoaded) {
+      return;
+    }
+    this.bccsLoaded = true;
+    this.bccService.getBCCs({ status: 'active', per_page: 200 }).subscribe({
+      next: (res) => {
+        this.bccs.set(res.data ?? []);
+        this.syncBccFieldOptions();
+        this.syncSearchFieldValues();
+      },
+    });
   }
 
   onAdvancedSearch(searchValues: { [key: string]: unknown }): void {

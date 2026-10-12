@@ -7,6 +7,7 @@ import {
   SacramentTypeLike
 } from './sacrament-completion.util';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
+import { sacramentSupportsCertificate } from '@features/settings/sacraments/utils/sacrament-certificate.util';
 
 export function registerStatusLabel(status: string | null | undefined): string {
   switch (status) {
@@ -110,8 +111,10 @@ export function buildRegisterDisplayFields(
     { label: 'Place', value: record.place_administered },
     { label: 'Minister', value: minister || record.minister_name },
     { label: 'Register', value: registerRegistrySummary(record) },
-    { label: 'Certificate', value: record.certificate_number }
   ];
+  if (sacramentSupportsCertificate(record.sacrament_type?.code)) {
+    rows.push({ label: 'Certificate', value: record.certificate_number });
+  }
 
   return rows
     .filter((row) => row.always || row.value?.trim())

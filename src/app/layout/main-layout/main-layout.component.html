@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <div class="topbar-center" *ngIf="hasParishContext((currentUser$ | async))">
+      <div class="topbar-center" *ngIf="hasParishContext((headerUser$ | async))">
         @if (shellGlobalFamilySearch && globalFamilySearchComponent) {
           <ng-container [ngComponentOutlet]="globalFamilySearchComponent" />
         } @else {
@@ -73,10 +73,10 @@
         }
       </div>
       
-      <div class="topbar-right">
-        <app-notification-bell *ngIf="currentUser"></app-notification-bell>
+      <div class="topbar-right" *ngIf="headerUser$ | async as headerUser">
+        <app-notification-bell *ngIf="headerUser"></app-notification-bell>
         <button
-          *ngIf="isVisible('donations', currentUser)"
+          *ngIf="isVisible('donations', headerUser)"
           type="button"
           class="collect-btn"
           [disabled]="isSubscriptionReadOnly()"
@@ -86,7 +86,7 @@
         >
           + Collect
         </button>
-        <div class="user-menu" *ngIf="currentUser$ | async as user">
+        <div class="user-menu" *ngIf="headerUser as user">
           <div class="user-dropdown" [class.open]="isUserMenuOpen && !isUserMenuClosing">
             <button class="user-trigger" (click)="toggleUserMenu($event)">
               <app-user-avatar
