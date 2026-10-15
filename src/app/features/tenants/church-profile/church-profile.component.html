@@ -22,7 +22,7 @@
         [class.active]="activeTab === 'leadership'"
         (click)="setActiveTab('leadership')">
         <span class="tab-icon">👥</span>
-        <span class="tab-label">Leadership</span>
+        <span class="tab-label">Parish Clergy</span>
         <span class="tab-badge" *ngIf="leadershipTabBadgeCount > 0">{{ leadershipTabBadgeCount }}</span>
       </button>
       <button 
@@ -394,7 +394,7 @@
           </div>
         } @placeholder {
           <div class="tab-pane leadership-pane" aria-busy="true">
-            <app-cf-brand-loader size="section" label="Loading leadership" />
+            <app-cf-brand-loader size="section" label="Loading parish clergy" />
           </div>
         }
       }

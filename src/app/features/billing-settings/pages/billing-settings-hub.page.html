@@ -1,0 +1,121 @@
+<div class="billing-settings-hub cf-page">
+  <app-page-header
+    title="Billing &amp; Payment Controls"
+    subtitle="Configure SaaS checkout, gateways, pricing, and payment operations"
+    backLink="/settings"
+    backLabel="Settings" />
+
+  <p class="billing-settings-hub__lead">
+    Parish subscription access and plan entitlements are managed under
+    <a routerLink="/settings/subscription">Subscription</a>. This section is for platform billing operations only.
+  </p>
+
+  <section class="billing-settings-hub__section" aria-labelledby="billing-hub-workspaces">
+    <h2 id="billing-hub-workspaces" class="billing-settings-hub__section-title">Workspaces</h2>
+    <div class="billing-settings-hub__grid">
+      <a
+        *ngFor="let section of sections; let i = index"
+        class="billing-settings-hub__card"
+        [style.animation-delay.ms]="i * 40"
+        [routerLink]="section.route"
+        [attr.aria-label]="'Open ' + section.title">
+        <span class="billing-settings-hub__card-body">
+          <span class="billing-settings-hub__icon" aria-hidden="true">
+            <svg *ngIf="section.icon === 'sliders'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="21" x2="4" y2="14"></line>
+              <line x1="4" y1="10" x2="4" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="3"></line>
+              <line x1="20" y1="21" x2="20" y2="16"></line>
+              <line x1="20" y1="12" x2="20" y2="3"></line>
+              <line x1="1" y1="14" x2="7" y2="14"></line>
+              <line x1="9" y1="8" x2="15" y2="8"></line>
+              <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
+            <svg *ngIf="section.icon === 'tag'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+              <line x1="7" y1="7" x2="7.01" y2="7"></line>
+            </svg>
+            <svg *ngIf="section.icon === 'scale'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v18"></path>
+              <path d="M5 7h14"></path>
+              <path d="M5 7l-3 6a4 4 0 0 0 8 0L7 7"></path>
+              <path d="M19 7l-3 6a4 4 0 0 0 8 0l-5-6"></path>
+            </svg>
+            <svg *ngIf="section.icon === 'file'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <svg *ngIf="section.icon === 'list'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <svg *ngIf="section.icon === 'inbox'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+              <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+            </svg>
+            <svg *ngIf="section.icon === 'search'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <svg *ngIf="section.icon === 'clipboard'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+          </span>
+          <span class="billing-settings-hub__copy">
+            <span class="billing-settings-hub__card-title">{{ section.title }}</span>
+            <span class="billing-settings-hub__card-desc">{{ section.description }}</span>
+          </span>
+          <span class="billing-settings-hub__chevron" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <section class="billing-settings-hub__section" aria-labelledby="billing-hub-related">
+    <h2 id="billing-hub-related" class="billing-settings-hub__section-title">Related</h2>
+    <div class="billing-settings-hub__grid billing-settings-hub__grid--related">
+      <a
+        *ngFor="let link of relatedLinks"
+        class="billing-settings-hub__card"
+        [routerLink]="link.route"
+        [attr.aria-label]="'Open ' + link.title">
+        <span class="billing-settings-hub__card-body">
+          <span class="billing-settings-hub__icon" aria-hidden="true">
+            <svg *ngIf="link.icon === 'calendar'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <svg *ngIf="link.icon === 'globe'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+          </span>
+          <span class="billing-settings-hub__copy">
+            <span class="billing-settings-hub__card-title">{{ link.title }}</span>
+            <span class="billing-settings-hub__card-desc">{{ link.description }}</span>
+          </span>
+          <span class="billing-settings-hub__chevron" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </a>
+    </div>
+  </section>
+</div>

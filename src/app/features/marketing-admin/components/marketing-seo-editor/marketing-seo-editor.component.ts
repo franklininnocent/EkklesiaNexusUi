@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   MARKETING_CANONICAL_ORIGINS,
+  MARKETING_SEO_DESCRIPTION_MAX,
   MARKETING_SEO_PAGE_IDS,
   MARKETING_SEO_PAGE_META,
   MarketingSeoPageId,
 } from '../../constants/marketing-seo.constants';
 import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { TabStripComponent, TabStripItem } from '@shared/components/tab-strip/tab-strip.component';
-import { MarketingSeoForm } from '../../models/marketing-seo.models';
+import { duplicateSeoTitleWarnings, MarketingSeoForm } from '../../models/marketing-seo.models';
 
 @Component({
   selector: 'app-marketing-seo-editor',
@@ -23,6 +24,7 @@ export class MarketingSeoEditorComponent {
   readonly origins = MARKETING_CANONICAL_ORIGINS;
   readonly pageIds = MARKETING_SEO_PAGE_IDS;
   readonly pageMeta = MARKETING_SEO_PAGE_META;
+  readonly seoDescriptionMax = MARKETING_SEO_DESCRIPTION_MAX;
 
   @Input({ required: true }) model!: MarketingSeoForm;
   /** ISO timestamp from published payload `seo.publishedAt` when live. */
@@ -65,9 +67,11 @@ export class MarketingSeoEditorComponent {
 
   descriptionLengthHint(length: number): string {
     if (length === 0) return 'Required';
-    if (length < 50) return 'Short — aim for 50–160 characters';
-    if (length > 160) return 'Long — aim for 50–160 characters';
-    return 'Good length for search snippets';
+    if (length < 50) return `Short — ${length} of ${this.seoDescriptionMax} characters`;
+    if (length > 160) {
+      return `${length} of ${this.seoDescriptionMax} characters (search snippets usually show about 160)`;
+    }
+    return `${length} of ${this.seoDescriptionMax} characters`;
   }
 
   socialPreviewTitle(pageId: MarketingSeoPageId): string {
@@ -89,5 +93,9 @@ export class MarketingSeoEditorComponent {
       urls.push(page.path === '/' ? `${origin}/` : `${origin}${page.path}`);
     }
     return urls;
+  }
+
+  duplicateTitleWarnings(): string[] {
+    return duplicateSeoTitleWarnings(this.model);
   }
 }

@@ -181,3 +181,32 @@
   background: #eef2ff;
   font-weight: 700;
 }
+
+.lrc-add-role {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.lrc-add-role__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.lrc-add-role__req {
+  color: var(--cf-danger, #dc2626);
+}
+
+.lrc-add-role__input {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--cf-border, #cbd5e1);
+  border-radius: var(--cf-radius-sm, 8px);
+  font-size: 0.875rem;
+}
+
+.lrc-add-role__error {
+  margin: 0;
+  color: var(--cf-danger, #dc2626);
+  font-size: 0.82rem;
+}

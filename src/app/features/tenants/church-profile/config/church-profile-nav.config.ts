@@ -31,7 +31,7 @@ export const CHURCH_PROFILE_TAB_LINKS: ChurchProfileNavLink[] = [
   },
   {
     id: 'leadership',
-    label: 'Leadership',
+    label: 'Parish Clergy',
     path: CHURCH_PROFILE_BASE_ROUTE,
     query: { tab: 'leadership' },
   },

@@ -35,6 +35,12 @@
   <ng-container *ngIf="panel === 'pages'">
     <section class="marketing-seo__section">
       <h3 class="marketing-seo__heading">Page SEO</h3>
+      <p
+        *ngFor="let warning of duplicateTitleWarnings()"
+        class="marketing-admin-callout marketing-admin-callout--warn"
+        role="status">
+        {{ warning }}
+      </p>
       <label class="marketing-admin-field">
         <span>Page</span>
         <select [(ngModel)]="activePageId">
@@ -53,7 +59,7 @@
         </label>
         <label class="marketing-admin-field">
           <span>Meta description</span>
-          <textarea rows="3" [(ngModel)]="page.seoDescription" (ngModelChange)="onPageFieldChange()" maxlength="180"></textarea>
+          <textarea rows="3" [(ngModel)]="page.seoDescription" (ngModelChange)="onPageFieldChange()" [maxlength]="seoDescriptionMax"></textarea>
           <p class="marketing-admin-field__hint">{{ descriptionLengthHint(page.seoDescription.length) }}</p>
         </label>
         <label class="marketing-admin-field">

@@ -3094,7 +3094,19 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   }
 
   get leadershipTabBadgeCount(): number {
-    return this.governanceCurrent?.active_count ?? this.leaders.length;
+    const groups = this.governanceCurrent?.groups ?? [];
+    if (groups.length > 0) {
+      return groups
+        .filter((group) => group.category === 'PARISH_CLERGY')
+        .reduce((sum, group) => sum + group.assignments.length, 0);
+    }
+
+    const assignments = this.governanceCurrent?.assignments ?? [];
+    if (assignments.length > 0) {
+      return assignments.filter((assignment) => assignment.role?.category === 'PARISH_CLERGY').length;
+    }
+
+    return this.leaders.length;
   }
 
   onGovernanceCurrentChanged(current: CurrentLeadershipResponse | null): void {

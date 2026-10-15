@@ -98,6 +98,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
       requiresSuperAdmin: true
     },
     {
+      title: 'Billing & Payment Controls',
+      description: 'SaaS checkout, gateways, promotions, pricing, and payment operations',
+      icon: 'credit-card',
+      route: '/settings/billing',
+      requiresStrictSuperAdmin: true,
+    },
+    {
       title: 'Web Management',
       description: 'Publish public EkklesiaNexusWeb content and SEO settings',
       icon: 'globe',

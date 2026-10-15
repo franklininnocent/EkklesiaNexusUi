@@ -1,0 +1,184 @@
+<section class="cf-page billing-workspace">
+  <app-page-header
+    title="Promotions & discounts"
+    subtitle="Reusable commercial offers for SaaS checkout"
+    backLink="/settings/billing"
+    backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    @if (error()) {
+      <p class="cf-inline-alert cf-panel" role="alert">{{ error() }}</p>
+    }
+
+    <section class="cf-panel billing-workspace__toolbar" aria-label="Promotion filters">
+      <label>
+        Search
+        <input type="search" [(ngModel)]="search" (ngModelChange)="applyFilter()" placeholder="Code or name" />
+      </label>
+      <label>
+        Status
+        <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilter()">
+          <option value="">All</option>
+          <option value="draft">Draft</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="expired">Expired</option>
+        </select>
+      </label>
+      <div class="billing-workspace__toolbar-actions">
+        <button type="button" class="cf-btn" (click)="reload()" [disabled]="loading()">Refresh</button>
+        <button type="button" class="cf-btn cf-btn-primary" (click)="openCreate()">New promotion</button>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading promotions…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="filteredRows.length">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Discount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of filteredRows">
+                <td><code>{{ row.code }}</code></td>
+                <td>{{ row.name }}</td>
+                <td><span class="cf-badge">{{ row.status }}</span></td>
+                <td>{{ row.discount_type }} {{ row.discount_value || '' }}</td>
+                <td>
+                  <div class="billing-workspace__row-actions">
+                    <button type="button" class="cf-btn cf-btn-sm" *ngIf="row.status === 'draft'" (click)="openEdit(row)">Edit</button>
+                    <button
+                      type="button"
+                      class="cf-btn cf-btn-sm cf-btn-primary"
+                      *ngIf="row.status === 'draft'"
+                      (click)="openActivate(row)">
+                      Activate
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!filteredRows.length" class="cf-muted">No promotions match your filters.</p>
+      </section>
+    }
+  </div>
+</section>
+
+<app-modal-shell
+  *ngIf="createOpen"
+  title="New promotion"
+  description="Creates a draft offer. Activate when ready for checkout."
+  size="lg"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeCreate()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-promo-create" (ngSubmit)="create()">
+    <label class="full-width">
+      Name <span class="cf-required">*</span>
+      <input type="text" [(ngModel)]="name" name="name" maxlength="160" required />
+    </label>
+    <label>
+      Code (optional)
+      <input type="text" [(ngModel)]="code" name="code" maxlength="64" autocomplete="off" />
+    </label>
+    <label>
+      Discount type
+      <select [(ngModel)]="discountType" name="discountType">
+        <option value="percent">Percent off</option>
+        <option value="fixed_amount">Fixed amount off</option>
+        <option value="fixed_price">Fixed price</option>
+      </select>
+    </label>
+    <label>
+      Value
+      <input type="text" [(ngModel)]="discountValue" name="discountValue" inputmode="decimal" />
+    </label>
+    <label>
+      Eligible plan
+      <input type="text" [(ngModel)]="planCode" name="planCode" placeholder="STARTER" />
+    </label>
+    <label>
+      Billing interval
+      <select [(ngModel)]="billingInterval" name="billingInterval">
+        <option value="MONTHLY">Monthly</option>
+        <option value="ANNUAL">Annual</option>
+        <option value="">Any</option>
+      </select>
+    </label>
+    <label class="full-width">
+      Internal reason <span class="cf-required">*</span>
+      <textarea rows="2" [(ngModel)]="reason" name="reason" maxlength="500" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeCreate()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-promo-create" class="cf-btn cf-btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Create draft' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="editRow"
+  title="Edit promotion"
+  size="lg"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeEdit()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-promo-edit" (ngSubmit)="saveEdit()">
+    <label class="full-width">
+      Name
+      <input type="text" [(ngModel)]="name" name="editName" maxlength="160" required />
+    </label>
+    <label>
+      Discount type
+      <select [(ngModel)]="discountType" name="editDiscountType">
+        <option value="percent">Percent off</option>
+        <option value="fixed_amount">Fixed amount off</option>
+        <option value="fixed_price">Fixed price</option>
+      </select>
+    </label>
+    <label>
+      Value
+      <input type="text" [(ngModel)]="discountValue" name="editDiscountValue" />
+    </label>
+    <label class="full-width">
+      Internal note
+      <textarea rows="2" [(ngModel)]="reason" name="editNote" maxlength="500"></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeEdit()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-promo-edit" class="cf-btn cf-btn-primary" [disabled]="saving()">Save</button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="activateRow"
+  title="Activate promotion"
+  [description]="'Activate ' + activateRow.name + ' (' + activateRow.code + ')?'"
+  size="sm"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeActivate()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-promo-activate" (ngSubmit)="confirmActivate()">
+    <label class="full-width">
+      Reason <span class="cf-required">*</span>
+      <textarea rows="3" [(ngModel)]="activateReason" name="activateReason" maxlength="500" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeActivate()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-promo-activate" class="cf-btn cf-btn-primary" [disabled]="saving()">
+      Activate
+    </button>
+  </ng-container>
+</app-modal-shell>

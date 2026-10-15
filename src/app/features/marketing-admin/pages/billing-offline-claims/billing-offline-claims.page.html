@@ -1,0 +1,120 @@
+<section class="cf-page billing-workspace">
+  <app-page-header
+    title="Offline payment verification"
+    subtitle="Review and approve tenant payment claims"
+    backLink="/settings/billing"
+    backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    @if (error()) {
+      <p class="cf-inline-alert cf-panel" role="alert">{{ error() }}</p>
+    }
+
+    <section class="cf-panel billing-workspace__toolbar">
+      <label>
+        Status
+        <select [(ngModel)]="statusFilter" (ngModelChange)="reload()">
+          <option value="pending_verification">Pending verification</option>
+          <option value="information_required">Information required</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </label>
+      <div class="billing-workspace__toolbar-actions">
+        <button type="button" class="cf-btn" (click)="reload()" [disabled]="loading()">Refresh</button>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading claims…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="rows.length">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>Amount</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ row['tenant_name'] || row['tenant_id'] }}</td>
+                <td>{{ row['claimed_amount'] }} {{ row['currency_code'] }}</td>
+                <td>{{ row['reference_number'] || '—' }}</td>
+                <td><span class="cf-badge">{{ row['status'] }}</span></td>
+                <td>
+                  <div class="billing-workspace__row-actions">
+                    <button type="button" class="cf-btn cf-btn-sm" (click)="openReview(row)">Review</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!rows.length" class="cf-muted">No claims in this status.</p>
+      </section>
+    }
+  </div>
+</section>
+
+<app-modal-shell
+  *ngIf="reviewRow"
+  title="Offline payment claim"
+  size="lg"
+  [isSubmitting]="actionBusy()"
+  (closeRequested)="closeReview()">
+  <dl class="billing-workspace__detail-dl">
+    <dt>Tenant</dt>
+    <dd>{{ reviewRow['tenant_name'] || reviewRow['tenant_id'] }}</dd>
+    <dt>Amount</dt>
+    <dd>{{ reviewRow['claimed_amount'] }} {{ reviewRow['currency_code'] }}</dd>
+    <dt>Reference</dt>
+    <dd>{{ reviewRow['reference_number'] || '—' }}</dd>
+    <dt>Status</dt>
+    <dd>{{ reviewRow['status'] }}</dd>
+  </dl>
+  @if (evidenceUrl) {
+    <p class="billing-workspace__section-title">Payment proof</p>
+    <img class="billing-workspace__evidence" [src]="evidenceUrl" alt="Payment proof" />
+  } @else {
+    <button type="button" class="cf-btn cf-btn-sm" (click)="loadEvidence()">Load proof</button>
+  }
+
+  @if (rejectMode) {
+    <form class="cf-form-grid billing-workspace__modal-form" id="billing-claim-reject" (ngSubmit)="confirmReject()">
+      <label class="full-width">
+        Rejection reason <span class="cf-required">*</span>
+        <textarea rows="3" [(ngModel)]="rejectReason" name="rejectReason" maxlength="500" required></textarea>
+      </label>
+    </form>
+  } @else if (approveMode) {
+    <form class="cf-form-grid billing-workspace__modal-form" id="billing-claim-approve" (ngSubmit)="confirmApprove()">
+      <label class="full-width">
+        Second approver user ID (if required)
+        <input type="number" [(ngModel)]="secondApproverId" name="secondApproverId" />
+      </label>
+      <p class="cf-muted full-width">Approval records a receipt and may fulfill the linked order when the invoice is fully paid.</p>
+    </form>
+  }
+
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeReview()" [disabled]="actionBusy()">Close</button>
+    @if (!rejectMode && !approveMode && canActOn(reviewRow)) {
+      <button type="button" class="cf-btn" (click)="startReject()" [disabled]="actionBusy()">Reject</button>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="startApprove()" [disabled]="actionBusy()">Approve</button>
+    }
+    @if (rejectMode) {
+      <button type="button" class="cf-btn" (click)="cancelReject()" [disabled]="actionBusy()">Back</button>
+      <button type="submit" form="billing-claim-reject" class="cf-btn cf-btn-primary" [disabled]="actionBusy()">Confirm reject</button>
+    }
+    @if (approveMode) {
+      <button type="button" class="cf-btn" (click)="cancelApprove()" [disabled]="actionBusy()">Back</button>
+      <button type="submit" form="billing-claim-approve" class="cf-btn cf-btn-primary" [disabled]="actionBusy()">Confirm approve</button>
+    }
+  </ng-container>
+</app-modal-shell>

@@ -1,0 +1,200 @@
+/* Shared layout for Super Admin billing workspace (/settings/billing/*) */
+
+.billing-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.billing-workspace__nav {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.billing-workspace__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.billing-workspace__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.billing-workspace__stat {
+  margin: 0;
+}
+
+.billing-workspace__stat-label {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--cf-text-muted, #64748b);
+  margin-bottom: 0.25rem;
+}
+
+.billing-workspace__stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.billing-workspace__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.billing-workspace__toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .billing-workspace__toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .billing-workspace__toolbar-actions .cf-btn {
+    flex: 1 1 auto;
+  }
+}
+
+.billing-workspace__toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 10rem;
+}
+
+.billing-workspace__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.billing-workspace__table-wrap .cf-table {
+  width: 100%;
+  min-width: 36rem;
+}
+
+.billing-workspace__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.billing-workspace__modal-form.cf-form-grid {
+  margin: 0;
+}
+
+.billing-workspace__section-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.billing-workspace__section-lead {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--cf-text-muted, #64748b);
+}
+
+.billing-workspace__settings-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 960px) {
+  .billing-workspace__settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.billing-workspace__settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.billing-workspace__settings-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  font-size: 0.875rem;
+}
+
+.billing-workspace__settings-card dt {
+  color: var(--cf-text-muted, #64748b);
+}
+
+.billing-workspace__settings-card dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.billing-workspace__click-row {
+  cursor: pointer;
+}
+
+.billing-workspace__click-row:focus-visible {
+  outline: 2px solid var(--cf-primary, #2563eb);
+  outline-offset: -2px;
+}
+
+.billing-workspace__evidence {
+  max-width: 100%;
+  max-height: 16rem;
+  object-fit: contain;
+  border-radius: var(--cf-radius-md, 0.375rem);
+  border: 1px solid var(--cf-border, #e2e8f0);
+}
+
+.billing-workspace__detail-dl {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+
+.billing-workspace__detail-dl dt {
+  color: var(--cf-text-muted, #64748b);
+}
+
+.billing-workspace__detail-dl dd {
+  margin: 0;
+}
+
+.cf-list-compact {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.cf-list-compact li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}

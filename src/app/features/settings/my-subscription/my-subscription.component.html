@@ -227,6 +227,8 @@
       <button type="button" class="cf-btn cf-btn-primary" (click)="load()">Try again</button>
     </div>
 
+    <app-billing-history></app-billing-history>
+
     <!-- Priority 6: Compare plans and ask for a change -->
     <section class="my-sub-panel" aria-labelledby="my-sub-compare-title" *ngIf="plans.length" id="compare-plans">
       <header class="my-sub-panel__header">
@@ -295,10 +297,63 @@
         <fieldset *ngIf="plan.pricing_type !== 'CUSTOM' && plan.billing_intervals.length > 1" class="my-sub-request-form__intervals">
           <legend>How would you like to pay?</legend>
           <label *ngFor="let interval of plan.billing_intervals">
-            <input type="radio" name="interval" [value]="interval" [(ngModel)]="requestInterval" />
+            <input
+              type="radio"
+              name="interval"
+              [value]="interval"
+              [(ngModel)]="requestInterval"
+              (ngModelChange)="onRequestIntervalChange()" />
             {{ intervalOptionLabel(interval) }}
           </label>
         </fieldset>
+
+        <section
+          class="my-sub-checkout cf-panel"
+          *ngIf="billingSelfServeEnabled && plan.pricing_type !== 'CUSTOM'"
+          aria-label="Checkout">
+          <div class="cf-inline-alert" *ngIf="checkoutQuoteLoading" role="status">Loading price from server…</div>
+          <div class="cf-inline-alert my-sub-preview--error" *ngIf="checkoutQuoteError" role="alert">{{ checkoutQuoteError }}</div>
+          <dl class="my-sub-checkout__quote" *ngIf="checkoutQuote as q">
+            <div>
+              <dt>Amount payable</dt>
+              <dd>{{ q.gross | cfCurrency: q.currency_code }}</dd>
+            </div>
+            <div *ngIf="q.discount?.list_price">
+              <dt>Published price</dt>
+              <dd>{{ q.discount!.list_price | cfCurrency: q.currency_code }}</dd>
+            </div>
+            <div *ngIf="q.discount?.amount_off">
+              <dt>Your discount</dt>
+              <dd>− {{ q.discount!.amount_off | cfCurrency: q.currency_code }}</dd>
+            </div>
+            <div>
+              <dt>Tax</dt>
+              <dd>{{ q.tax | cfCurrency: q.currency_code }} ({{ q.tax_label || 'Tax' }})</dd>
+            </div>
+          </dl>
+          <p class="my-sub-muted" *ngIf="checkoutQuote">
+            Totals are calculated on the server. Payment is not complete until verified.
+          </p>
+          <p class="my-sub-request-form__error" *ngIf="checkoutError" role="alert">{{ checkoutError }}</p>
+          <div class="my-sub-request-form__actions" *ngIf="checkoutQuote">
+            <button
+              type="button"
+              class="cf-btn cf-btn-primary"
+              *ngIf="billingAvailability?.can_checkout_online"
+              [disabled]="checkoutBusy || !canPayOnline"
+              (click)="payOnline()">
+              {{ checkoutBusy ? 'Please wait…' : 'Pay online' }}
+            </button>
+            <button
+              type="button"
+              class="cf-btn cf-btn-secondary"
+              *ngIf="billingAvailability?.can_submit_offline_claim && !offlineInvoiceId"
+              [disabled]="checkoutBusy || !checkoutQuote"
+              (click)="prepareOfflinePayment()">
+              Pay offline
+            </button>
+          </div>
+        </section>
         <label class="my-sub-request-form__message">
           Message for EkklesiaNexus (optional)
           <textarea
@@ -308,7 +363,12 @@
             [(ngModel)]="requestMessage"
             placeholder="For example: we are growing and need contribution plans"></textarea>
         </label>
-        <p class="my-sub-muted">No payment is taken here. EkklesiaNexus will review your request and contact you.</p>
+        <p class="my-sub-muted" *ngIf="!billingSelfServeEnabled">
+          No payment is taken here. EkklesiaNexus will review your request and contact you.
+        </p>
+        <p class="my-sub-muted" *ngIf="billingSelfServeEnabled">
+          You can pay online or offline when enabled, or send a request for EkklesiaNexus to review.
+        </p>
         <p class="my-sub-request-form__error" *ngIf="requestError" role="alert">{{ requestError }}</p>
         <div class="my-sub-request-form__actions">
           <button type="submit" class="cf-btn cf-btn-primary" [disabled]="submitting">
@@ -321,9 +381,12 @@
 
     <!-- Secondary: honest scope note (no payment UX) -->
     <aside class="my-sub-footnote" aria-label="About subscription management">
-      <p>
+      <p *ngIf="!billingSelfServeEnabled">
         This page shows your church's subscription and access status.
         Plan changes and renewals are managed by EkklesiaNexus administrators — payment and billing are not handled here.
+      </p>
+      <p *ngIf="billingSelfServeEnabled">
+        This page shows your church's subscription, access status, and self-service billing when your administrator has enabled payments.
       </p>
       <p *ngIf="s.grace_period_days != null">
         Grace period is currently {{ s.grace_period_days }} day<span *ngIf="s.grace_period_days !== 1">s</span> after the end date.
@@ -331,6 +394,35 @@
     </aside>
   </ng-container>
 </div>
+
+<app-modal-shell
+  *ngIf="offlineInvoiceId"
+  title="Offline payment"
+  description="Transfer the exact amount from your quote. Submitting a claim does not verify payment until your church administrator approves it."
+  size="lg"
+  [isSubmitting]="offlineClaimBusy"
+  (closeRequested)="closeOfflineClaimModal()">
+  <div *ngFor="let m of offlineMethods" class="my-sub-offline__method">
+    <strong>{{ m.label }}</strong>
+    <pre class="my-sub-offline__instructions">{{ offlineInstructionText(m) }}</pre>
+  </div>
+  <form class="cf-form-grid" id="my-sub-offline-claim" (ngSubmit)="submitOfflineClaim()">
+    <label class="full-width">
+      Bank / UPI reference (optional)
+      <input type="text" maxlength="120" [(ngModel)]="offlineReference" name="offlineReference" />
+    </label>
+    <label class="full-width">
+      Payment proof (optional photo)
+      <input type="file" accept="image/*" (change)="offlineEvidenceFile = $any($event.target).files?.[0] ?? null" />
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeOfflineClaimModal()" [disabled]="offlineClaimBusy">Cancel</button>
+    <button type="submit" form="my-sub-offline-claim" class="cf-btn cf-btn-primary" [disabled]="offlineClaimBusy">
+      {{ offlineClaimBusy ? 'Submitting…' : 'Submit payment claim' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
 
 <app-modal-shell
   *ngIf="featuresPlan"

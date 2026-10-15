@@ -9,6 +9,7 @@ import {
   PublishMarketingResult,
   PublishedMarketingContent,
 } from '../models/marketing-admin.models';
+import { MARKETING_CONTENT_BOOTSTRAP } from '../constants/marketing-content.bootstrap';
 
 @Injectable({ providedIn: 'root' })
 export class MarketingAdminService {
@@ -24,7 +25,15 @@ export class MarketingAdminService {
   getPublished(): Observable<PublishedMarketingContent | null> {
     return this.http.get<ApiEnvelope<PublishedMarketingContent>>(`${this.base}/content/published`).pipe(
       map((body) => (body.success && body.data ? body.data : null)),
+      catchError((err: { status?: number }) =>
+        err.status === 404 ? of(null) : throwError(() => err),
+      ),
     );
+  }
+
+  /** Default CMS payload shipped with the admin UI (matches EkklesiaNexusWeb export). */
+  getBootstrapPayload(): Observable<Record<string, unknown>> {
+    return of(JSON.parse(JSON.stringify(MARKETING_CONTENT_BOOTSTRAP)) as Record<string, unknown>);
   }
 
   getLatestDraft(): Observable<MarketingContentDraft | null> {

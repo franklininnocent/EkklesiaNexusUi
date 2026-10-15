@@ -41,6 +41,7 @@ import {
 import { EditIconButtonComponent } from '@shared/components/edit-icon-button/edit-icon-button.component';
 import { ImageViewerComponent } from '@shared/components/image-viewer/image-viewer.component';
 import { LeadershipRoleComboboxComponent } from '../leadership-role-combobox/leadership-role-combobox.component';
+import { LeadershipAddRoleModalComponent } from '../leadership-add-role-modal/leadership-add-role-modal.component';
 import { ParishPerson, ParishPersonService } from '@features/settings/sacraments/services/person.service';
 import { PhoneInputComponent } from '@shared/components/phone-input/phone-input.component';
 import { PhoneCodeService } from '@core/services/phone-code.service';
@@ -48,6 +49,7 @@ import { formatPhoneForApi } from '@features/family-management/utils/prepare-fam
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 
 type HistoryView = 'table' | 'timeline';
+type LeadershipContentView = 'current-governance' | 'leadership-history';
 
 @Component({
   selector: 'app-church-leadership-governance',
@@ -67,6 +69,7 @@ type HistoryView = 'table' | 'timeline';
     EditIconButtonComponent,
     ImageViewerComponent,
     LeadershipRoleComboboxComponent,
+    LeadershipAddRoleModalComponent,
     PhoneInputComponent,
   ],
   templateUrl: './church-leadership-governance.component.html',
@@ -93,9 +96,11 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
   loadingCurrent = false;
   currentError: string | null = null;
 
+  contentView: LeadershipContentView = 'current-governance';
   history: LeadershipAssignment[] = [];
   historyLoading = false;
   historyError: string | null = null;
+  historyDataLoaded = false;
   historyView: HistoryView = 'table';
   historyFilters: LeadershipHistoryFilters = { page: 1, per_page: 15 };
   historyPagination = { current_page: 1, last_page: 1, per_page: 15, total: 0 };
@@ -111,6 +116,10 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
   showTerminateModal = false;
   showEditModal = false;
   showManageRolesModal = false;
+  showAddRoleModal = false;
+  addRoleInitialName = '';
+  addRoleDefaultCategory: LeadershipCategory = 'PARISH_CLERGY';
+  addRoleShowCategory = false;
   saving = false;
   savingRoleId: string | null = null;
   roleCategoryDraft: Record<string, LeadershipCategory> = {};
@@ -174,6 +183,9 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
   });
 
   readonly categoryOptions = LEADERSHIP_CATEGORY_OPTIONS;
+  readonly parishClergyCategoryOptions = LEADERSHIP_CATEGORY_OPTIONS.filter(
+    (option) => option.value === 'PARISH_CLERGY' || option.value === 'OTHER',
+  );
 
   readonly exitReasons: LeadershipExitReasonCode[] = [
     'transferred',
@@ -195,7 +207,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
     this.setupPersonSearch();
     this.setupHistoryReload();
     this.loadRoles();
-    this.refreshAll();
+    this.loadCurrent();
   }
 
   get canSubmitAssign(): boolean {
@@ -239,6 +251,14 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
 
   get drawerFilterCount(): number {
     return this.getActiveFilterCount();
+  }
+
+  get parishClergyGroups(): NonNullable<CurrentLeadershipResponse['groups']> {
+    return (this.current?.groups ?? []).filter((group) => group.category === 'PARISH_CLERGY');
+  }
+
+  get parishClergyActiveCount(): number {
+    return this.parishClergyGroups.reduce((count, group) => count + group.assignments.length, 0);
   }
 
   ngOnDestroy(): void {
@@ -291,6 +311,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
           map((response) => ({ response, showLoading })),
           catchError(() => {
             this.historyLoading = false;
+            this.historyDataLoaded = false;
             this.historyError = 'Could not load leadership history.';
             this.cdr.markForCheck();
             return EMPTY;
@@ -312,6 +333,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
       }
 
       this.historyLoading = false;
+      this.historyDataLoaded = true;
       this.cdr.markForCheck();
     });
   }
@@ -472,6 +494,19 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  showLeadershipHistory(): void {
+    this.contentView = 'leadership-history';
+    if (!this.historyDataLoaded && !this.historyLoading) {
+      this.loadHistory();
+    }
+    this.cdr.markForCheck();
+  }
+
+  showCurrentGovernance(): void {
+    this.contentView = 'current-governance';
+    this.cdr.markForCheck();
+  }
+
   openAssignModal(): void {
     if (!this.canEdit) {
       return;
@@ -486,7 +521,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
     this.modalError = null;
     this.assignPhotoFile = null;
     this.assignPhotoPreview = null;
-    this.assignCategory = '';
+    this.assignCategory = 'PARISH_CLERGY';
     this.assignForm.reset({
       person_id: '',
       role_id: '',
@@ -498,7 +533,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
       email: '',
       phone: '',
     });
-    this.assignForm.controls.role_id.disable();
+    this.onAssignCategoryChange();
     this.showAssignModal = true;
     this.cdr.markForCheck();
   }
@@ -1299,6 +1334,50 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
     return this.roles
       .filter((role) => !role.is_global)
       .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  openAddRoleFromCombobox(request: { initialName: string; category: LeadershipCategory }): void {
+    this.addRoleInitialName = request.initialName;
+    this.addRoleDefaultCategory = request.category || 'PARISH_CLERGY';
+    this.addRoleShowCategory = false;
+    this.showAddRoleModal = true;
+    this.cdr.markForCheck();
+  }
+
+  openAddRoleFromManage(): void {
+    if (!this.canCreateCustomRole) {
+      return;
+    }
+    this.addRoleInitialName = '';
+    this.addRoleDefaultCategory = 'PARISH_CLERGY';
+    this.addRoleShowCategory = true;
+    this.showAddRoleModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeAddRoleModal(): void {
+    this.showAddRoleModal = false;
+    this.cdr.markForCheck();
+  }
+
+  onAddRoleCreated(role: LeadershipRoleOption): void {
+    const nextRoles = [...this.roles.filter((existing) => existing.id !== role.id), role];
+    this.onRolesRefreshed(nextRoles);
+
+    if (this.showAssignModal) {
+      this.assignForm.controls.role_id.enable();
+      this.assignForm.controls.role_id.setValue(role.id);
+    }
+    if (this.showEditModal) {
+      this.editForm.controls.role_id.setValue(role.id);
+    }
+    if (this.showManageRolesModal) {
+      this.roleCategoryDraft = {
+        ...this.roleCategoryDraft,
+        [role.id]: role.category,
+      };
+    }
+    this.cdr.markForCheck();
   }
 
   openManageRolesModal(): void {
