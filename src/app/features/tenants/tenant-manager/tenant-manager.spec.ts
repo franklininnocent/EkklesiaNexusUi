@@ -238,9 +238,9 @@ describe('TenantManagerComponent', () => {
     };
     const lifetime = { ...mockTenants[0], trial_ends_at: null, subscription_ends_at: null };
 
-    expect(component.formatPlanExpiry(subscribed)).toBe('Dec 15, 2026');
+    expect(component.formatPlanExpiry(subscribed)).toBe('15 Dec 2026');
     expect(component.getPlanExpiryLabel(subscribed)).toBe('Expires');
-    expect(component.formatPlanExpiry(trialing)).toBe('Jun 1, 2027');
+    expect(component.formatPlanExpiry(trialing)).toBe('1 Jun 2027');
     expect(component.getPlanExpiryLabel(trialing)).toBe('Trial ends');
     expect(component.formatPlanExpiry(lifetime)).toBe('No expiry');
   });

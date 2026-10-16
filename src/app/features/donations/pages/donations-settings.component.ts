@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
@@ -15,6 +15,7 @@ import { refreshStewardshipView, setupStewardshipRouteReload } from '../utils/st
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, LoadingSkeletonComponent, PageHeaderComponent, CfActionIconComponent],
   templateUrl: './donations-settings.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-settings.component.scss'
 })
 export class DonationsSettingsComponent implements OnInit {

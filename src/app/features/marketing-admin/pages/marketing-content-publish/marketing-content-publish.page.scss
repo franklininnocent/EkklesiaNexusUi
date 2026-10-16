@@ -1,4 +1,4 @@
-@import '../../styles/marketing-admin.shared.scss';
+@use '../../styles/marketing-admin.shared';
 
 .marketing-website {
   &__workflow {
@@ -127,6 +127,17 @@
     margin: 0.35rem 0 0;
     color: var(--cf-danger, #b91c1c);
     font-size: var(--cf-text-sm, 0.875rem);
+  }
+
+  &__global-json-error {
+    margin: 0;
+    padding: var(--cf-space-3, 0.75rem) var(--cf-space-4, 1rem);
+    background: color-mix(in srgb, var(--cf-danger, #b91c1c) 8%, transparent);
+    border-radius: var(--cf-radius-md, 0.375rem);
+  }
+
+  &__load-live {
+    margin-top: var(--cf-space-3, 0.75rem);
   }
 
   &__notes-block {

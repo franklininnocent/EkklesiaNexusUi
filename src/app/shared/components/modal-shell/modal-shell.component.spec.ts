@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ModalShellComponent } from './modal-shell.component';
 
 @Component({
   standalone: true,
   imports: [ModalShellComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <app-modal-shell title="Bottom" (closeRequested)="bottomClosed = true">
       <p>Bottom modal</p>

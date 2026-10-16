@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, HostListener, inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -83,6 +83,7 @@ import { CF_OVERLAY_Z, CfOverlayHandle, CfOverlayStackService } from '@core/serv
       </footer>
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .palette-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: var(--cf-z-command-palette); }
     .command-palette {

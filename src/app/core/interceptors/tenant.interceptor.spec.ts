@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { tenantInterceptor } from './tenant.interceptor';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
@@ -20,7 +20,7 @@ describe('tenantInterceptor', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([tenantInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([tenantInterceptor])),
         provideHttpClientTesting(),
         { provide: SupportSessionService, useValue: supportSessions },
       ],

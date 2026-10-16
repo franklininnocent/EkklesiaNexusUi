@@ -1,0 +1,25 @@
+@use '../../../donations/styles/stewardship-split-layout.scss';
+
+.billing-gateway-modal.cf-split-form-body {
+  max-width: none;
+}
+
+.billing-controls {
+  .cf-form-grid {
+    display: grid;
+    gap: 1rem;
+    max-width: 36rem;
+    margin-top: 1rem;
+  }
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+  }
+}

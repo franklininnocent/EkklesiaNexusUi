@@ -5,7 +5,107 @@ import { ToastService } from '@core/services/toast.service';
 import { GeographyService } from '@core/services/geography.service';
 import { ArchdioceseService } from '@core/services/church/archdiocese.service';
 import { PhoneCodeService } from '@core/services/phone-code.service';
+import { CatalogPlan } from '@features/subscriptions/models/subscription-admin.models';
+import { SubscriptionAdminService } from '@features/subscriptions/services/subscription-admin.service';
 import { of, throwError } from 'rxjs';
+
+const catalogPlans = [
+  {
+    id: 1,
+    code: 'STARTER',
+    key: 'starter',
+    name: 'Starter',
+    short_description: 'Parish essentials',
+    pricing_type: 'FIXED',
+    status: 'ACTIVE',
+    is_assignable: true,
+    is_legacy: false,
+    is_default: true,
+    active_version: {
+      id: 11,
+      currency_code: 'INR',
+      monthly_price: '1499.00',
+      limit_summary: [{ code: 'USERS', name: 'Users', unit: null, value: 5, unlimited: false }],
+    },
+  },
+  {
+    id: 2,
+    code: 'STANDARD',
+    key: 'standard',
+    name: 'Standard',
+    short_description: 'Growing parishes',
+    pricing_type: 'FIXED',
+    status: 'ACTIVE',
+    is_assignable: true,
+    is_legacy: false,
+    is_default: false,
+    active_version: { id: 12, currency_code: 'INR', monthly_price: '2999.00', limit_summary: [] },
+  },
+  {
+    id: 3,
+    code: 'OLD',
+    key: 'old',
+    name: 'Old',
+    pricing_type: 'FIXED',
+    status: 'ARCHIVED',
+    is_assignable: true,
+    is_legacy: false,
+    is_default: false,
+    active_version: { id: 13, currency_code: 'INR', monthly_price: '1.00' },
+  },
+  {
+    id: 4,
+    code: 'LEGACY_FREE',
+    key: 'free',
+    name: 'Free (legacy)',
+    pricing_type: 'FREE',
+    status: 'ACTIVE',
+    is_assignable: false,
+    is_legacy: true,
+    is_default: false,
+    active_version: { id: 14, currency_code: 'INR', monthly_price: '0.00' },
+  },
+  {
+    id: 5,
+    code: 'DRAFTY',
+    key: 'drafty',
+    name: 'Drafty',
+    pricing_type: 'FIXED',
+    status: 'ACTIVE',
+    is_assignable: true,
+    is_legacy: false,
+    is_default: false,
+    active_version: null,
+  },
+] as unknown as CatalogPlan[];
+
+function validForm() {
+  return {
+    tenant_name: 'Acme Church',
+    slogan: '',
+    tenant_official_address: {
+      line1: '123 Main',
+      line2: '',
+      country_id: 1,
+      state_id: 10,
+      district: 'Springfield',
+      pin_zip_code: '12345',
+    },
+    primary_user_name: 'John Doe',
+    primary_user_email: 'john@example.com',
+    primary_user_password: 'Strong1!',
+    primary_user_password_confirmation: 'Strong1!',
+    primary_contact_number: '555123456',
+    primary_user_address: {
+      line1: '123 Main',
+      line2: '',
+      country_id: 1,
+      state_id: 10,
+      district: 'Springfield',
+      pin_zip_code: '12345',
+    },
+  };
+}
 
 describe('TenantCreateModalComponent', () => {
   let component: TenantCreateModalComponent;
@@ -14,6 +114,7 @@ describe('TenantCreateModalComponent', () => {
   let toastService: { success: jest.Mock; error: jest.Mock };
   let geographyService: { getCountries: jest.Mock; getStatesByCountry: jest.Mock };
   let archdioceseService: { getArchdioceses: jest.Mock };
+  let subscriptionAdmin: { listPlans: jest.Mock };
 
   beforeEach(async () => {
     tenantService = {
@@ -30,6 +131,9 @@ describe('TenantCreateModalComponent', () => {
         data: [{ id: 5, name: 'Archdiocese of Test', country: 'India', active: 1 }],
       })),
     };
+    subscriptionAdmin = {
+      listPlans: jest.fn().mockReturnValue(of([])),
+    };
     const phoneCodeService = {
       initializeFromApiOnce: jest.fn().mockReturnValue(of({ success: true, countryCode: 'IN', phoneCode: '+91' })),
       updatePhoneCodeByCountryId: jest.fn().mockReturnValue(of({ success: true, phoneCode: '+91', countryName: 'India' })),
@@ -45,7 +149,8 @@ describe('TenantCreateModalComponent', () => {
         { provide: ToastService, useValue: toastService },
         { provide: GeographyService, useValue: geographyService },
         { provide: ArchdioceseService, useValue: archdioceseService },
-        { provide: PhoneCodeService, useValue: phoneCodeService }
+        { provide: PhoneCodeService, useValue: phoneCodeService },
+        { provide: SubscriptionAdminService, useValue: subscriptionAdmin },
       ]
     }).compileComponents();
 
@@ -335,8 +440,96 @@ describe('TenantCreateModalComponent', () => {
     const submitBtn = actions.querySelector('button[type="submit"]');
     const cancelBtn = actions.querySelector('button[type="button"]');
 
-    expect(submitBtn.textContent?.trim()).toBe('Saving…');
+    expect(submitBtn.textContent?.trim()).toMatch(/Saving/);
     expect(submitBtn.disabled).toBe(true);
     expect(cancelBtn.disabled).toBe(true);
+  });
+
+  it('loads assignable plans, filters ineligible rows, and pre-selects the default', () => {
+    subscriptionAdmin.listPlans.mockReturnValue(of(catalogPlans));
+    component.loadPlans();
+    fixture.detectChanges();
+
+    expect(subscriptionAdmin.listPlans).toHaveBeenCalled();
+    expect(component.assignablePlans.map((plan) => plan.key)).toEqual(['starter', 'standard']);
+    expect(component.selectedPlanKey).toBe('starter');
+    expect(fixture.nativeElement.querySelectorAll('input[name="tenantCreatePlan"]').length).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('Default for new churches');
+    expect(fixture.nativeElement.textContent).toContain('Starter');
+  });
+
+  it('submits the selected catalog plan key', () => {
+    subscriptionAdmin.listPlans.mockReturnValue(of(catalogPlans));
+    component.loadPlans();
+    component.formData = validForm() as any;
+    component.choosePlan(catalogPlans[1]);
+    component.onSubmit();
+
+    expect(tenantService.createTenant).toHaveBeenCalledWith(expect.objectContaining({
+      plan: 'standard',
+    }));
+  });
+
+  it('omits plan when the catalog is empty', () => {
+    component.formData = validForm() as any;
+    component.onSubmit();
+
+    const payload = tenantService.createTenant.mock.calls[0][0];
+    expect(payload.plan).toBeUndefined();
+  });
+
+  it('omits plan and shows an error when the catalog fails', () => {
+    subscriptionAdmin.listPlans.mockReturnValue(throwError(() => ({ status: 500, message: 'Internal server error.' })));
+    component.loadPlans();
+    fixture.detectChanges();
+
+    expect(component.plansLoadError).toBe('Unable to load plans.');
+    expect(component.assignablePlans).toEqual([]);
+    expect(fixture.nativeElement.textContent).toContain('Try again');
+
+    component.formData = validForm() as any;
+    component.onSubmit();
+    expect(tenantService.createTenant.mock.calls[0][0].plan).toBeUndefined();
+  });
+
+  it('maps API plan validation onto the plan control', () => {
+    tenantService.createTenant.mockReturnValue(throwError(() => ({
+      message: 'Validation error',
+      errors: { plan: ['Selected plan is not available for new churches'] },
+    })));
+    component.formData = validForm() as any;
+    component.selectedPlanKey = 'standard';
+    component.onSubmit();
+
+    expect(component.getFieldError('plan')).toBe('Selected plan is not available for new churches');
+    expect(component.isFieldInvalid('plan')).toBe(true);
+  });
+
+  it('does not submit twice while the first request is in flight', () => {
+    component.formData = validForm() as any;
+    component.isSubmitting = true;
+    fixture.detectChanges();
+
+    const submitBtn = fixture.nativeElement.querySelector('.cf-split-form-actions button[type="submit"]');
+    expect(submitBtn.disabled).toBe(true);
+
+    component.onSubmit();
+    expect(tenantService.createTenant).not.toHaveBeenCalled();
+  });
+
+  it('clears a previous plan selection on reset', () => {
+    subscriptionAdmin.listPlans.mockReturnValue(of(catalogPlans));
+    component.loadPlans();
+    component.choosePlan(catalogPlans[1]);
+    expect(component.selectedPlanKey).toBe('standard');
+
+    component.resetForm();
+    expect(component.selectedPlanKey).toBe('starter');
+  });
+
+  it('resetForm clears plan load errors', () => {
+    component.plansLoadError = 'Unable to load plans.';
+    component.resetForm();
+    expect(component.plansLoadError).toBe('');
   });
 });

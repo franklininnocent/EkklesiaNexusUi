@@ -1,0 +1,124 @@
+<section class="cf-page billing-workspace">
+  <app-page-header title="Billing transactions" subtitle="Orders, payments, and refunds" backLink="/settings/billing" backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    <section class="cf-panel billing-workspace__toolbar" aria-label="Order search">
+      <label>
+        Reference
+        <input type="search" [(ngModel)]="reference" (keyup.enter)="search()" placeholder="BILL-…" />
+      </label>
+      <div class="billing-workspace__toolbar-actions">
+        <button type="button" class="cf-btn cf-btn-primary" (click)="search()" [disabled]="loading()">Search</button>
+        <button type="button" class="cf-btn" (click)="runReconciliation()">Run reconciliation</button>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading orders…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="rows.length">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Tenant</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ row['internal_reference'] }}</td>
+                <td>{{ row['tenant_id'] }}</td>
+                <td><span class="cf-badge">{{ row['status'] }}</span></td>
+                <td>{{ row['gross_amount'] }} {{ row['currency_code'] }}</td>
+                <td>
+                  <button type="button" class="cf-btn cf-btn-sm cf-btn-primary" (click)="open(row)">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!rows.length" class="cf-muted">No orders found.</p>
+      </section>
+    }
+  </div>
+</section>
+
+<app-modal-shell
+  *ngIf="detail as d"
+  [title]="'Order ' + d.order['internal_reference']"
+  size="xl"
+  (closeRequested)="close()">
+  <p *ngIf="d.tenant" class="cf-muted">Tenant: <strong>{{ d.tenant.name }}</strong> ({{ d.tenant.id }})</p>
+  <dl class="billing-workspace__detail-dl">
+    <dt>Status</dt>
+    <dd>{{ d.order['status'] }}</dd>
+    <dt>Provider order</dt>
+    <dd>{{ d.order['provider_order_id'] || '—' }}</dd>
+    <dt>Environment</dt>
+    <dd>{{ d.order['environment'] }}</dd>
+  </dl>
+
+  <h3 class="billing-workspace__section-title">Payment attempts</h3>
+  <div class="billing-workspace__table-wrap" *ngIf="d.payment_attempts?.length">
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Provider payment</th>
+          <th>Status</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of d.payment_attempts">
+          <td>{{ a['id'] }}</td>
+          <td>{{ a['provider_payment_id'] }}</td>
+          <td>{{ a['status'] }}</td>
+          <td>{{ a['amount'] }} {{ a['currency_code'] }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="billing-workspace__section-title">Webhook events</h3>
+  <ul *ngIf="d.webhook_events?.length">
+    <li *ngFor="let w of d.webhook_events">{{ w['event_type'] }} — {{ w['processing_status'] }} ({{ formatDate(w['created_at']) }})</li>
+  </ul>
+  <p *ngIf="!d.webhook_events?.length" class="cf-muted">No webhook events linked.</p>
+
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="close()">Close</button>
+    <button type="button" class="cf-btn cf-btn-primary" *ngIf="primaryAttempt()" (click)="openRefund()">Issue refund</button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="refundOpen && detail"
+  title="Confirm refund"
+  size="md"
+  [nested]="true"
+  [isSubmitting]="refundBusy"
+  (closeRequested)="closeRefund()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-refund-form" (ngSubmit)="requestRefund()">
+    <label>
+      Amount
+      <input type="text" [(ngModel)]="refundAmount" name="refundAmount" inputmode="decimal" required />
+    </label>
+    <label class="full-width">
+      Reason <span class="cf-required">*</span>
+      <textarea rows="3" [(ngModel)]="refundReason" name="refundReason" maxlength="500" required></textarea>
+    </label>
+    <p class="cf-muted full-width">Refunds do not change subscription dates. Processing uses the payment gateway when applicable.</p>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeRefund()" [disabled]="refundBusy">Cancel</button>
+    <button type="submit" form="billing-refund-form" class="cf-btn cf-btn-primary" [disabled]="refundBusy">
+      {{ refundBusy ? 'Processing…' : 'Confirm refund' }}
+    </button>
+  </ng-container>
+</app-modal-shell>

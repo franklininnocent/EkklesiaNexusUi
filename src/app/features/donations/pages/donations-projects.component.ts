@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -81,6 +81,7 @@ function projectDateRangeValidator(control: AbstractControl): ValidationErrors |
     CfActionIconComponent,
     CfFamilyPickerLabelPipe],
   templateUrl: './donations-projects.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-projects.component.scss'
 })
 export class DonationsProjectsComponent implements OnInit {

@@ -71,6 +71,7 @@ describe('MySubscriptionComponent', () => {
             publicPlans: () => of([standard]),
             upgradeRequests: () => of(requests),
             submitUpgradeRequest: submit,
+            previewPlanChange: () => of({ lines: [], requires_staff_approval: false, plan_changes_immediately: true }),
           },
         },
         { provide: EntitlementService, useValue: { featureName: (c: string) => (c === 'CONTRIBUTION_PLANS' ? 'Contribution Plans' : c) } },

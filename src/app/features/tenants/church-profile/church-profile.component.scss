@@ -6045,3 +6045,26 @@
   }
 }
 
+.statistics-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-page-gap, 1.5rem);
+
+  &__period-cell strong {
+    font-weight: 600;
+    color: var(--cf-text-primary, var(--text-primary));
+  }
+
+  &__num-col {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__row-actions {
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}
+

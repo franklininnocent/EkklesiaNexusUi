@@ -65,6 +65,7 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
 
   @Output() roleCreated = new EventEmitter<LeadershipRoleOption>();
   @Output() rolesRefresh = new EventEmitter<LeadershipRoleOption[]>();
+  @Output() addNewRoleRequested = new EventEmitter<{ initialName: string; category: LeadershipCategory }>();
 
   value: string | null = null;
   disabled = false;
@@ -115,6 +116,10 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
 
   get hasVisibleResults(): boolean {
     return this.flatOptions.length > 0;
+  }
+
+  get addNewRoleIndex(): number {
+    return this.flatOptions.length + (this.showCreateAction ? 1 : 0);
   }
 
   writeValue(value: string | null): void {
@@ -199,57 +204,27 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
 
   createCustomRole(event?: Event): void {
     event?.preventDefault();
-    const title = canonicalizeLeadershipRoleTitle(this.searchQuery);
-    if (!title || this.creating || !this.canCreate) {
+    this.persistRole(canonicalizeLeadershipRoleTitle(this.searchQuery), this.createCategory);
+  }
+
+  openAddNewRoleModal(event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!this.canCreate || this.disabled) {
       return;
     }
 
-    const existing = findExactRoleMatch(this.visibleRoles, title);
-    if (existing) {
-      this.selectRole(existing);
-      return;
-    }
-
-    this.creating = true;
-    this.cdr.markForCheck();
-
-    this.api.createRole({ title, category: this.createCategory }).subscribe({
-      next: (response) => {
-        const created = response.data;
-        const nextRoles = [...this.roles.filter((role) => role.id !== created.id), created];
-        this.roles = nextRoles;
-        this.rolesRefresh.emit(nextRoles);
-        this.roleCreated.emit(created);
-        this.selectRole(created);
-        this.toast.success(
-          `${created.title} is now available for this church.`,
-          'Custom role added',
-        );
-        this.creating = false;
-        this.cdr.markForCheck();
-      },
-      error: (error: unknown) => {
-        this.creating = false;
-        if (error instanceof HttpErrorResponse && error.status === 409 && error.error?.code === 'ROLE_ALREADY_EXISTS') {
-          this.refreshRolesAndSelect(title);
-          this.toast.warning(
-            `"${title}" is already available and has been selected.`,
-            'Role already exists',
-          );
-          this.cdr.markForCheck();
-          return;
-        }
-        const message = error instanceof HttpErrorResponse
-          ? error.error?.message || 'Could not create custom role.'
-          : 'Could not create custom role.';
-        this.toast.error(message);
-        this.cdr.markForCheck();
-      },
+    this.closePanel();
+    this.addNewRoleRequested.emit({
+      initialName: canonicalizeLeadershipRoleTitle(this.searchQuery),
+      category: this.defaultCreateCategory,
     });
   }
 
   onPanelKeydown(event: KeyboardEvent): void {
-    const actionableCount = this.flatOptions.length + (this.showCreateAction ? 1 : 0);
+    const actionableCount = this.flatOptions.length
+      + (this.showCreateAction ? 1 : 0)
+      + (this.canCreate ? 1 : 0);
     if (!actionableCount) {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -276,8 +251,10 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
       event.preventDefault();
       if (this.highlightedIndex < this.flatOptions.length) {
         this.selectRole(this.flatOptions[this.highlightedIndex]);
-      } else if (this.showCreateAction) {
+      } else if (this.showCreateAction && this.highlightedIndex === this.flatOptions.length) {
         this.createCustomRole();
+      } else if (this.canCreate) {
+        this.openAddNewRoleModal();
       }
       return;
     }
@@ -310,6 +287,75 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
       this.highlightedIndex = this.flatOptions.length;
       this.cdr.markForCheck();
     }
+  }
+
+  isAddNewRoleHighlighted(): boolean {
+    return this.canCreate && this.highlightedIndex === this.addNewRoleIndex;
+  }
+
+  highlightAddNewRoleAction(): void {
+    if (this.canCreate) {
+      this.highlightedIndex = this.addNewRoleIndex;
+      this.cdr.markForCheck();
+    }
+  }
+
+  private persistRole(title: string, category: LeadershipCategory): void {
+    if (!title) {
+      return;
+    }
+
+    if (this.creating || !this.canCreate) {
+      return;
+    }
+
+    const existing = findExactRoleMatch(this.roles, title) ?? findExactRoleMatch(this.visibleRoles, title);
+    if (existing) {
+      this.selectRole(existing);
+      this.toast.warning(
+        `"${existing.title}" is already available and has been selected.`,
+        'Role already exists',
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.creating = true;
+    this.cdr.markForCheck();
+
+    this.api.createRole({ title, category }).subscribe({
+      next: (response) => {
+        const created = response.data;
+        const nextRoles = [...this.roles.filter((role) => role.id !== created.id), created];
+        this.roles = nextRoles;
+        this.rolesRefresh.emit(nextRoles);
+        this.roleCreated.emit(created);
+        this.selectRole(created);
+        this.toast.success(
+          `${created.title} is now available for this church.`,
+          'Custom role added',
+        );
+        this.creating = false;
+        this.cdr.markForCheck();
+      },
+      error: (error: unknown) => {
+        this.creating = false;
+        if (error instanceof HttpErrorResponse && error.status === 409 && error.error?.code === 'ROLE_ALREADY_EXISTS') {
+          this.refreshRolesAndSelect(title);
+          this.toast.warning(
+            `"${title}" is already available and has been selected.`,
+            'Role already exists',
+          );
+          this.cdr.markForCheck();
+          return;
+        }
+        const message = error instanceof HttpErrorResponse
+          ? error.error?.message || 'Could not create custom role.'
+          : 'Could not create custom role.';
+        this.toast.error(message);
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private syncSuggestedCategory(): void {

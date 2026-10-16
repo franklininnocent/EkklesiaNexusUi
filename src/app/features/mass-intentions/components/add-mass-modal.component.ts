@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MassCelebrationSummary } from '../services/mass-intentions-api.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -129,6 +129,7 @@ import { formatMassDayTime } from '../utils/mass-celebration-display';
       </form>
     </app-modal-shell>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './add-mass-modal.component.scss',
 })
 export class AddMassModalComponent implements OnChanges {

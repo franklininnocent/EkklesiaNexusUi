@@ -54,13 +54,13 @@
             <span class="lrc__option-check" *ngIf="value === role.id" aria-hidden="true">✓</span>
             <span>{{ role.title }}</span>
           </button>
-          <div class="lrc__divider" *ngIf="!lastGroup || showCreateAction" aria-hidden="true"></div>
+          <div class="lrc__divider" *ngIf="!lastGroup || showCreateAction || canCreate" aria-hidden="true"></div>
         </section>
       </ng-container>
 
       <ng-template #noMatches>
         <p class="lrc__empty">No matching roles</p>
-        <div class="lrc__divider" *ngIf="showCreateAction" aria-hidden="true"></div>
+        <div class="lrc__divider" *ngIf="showCreateAction || canCreate" aria-hidden="true"></div>
       </ng-template>
 
       <div *ngIf="showCreateAction" class="lrc__create-wrap">
@@ -92,6 +92,19 @@
           <span class="lrc__create-loading" *ngIf="creating">…</span>
         </button>
       </div>
+
+      <button
+        *ngIf="canCreate"
+        type="button"
+        class="lrc__create"
+        [class.is-highlighted]="isAddNewRoleHighlighted()"
+        [disabled]="creating"
+        (mousedown)="openAddNewRoleModal($event)"
+        (mouseenter)="highlightAddNewRoleAction()"
+      >
+        <span class="lrc__create-icon" aria-hidden="true">+</span>
+        <span>+ Add New Role</span>
+      </button>
     </div>
   </div>
 </div>

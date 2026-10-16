@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
@@ -37,6 +37,7 @@ import { massIntentionsHomePeriodSubtitle } from '../utils/mass-intentions-chrom
     MassIntentionsSixMonthTrendComponent,
   ],
   templateUrl: './mass-intentions-home.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-intentions-home.page.scss',
 })
 export class MassIntentionsHomePageComponent {

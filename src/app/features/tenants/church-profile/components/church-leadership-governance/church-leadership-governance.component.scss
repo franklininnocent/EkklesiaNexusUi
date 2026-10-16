@@ -20,8 +20,21 @@
 .clg__header-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.clg__header-action {
+  white-space: nowrap;
+}
+
+.clg__history-nav {
+  margin-bottom: 0.25rem;
+}
+
+.clg__back-action {
+  padding-left: 0;
 }
 
 .clg__manage-roles-table-wrap {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import {
   ActiveFilter,
@@ -44,6 +44,7 @@ import {
     AdvancedSearchPanelComponent,
   ],
   templateUrl: './mass-intentions-audit.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-intentions-audit.page.scss',
 })
 export class MassIntentionsAuditPageComponent {

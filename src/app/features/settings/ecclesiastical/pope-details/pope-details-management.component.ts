@@ -31,7 +31,7 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
     CfEmptyStateComponent,
   ],
   templateUrl: './pope-details-management.component.html',
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './pope-details-management.component.scss'
 })
 export class PopeDetailsManagementComponent implements OnInit {

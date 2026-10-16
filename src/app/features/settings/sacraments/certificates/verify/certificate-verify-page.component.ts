@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { SacramentService } from '../../services/sacrament.service';
 
@@ -22,6 +22,7 @@ import { SacramentService } from '../../services/sacrament.service';
       </dl>
     </main>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .verify-page { max-width: 40rem; margin: 3rem auto; font-family: Georgia, serif; padding: 0 1.5rem; }
     h1 { font-size: 1.6rem; }

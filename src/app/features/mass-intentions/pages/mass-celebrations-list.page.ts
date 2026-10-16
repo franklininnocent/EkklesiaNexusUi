@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import {
@@ -45,6 +45,7 @@ const LIST_PAGE_SIZE = 100;
     MassCelebrationsViewNavComponent,
   ],
   templateUrl: './mass-celebrations-list.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-celebrations-list.page.scss',
 })
 export class MassCelebrationsListPageComponent {

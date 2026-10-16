@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -11,6 +11,7 @@ import { SupportLookupType } from '../../models/support-ticket.model';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, NgSelectModule, ModalShellComponent],
   templateUrl: './support-ticket-create-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './support-ticket-create-modal.component.scss',
 })
 export class SupportTicketCreateModalComponent implements OnInit {

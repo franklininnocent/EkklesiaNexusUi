@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 
@@ -73,6 +73,7 @@ export interface StewardshipConfirmResult {
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .cf-dialog-backdrop {
       position: fixed; inset: 0; z-index: 80;

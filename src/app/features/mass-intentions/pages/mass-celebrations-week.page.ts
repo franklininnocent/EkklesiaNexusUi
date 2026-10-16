@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
@@ -33,6 +33,7 @@ import {
     MassCelebrationsViewNavComponent,
   ],
   templateUrl: './mass-celebrations-week.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-celebrations-week.page.scss',
 })
 export class MassCelebrationsWeekPageComponent {

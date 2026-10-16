@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
@@ -50,6 +50,7 @@ export type MassScheduleGenerationStatus =
     AdvancedSearchPanelComponent,
   ],
   templateUrl: './mass-regular-schedule.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-regular-schedule.page.scss',
 })
 export class MassRegularSchedulePageComponent {

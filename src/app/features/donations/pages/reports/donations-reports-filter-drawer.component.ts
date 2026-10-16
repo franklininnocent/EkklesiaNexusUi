@@ -11,6 +11,7 @@ import {
   SimpleChanges,
   ViewChild,
   inject,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { restoreActiveElement, saveActiveElement, trapFocus } from '@shared/utils/focus-trap.util';
@@ -207,6 +208,7 @@ export interface DonationsReportsFilterDraft {
       </footer>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: '../../../../shared/components/advanced-search-panel/advanced-search-panel.component.scss',
 })
 export class DonationsReportsFilterDrawerComponent implements OnChanges, OnDestroy {

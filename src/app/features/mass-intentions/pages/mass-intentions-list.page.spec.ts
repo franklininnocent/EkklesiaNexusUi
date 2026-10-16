@@ -24,6 +24,7 @@ describe('MassIntentionsListPageComponent', () => {
             listRequests: jest.fn().mockReturnValue(of({ data: [], total: 0, last_page: 1, current_page: 1 })),
             listAllRequests: jest.fn().mockReturnValue(of([])),
             listCategories: jest.fn().mockReturnValue(of({ data: [] })),
+            listCelebrations: jest.fn().mockReturnValue(of({ data: [] })),
           },
         },
         { provide: ParishPersonService, useValue: { search: jest.fn().mockReturnValue(of({ data: [] })) } },

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
@@ -33,6 +33,7 @@ type TemporaryScheduleRow = {
     CfActionIconComponent,
   ],
   templateUrl: './mass-temporary-schedules.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-temporary-schedules.page.scss',
 })
 export class MassTemporarySchedulesPageComponent {

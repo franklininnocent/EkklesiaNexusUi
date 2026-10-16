@@ -210,7 +210,7 @@
             <span class="bcc-leadership__label">Current holder</span>
             <p class="bcc-leadership__readonly">
               <strong>{{ editingLeader?.member_name }}</strong>
-              <span class="cf-meta"> · {{ editingLeader?.role | titlecase }}</span>
+              <span class="cf-meta"> · {{ $safeNavigationMigration(editingLeader?.role) | titlecase }}</span>
             </p>
           </div>
           <div class="bcc-leadership__field-grid">
@@ -381,7 +381,7 @@
           <span class="bcc-leadership__label">Member</span>
           <p class="bcc-leadership__readonly">
             <strong>{{ editingLeader?.member_name }}</strong>
-            <span class="cf-meta"> · {{ editingLeader?.role | titlecase }}</span>
+            <span class="cf-meta"> · {{ $safeNavigationMigration(editingLeader?.role) | titlecase }}</span>
           </p>
         </div>
 

@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { SidebarNavTreeComponent } from './sidebar-nav-tree.component';
 import { DONATIONS_SIDEBAR_TREE } from '@features/donations/config/stewardship-sidebar.adapter';
 
-@Component({ template: '', standalone: true })
+@Component({ template: '', changeDetection: ChangeDetectionStrategy.Eager,
+ standalone: true })
 class StubPageComponent {}
 
 describe('SidebarNavTreeComponent', () => {

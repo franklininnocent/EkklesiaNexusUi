@@ -15,14 +15,14 @@ describe('mass-celebrations-nav.util', () => {
 
   it('omits month query param for the current calendar month', () => {
     const month = new Date().toISOString().slice(0, 7);
-    expect(listViewQueryParams(month, emptyFilters).month).toBeNull();
-    expect(listViewQueryParams('2026-01', emptyFilters).month).toBe('2026-01');
+    expect(listViewQueryParams(month, emptyFilters)['month']).toBeNull();
+    expect(listViewQueryParams('2026-01', emptyFilters)['month']).toBe('2026-01');
   });
 
   it('omits week query param for the current mass week', () => {
     const sunday = massWeekBoundsContaining().sunday;
-    expect(weekViewQueryParams(sunday, emptyFilters).week).toBeNull();
-    expect(weekViewQueryParams('2020-01-05', emptyFilters).week).toBe('2020-01-05');
+    expect(weekViewQueryParams(sunday, emptyFilters)['week']).toBeNull();
+    expect(weekViewQueryParams('2020-01-05', emptyFilters)['week']).toBe('2020-01-05');
   });
 
   it('picks a week in the selected month when leaving list view', () => {

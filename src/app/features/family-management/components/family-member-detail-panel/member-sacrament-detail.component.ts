@@ -16,6 +16,7 @@ import {
 } from '../../utils/register-sacrament.util';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { resolveMarriageSpouseDisplayName } from '../../utils/marriage-spouse-display.util';
+import { sacramentSupportsCertificate } from '@features/settings/sacraments/utils/sacrament-certificate.util';
 
 export interface SacramentDisplayField {
   label: string;
@@ -137,6 +138,13 @@ export class MemberSacramentDetailComponent {
 
   get registerViewPath(): string | null {
     return this.registerRecord ? `/sacraments/view/${this.registerRecord.id}` : null;
+  }
+
+  get showCertificateLink(): boolean {
+    return (
+      this.registerRecord != null &&
+      sacramentSupportsCertificate(this.registerRecord.sacrament_type?.code ?? this.sacramentType.code)
+    );
   }
 
   get registerDisplayFields(): SacramentDisplayField[] {

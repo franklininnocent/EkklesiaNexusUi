@@ -124,11 +124,12 @@
               <div class="cf-row-actions">
                 <button
                   type="button"
-                  class="cf-btn cf-btn--sm cf-btn-danger"
+                  class="cf-btn cf-btn-icon cf-btn--sm cf-btn-danger"
                   (click)="deleteBCC(bcc)"
-                  title="Delete BCC"
+                  [attr.aria-label]="'Delete ' + bcc.name"
+                  [attr.title]="'Delete ' + bcc.name"
                 >
-                  Delete
+                  <app-cf-action-icon name="trash" />
                 </button>
               </div>
             </td>

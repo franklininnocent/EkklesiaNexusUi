@@ -41,18 +41,47 @@ export function defaultMarketingSeoForm(site?: {
     'EkklesiaNexus is a complete Church Management System for parishes.';
   const orgName = site?.name ?? 'EkklesiaNexus';
 
+  const optionalCopy: Partial<
+    Record<MarketingSeoPageId, { seoTitle: string; seoDescription: string }>
+  > = {
+    features: {
+      seoTitle: 'Church management features — EkklesiaNexus',
+      seoDescription:
+        'Explore verified EkklesiaNexus capabilities for families, sacramental registers, Mass intentions, ministries, stewardship, and parish reports.',
+    },
+    about: {
+      seoTitle: 'About EkklesiaNexus',
+      seoDescription:
+        'EkklesiaNexus is a church management system for parish staff—families, sacraments, stewardship, and administration in one connected experience.',
+    },
+    contact: {
+      seoTitle: 'Contact EkklesiaNexus',
+      seoDescription:
+        'Reach the EkklesiaNexus team about parish software for your church. Request a conversation or send a message through our secure form.',
+    },
+    solutionsCatholicParishes: {
+      seoTitle: 'Catholic parish management software — EkklesiaNexus',
+      seoDescription:
+        'Catholic parish administration with family registers, sacramental records, Mass intentions, Life Groups / BCCs, and stewardship—built for parish office workflows.',
+    },
+  };
+
   const pages = {} as Record<MarketingSeoPageId, PublicPageSeoForm>;
   for (const id of MARKETING_SEO_PAGE_IDS) {
     const meta = MARKETING_SEO_PAGE_META[id];
     const isHome = id === 'home';
+    const optional = optionalCopy[id];
     pages[id] = {
       id,
       name: meta.name,
       path: meta.path,
-      seoTitle: isHome ? title : `${meta.name} — EkklesiaNexus`,
+      seoTitle: isHome
+        ? title
+        : (optional?.seoTitle ?? `${meta.name} — EkklesiaNexus`),
       seoDescription: isHome
         ? description
-        : `${meta.name} information for the EkklesiaNexus marketing website.`,
+        : (optional?.seoDescription ??
+          `${meta.name} information for the EkklesiaNexus marketing website.`),
       ogTitle: '',
       ogDescription: '',
       ogImage: DEFAULT_MARKETING_OG_IMAGE,
@@ -201,4 +230,23 @@ export function applySeoFormToPayload(
   }
 
   return next;
+}
+
+/** Normalized titles that appear on more than one page (SEO quality warning). */
+export function duplicateSeoTitleWarnings(form: MarketingSeoForm): string[] {
+  const byTitle = new Map<string, MarketingSeoPageId[]>();
+  for (const id of MARKETING_SEO_PAGE_IDS) {
+    const normalized = form.pages[id].seoTitle.trim().toLowerCase();
+    if (!normalized) continue;
+    const list = byTitle.get(normalized) ?? [];
+    list.push(id);
+    byTitle.set(normalized, list);
+  }
+  const warnings: string[] = [];
+  for (const [title, ids] of byTitle) {
+    if (ids.length < 2) continue;
+    const labels = ids.map((id) => MARKETING_SEO_PAGE_META[id].name).join(', ');
+    warnings.push(`Duplicate title “${title}” on: ${labels}.`);
+  }
+  return warnings;
 }

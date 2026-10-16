@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { signal } from '@angular/core';
@@ -9,6 +9,7 @@ import { SubscriptionRestrictionService } from '@core/services/subscription-rest
 @Component({
   standalone: true,
   imports: [CfSubscriptionGuardDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<button type="button" cfSubscriptionGuard (click)="clicked = true">Add</button>`,
 })
 class HostComponent {

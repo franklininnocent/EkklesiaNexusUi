@@ -8,12 +8,12 @@
 From the repo root:
 
 ```bash
-cp EkklesiaSoftUi/src/app/features/dashboard/v2.0/dashboard.component.ts.bak \
-   EkklesiaSoftUi/src/app/features/dashboard/dashboard.component.ts
-cp EkklesiaSoftUi/src/app/features/dashboard/v2.0/dashboard.component.html.bak \
-   EkklesiaSoftUi/src/app/features/dashboard/dashboard.component.html
-cp EkklesiaSoftUi/src/app/features/dashboard/v2.0/dashboard.component.scss.bak \
-   EkklesiaSoftUi/src/app/features/dashboard/dashboard.component.scss
+cp EkklesiaNexusUi/src/app/features/dashboard/v2.0/dashboard.component.ts.bak \
+   EkklesiaNexusUi/src/app/features/dashboard/dashboard.component.ts
+cp EkklesiaNexusUi/src/app/features/dashboard/v2.0/dashboard.component.html.bak \
+   EkklesiaNexusUi/src/app/features/dashboard/dashboard.component.html
+cp EkklesiaNexusUi/src/app/features/dashboard/v2.0/dashboard.component.scss.bak \
+   EkklesiaNexusUi/src/app/features/dashboard/dashboard.component.scss
 ```
 
 Version 1.0 remains under `./v1.0/`.

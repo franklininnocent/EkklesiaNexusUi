@@ -10,6 +10,6 @@ import { PopeDetailsManagementComponent } from '../ecclesiastical/pope-details/p
   standalone: true,
   imports: [PopeDetailsManagementComponent],
   template: `<app-pope-details-management></app-pope-details-management>`,
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class PopeSettingsComponent {}

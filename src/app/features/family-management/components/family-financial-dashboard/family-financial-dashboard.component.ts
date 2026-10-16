@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { IfFeatureDirective } from '@shared/directives/if-feature.directive';
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { QuickCollectService } from '@features/donations/services/quick-collect.service';
 import { ReceiptPrintService } from '@features/donations/services/receipt-print.service';
@@ -185,10 +185,10 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
               <h4 class="cf-subsection-title">Outstanding</h4>
               <ul class="metric-list cf-body">
                 <li>Mandatory: {{ formatCurrency(profile.outstanding_balances?.mandatory || profile.totals.pending_mandatory_due) }}</li>
-                <li>Mandatory overdue: {{ formatCurrency(profile.outstanding_balances?.mandatory_overdue) }}</li>
-                <li>Project balance: {{ formatCurrency(profile.outstanding_balances?.project) }}</li>
+                <li>Mandatory overdue: {{ formatCurrency($safeNavigationMigration(profile.outstanding_balances?.mandatory_overdue)) }}</li>
+                <li>Project balance: {{ formatCurrency($safeNavigationMigration(profile.outstanding_balances?.project)) }}</li>
                 <li>Project installments: {{ formatCurrency(profile.outstanding_balances?.project_installments || profile.totals.pending_project_due) }}</li>
-                <li>Voluntary pledged: {{ formatCurrency(profile.outstanding_balances?.voluntary_pledged) }}</li>
+                <li>Voluntary pledged: {{ formatCurrency($safeNavigationMigration(profile.outstanding_balances?.voluntary_pledged)) }}</li>
               </ul>
             </div>
           </div>
@@ -252,7 +252,7 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
           <div class="mini-metrics cf-meta">
             <span>Lifetime {{ (profile.donations_offerings?.lifetime_collected || 0) | cfCurrency }}</span>
             <span>FY {{ profile.donations_offerings?.financial_year || profile.financial_year }}: {{ (profile.donations_offerings?.current_financial_year_collected || 0) | cfCurrency }}</span>
-            <span>Last gift: {{ profile.donations_offerings?.last_donation_date ? (profile.donations_offerings?.last_donation_date | date) : '—' }}</span>
+            <span>Last gift: {{ profile.donations_offerings?.last_donation_date ? ($safeNavigationMigration(profile.donations_offerings?.last_donation_date) | date) : '—' }}</span>
           </div>
           <table class="cf-table" *ngIf="profile.donations_offerings?.by_category?.length">
             <thead><tr><th>Category</th><th>Collected</th></tr></thead>
@@ -332,6 +332,7 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
 
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .family-financial-dashboard { margin-bottom: 0; }
     .dashboard-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 0.85rem; }

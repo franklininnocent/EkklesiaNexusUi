@@ -13,8 +13,8 @@ import {
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, Subject, EMPTY } from 'rxjs';
-import { catchError, filter, takeUntil } from 'rxjs/operators';
+import { Observable, Subject, EMPTY, combineLatest } from 'rxjs';
+import { catchError, filter, map, takeUntil } from 'rxjs/operators';
 
 import { AppState } from '@core/store';
 import { User, Tenant } from '@core/models';
@@ -41,9 +41,11 @@ import { NotificationBellComponent } from '@features/notifications/components/no
 import { NotificationPopoverComponent } from '@features/notifications/components/notification-popover/notification-popover.component';
 import { NotificationInboxService } from '@features/notifications/services/notification-inbox.service';
 import {
+  adjustSidebarForStarterPlan,
   buildAppSidebarSections,
   filterSidebarSections,
 } from '../sidebar-nav/app-sidebar.config';
+import { isStarterSubscriptionPlan } from '@shared/utils/subscription-plan.util';
 import { SidebarNavSection } from '../sidebar-nav/sidebar-nav.model';
 @Component({
   selector: 'app-main-layout',
@@ -85,6 +87,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private entitlements = inject(EntitlementService);
 
   currentUser$: Observable<User | null>;
+  /** Store user, with AuthService cache fallback while the store hydrates after refresh. */
+  headerUser$: Observable<User | null>;
   currentTenant$: Observable<Tenant | null>;
   isSidebarCollapsed = false;
   isMobileNavOpen = false;
@@ -105,6 +109,12 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   constructor() {
     this.currentUser$ = this.store.select(selectCurrentUser);
+    this.headerUser$ = combineLatest([
+      this.currentUser$,
+      this.authService.currentUser$,
+    ]).pipe(
+      map(([storeUser, cachedUser]) => storeUser ?? cachedUser)
+    );
     this.currentTenant$ = this.store.select(selectCurrentTenant);
   }
 
@@ -115,7 +125,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.store.dispatch(AuthActions.loadUser());
     }
 
-    this.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+    this.headerUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.currentUser = user;
       this.refreshVisibleSidebar();
       if (this.appContext.hasParishResourceContext(user)) {
@@ -275,11 +285,15 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   }
 
   private refreshVisibleSidebar(): void {
-    this.visibleSidebarSections = filterSidebarSections(
+    const filtered = filterSidebarSections(
       this.sidebarSections,
       (menuId) => this.navMenu.isVisible(menuId as NavMenuId, this.currentUser),
       (route) => this.navMenu.isRouteAllowed(route)
     );
+    const starter =
+      this.entitlements.appliesToCurrentUser() &&
+      isStarterSubscriptionPlan(this.entitlements.plan());
+    this.visibleSidebarSections = adjustSidebarForStarterPlan(filtered, starter);
   }
 
   private updateViewportState(): void {

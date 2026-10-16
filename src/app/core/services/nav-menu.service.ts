@@ -44,7 +44,9 @@ export type NavMenuId =
   | 'settings-data-export'
   | 'settings-default-seeds'
   | 'settings-web-settings'
-  | 'settings-contact-enquiries';
+  | 'settings-contact-enquiries'
+  | 'settings-marketing-website'
+  | 'settings-billing-payment-controls';
 
 type NavAudience = 'ekklesia' | 'tenant' | 'both';
 
@@ -209,6 +211,8 @@ export class NavMenuService {
       'default-seeds',
       'web-settings',
       'contact-enquiries',
+      'marketing-website',
+      'billing-payment-controls',
     ];
     return allowed.includes(key) ? key : null;
   }

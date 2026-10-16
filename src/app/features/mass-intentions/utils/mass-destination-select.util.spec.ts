@@ -10,7 +10,7 @@ describe('toMassDestinationSelectOptions', () => {
         place: 'Main Church',
       },
     ]);
-    expect(options[0].optionLabel).toMatch(/Sunday.*2026-10-04/i);
+    expect(options[0].optionLabel).toMatch(/Sunday.*4 Oct 2026/i);
     expect(options[0].optionLabel).toMatch(/8:30.*AM/i);
     expect(options[0].optionLabel).toContain('Main Church');
   });

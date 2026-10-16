@@ -11,7 +11,6 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
-import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
@@ -61,7 +60,6 @@ const TABLE_SORT_COLUMNS: SortBy[] = [
     CommonModule,
     FormsModule,
     RouterModule,
-    CfActionIconComponent,
     CfEmptyStateComponent,
     LoadingSkeletonComponent,
     PaginationComponent,
@@ -184,8 +182,12 @@ export class OrganizationListPageComponent implements OnInit, OnDestroy {
     this.loadOrganizations();
   }
 
+  trackByOrganizationId(_index: number, organization: Organization): string {
+    return organization.id;
+  }
+
   openOrganization(organization: Organization): void {
-    void this.router.navigate(['/ministries', organization.id]);
+    void this.router.navigateByUrl(ministriesLink(this.router.url, organization.id));
   }
 
   retryLoad(): void {

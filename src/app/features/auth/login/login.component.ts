@@ -20,7 +20,6 @@ import {
   PasswordRecoveryViewState,
 } from '@core/services/password-recovery.service';
 import { CfBusyLabelComponent } from '@shared/components/cf-busy-label/cf-busy-label.component';
-import { environment } from '@environments/environment';
 
 type LoginScreenView = PasswordRecoveryViewState | 'REQUEST_ACCOUNT';
 @Component({
@@ -50,8 +49,6 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   viewState: LoginScreenView = 'LOGIN';
   readonly currentYear = new Date().getFullYear();
-  /** Public site contact section. Origin comes from the active environment. */
-  readonly contactSupportHref = `${environment.websiteUrl.replace(/\/+$/, '')}/#contact`;
   passwordVisible = false;
   recoveryLoading = false;
   recoveryError: string | null = null;

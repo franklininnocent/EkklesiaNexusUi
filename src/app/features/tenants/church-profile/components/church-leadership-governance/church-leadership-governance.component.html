@@ -1,20 +1,33 @@
 <div class="clg">
+  <ng-container *ngIf="contentView === 'current-governance'">
   <div class="clg__header">
     <div>
-      <h2 class="clg__title">Current Governance</h2>
-      <p class="clg__subtitle">Active leadership grouped by parish governance category.</p>
+      <h2 class="clg__title">Parish Clergy</h2>
+      <p class="clg__subtitle">Active parish clergy and their roles.</p>
     </div>
-    <div *ngIf="canEdit" class="clg__header-actions">
+    <div class="clg__header-actions">
       <button
-        *ngIf="canCreateCustomRole"
+        *ngIf="canEdit && canCreateCustomRole"
         type="button"
-        class="cf-btn"
+        class="cf-btn clg__header-action"
         (click)="openManageRolesModal()"
       >
         Manage custom roles
       </button>
-      <button type="button" class="cf-btn cf-btn-primary" (click)="openAssignModal()">
-        Add Leader
+      <button
+        *ngIf="canEdit"
+        type="button"
+        class="cf-btn cf-btn-primary clg__header-action"
+        (click)="openAssignModal()"
+      >
+        Add Parish Clergy
+      </button>
+      <button
+        type="button"
+        class="cf-btn cf-btn-link clg__header-action"
+        (click)="showLeadershipHistory()"
+      >
+        Leadership History
       </button>
     </div>
   </div>
@@ -31,16 +44,15 @@
 
   <ng-container *ngIf="!loadingCurrent && !currentError && current as governance">
     <app-cf-empty-state
-      *ngIf="governance.active_count === 0"
-      title="No active leaders"
-      description="Add parish leaders to begin tracking governance."
+      *ngIf="parishClergyActiveCount === 0"
+      title="No parish clergy"
+      description="Add parish clergy to record active clergy roles and appointments."
       [hasActions]="canEdit"
     >
-      <button *ngIf="canEdit" type="button" class="cf-btn cf-btn-primary" (click)="openAssignModal()">Add Leader</button>
+      <button *ngIf="canEdit" type="button" class="cf-btn cf-btn-primary" (click)="openAssignModal()">Add Parish Clergy</button>
     </app-cf-empty-state>
 
-    <div *ngFor="let group of governance.groups" class="clg__group">
-      <h3 class="clg__group-title">{{ group.category_label }}</h3>
+    <div *ngFor="let group of parishClergyGroups" class="clg__group">
       <div class="clg__cards">
         <article *ngFor="let assignment of group.assignments" class="clg__card">
           <div
@@ -114,8 +126,25 @@
       </div>
     </div>
   </ng-container>
+  </ng-container>
 
-  <app-section-card class="clg__history" title="Leadership History" [collapsible]="true" [expanded]="true">
+  <ng-container *ngIf="contentView === 'leadership-history'">
+    <div class="clg__history-nav">
+      <button
+        type="button"
+        class="cf-btn cf-btn-link clg__back-action"
+        (click)="showCurrentGovernance()"
+      >
+        Back to Parish Clergy
+      </button>
+    </div>
+
+  <app-section-card
+    id="clg-history"
+    class="clg__history"
+    title="Leadership History"
+    [collapsible]="false"
+  >
     <div sectionActions class="clg__history-actions">
       <app-list-toolbar
         [showSearch]="false"
@@ -241,15 +270,16 @@
     (clear)="onClearAdvancedSearch()"
     (close)="showAdvancedSearch = false"
   ></app-advanced-search-panel>
+  </ng-container>
 </div>
 
 <app-modal-shell
   *ngIf="showAssignModal"
-  title="Add Leader"
+  title="Add Parish Clergy"
   size="lg"
   headerVariant="compact"
   bodyPadding="none"
-  closeAriaLabel="Close add leader"
+  closeAriaLabel="Close add parish clergy"
   [isSubmitting]="saving"
   (closeRequested)="closeAssignModal()"
 >
@@ -259,7 +289,7 @@
     (ngSubmit)="submitAssign()"
     novalidate
   >
-    <p class="cf-meta">Add a parish leader — link a parish person and record their role and appointment dates.</p>
+    <p class="cf-meta">Add parish clergy — link a parish person and record their clergy role and appointment dates.</p>
 
     <section class="cf-split-section" aria-labelledby="assign-section-person">
       <h3 id="assign-section-person" class="cf-split-section__title">Leader</h3>
@@ -381,13 +411,12 @@
             (ngModelChange)="onAssignCategoryChange()"
             aria-required="true"
           >
-            <option value="" disabled>Select category…</option>
-            <option *ngFor="let option of categoryOptions" [ngValue]="option.value">
+            <option *ngFor="let option of parishClergyCategoryOptions" [ngValue]="option.value">
               {{ option.label }}
             </option>
           </select>
           <p class="cf-split-field__hint">
-            Parish Clergy, councils, ministries, or other — where this leader appears on the Leadership tab.
+            Parish Clergy roles appear on this tab. Other is for clergy-related roles tracked outside this list.
           </p>
         </div>
 
@@ -404,9 +433,9 @@
             [defaultCreateCategory]="assignCategory || 'OTHER'"
             placeholder="Select a role"
             (rolesRefresh)="onRolesRefreshed($event)"
+            (addNewRoleRequested)="openAddRoleFromCombobox($event)"
           ></app-leadership-role-combobox>
-          <p class="cf-split-field__hint" *ngIf="!assignCategory">Select a category first.</p>
-          <p class="cf-split-field__hint" *ngIf="assignCategory">Choose the leadership role for this parish.</p>
+          <p class="cf-split-field__hint">Choose the clergy role for this parish.</p>
         </div>
 
         <div class="cf-split-field">
@@ -457,7 +486,7 @@
         class="cf-btn cf-btn-primary"
         [disabled]="saving || !canSubmitAssign"
       >
-        {{ saving ? 'Saving…' : 'Add Leader' }}
+        {{ saving ? 'Saving…' : 'Add Parish Clergy' }}
       </button>
       <button type="button" class="cf-btn" (click)="closeAssignModal()" [disabled]="saving">Cancel</button>
     </div>
@@ -704,12 +733,12 @@
             (ngModelChange)="onEditCategoryChange()"
             aria-required="true"
           >
-            <option *ngFor="let option of categoryOptions" [ngValue]="option.value">
+            <option *ngFor="let option of parishClergyCategoryOptions" [ngValue]="option.value">
               {{ option.label }}
             </option>
           </select>
           <p class="cf-split-field__hint">
-            Where this leader appears in Current Governance.
+            Parish Clergy roles appear on this tab. Other is for clergy-related roles tracked outside this list.
           </p>
         </div>
 
@@ -726,6 +755,7 @@
             [defaultCreateCategory]="editCategory"
             placeholder="Select a role"
             (rolesRefresh)="onRolesRefreshed($event)"
+            (addNewRoleRequested)="openAddRoleFromCombobox($event)"
           ></app-leadership-role-combobox>
         </div>
 
@@ -788,8 +818,13 @@
     <app-cf-empty-state
       *ngIf="customRoles.length === 0"
       title="No custom roles yet"
-      description="Create a custom role from the Add Leader form when a system role does not fit."
-    ></app-cf-empty-state>
+      description="Create a church-specific role for situations where the existing system roles do not meet your parish's needs."
+      [hasActions]="canCreateCustomRole"
+    >
+      <button *ngIf="canCreateCustomRole" type="button" class="cf-btn cf-btn-primary" (click)="openAddRoleFromManage()">
+        Add New Role
+      </button>
+    </app-cf-empty-state>
 
     <div *ngIf="customRoles.length > 0" class="clg__manage-roles-table-wrap">
       <table class="cf-table clg__manage-roles-table">
@@ -830,12 +865,35 @@
     </div>
 
     <div class="cf-split-form-actions">
+      <button
+        *ngIf="canCreateCustomRole"
+        type="button"
+        class="cf-btn cf-btn-primary"
+        (click)="openAddRoleFromManage()"
+        [disabled]="!!savingRoleId"
+      >
+        Add New Role
+      </button>
       <button type="button" class="cf-btn" (click)="closeManageRolesModal()" [disabled]="!!savingRoleId">
         Close
       </button>
     </div>
   </div>
 </app-modal-shell>
+
+<app-leadership-add-role-modal
+  *ngIf="showAddRoleModal"
+  [nested]="true"
+  [initialName]="addRoleInitialName"
+  [defaultCategory]="addRoleDefaultCategory"
+  [showCategory]="addRoleShowCategory"
+  [categoryOptions]="addRoleShowCategory ? categoryOptions : parishClergyCategoryOptions"
+  [existingRoles]="roles"
+  nameInputId="clg_new_role_name"
+  (closed)="closeAddRoleModal()"
+  (created)="onAddRoleCreated($event)"
+  (rolesRefresh)="onRolesRefreshed($event)"
+></app-leadership-add-role-modal>
 
 <app-image-viewer
   *ngIf="photoViewer as viewer"

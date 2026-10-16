@@ -7,9 +7,9 @@
 >
   <p class="cf-confirm__message" *ngIf="kind === 'view_only'">
     Your subscription expired on
-    <strong>{{ access.snapshotSignal()?.subscription_ends_at | cfDate }}</strong>,
+    <strong>{{ $safeNavigationMigration(access.snapshotSignal()?.subscription_ends_at) | cfDate }}</strong>,
     and your grace period ended on
-    <strong>{{ access.snapshotSignal()?.grace_ends_at | cfDate }}</strong>.
+    <strong>{{ $safeNavigationMigration(access.snapshotSignal()?.grace_ends_at) | cfDate }}</strong>.
     Your account is now in view-only mode. Creating, updating, deleting, exporting, and downloading are restricted.
     Renew your subscription to restore full access.
   </p>

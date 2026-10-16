@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SacramentMasonryDirective } from './sacrament-masonry.directive';
 
 @Component({
   standalone: true,
   imports: [SacramentMasonryDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div appSacramentMasonry class="sacrament-grid" style="grid-auto-rows: 1px">
       <article class="card" data-height="280" style="margin-bottom: 10px"><div class="sacrament-tile"></div></article>

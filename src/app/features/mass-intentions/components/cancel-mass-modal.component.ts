@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import {
@@ -80,6 +80,7 @@ export interface CancelMassPayload {
       </form>
     </app-modal-shell>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .cancel-mass__body {
