@@ -34,6 +34,12 @@ describe('media-url.util', () => {
     expect(resolveMediaDisplaySrc(signed)).toBe(signed);
   });
 
+  it('prefixes relative /api media paths with the production API origin', () => {
+    expect(resolveMediaDisplaySrc('/api/tenant/media/serve?token=abc')).toBe(
+      'https://api.ekklesianexus.com/api/tenant/media/serve?token=abc'
+    );
+  });
+
   it('validates supported image files', () => {
     const valid = new File(['x'], 'photo.webp', { type: 'image/webp' });
     Object.defineProperty(valid, 'size', { value: 1024 });

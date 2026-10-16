@@ -100,9 +100,20 @@ npm run build:prod
 test -f dist/ekklesia-soft-ui/browser/index.html
 grep -R --binary-files=without-match -n 'localhost' dist/ekklesia-soft-ui/browser && echo 'LOCALHOST_FOUND' || echo 'LOCALHOST_ABSENT'
 grep -R --binary-files=without-match -n 'api.ekklesianexus.com/api' dist/ekklesia-soft-ui/browser | head
+MAIN_JS=$(ls dist/ekklesia-soft-ui/browser/main-*.js)
+grep -q 'pathname.startsWith(`/api/`)&&' "$MAIN_JS" && echo 'MEDIA_URL_FIX_PRESENT' || echo 'MEDIA_URL_FIX_MISSING'
 ```
 
-Expected for Production: `index.html` exists, `LOCALHOST_ABSENT`, and the Production API host is present. `npm ci` must not rewrite `package-lock.json`.
+Expected for Production: `index.html` exists, `LOCALHOST_ABSENT`, `MEDIA_URL_FIX_PRESENT`, and the Production API host is present. `npm ci` must not rewrite `package-lock.json`.
+
+After publish, confirm the live app serves the new bundle (not an older `main-*.js`):
+
+```bash
+curl -sS https://<APP_HOST>/ | grep -oE 'main-[A-Z0-9]+\.js'
+curl -sS "https://<APP_HOST>/$(curl -sS https://<APP_HOST>/ | grep -oE 'main-[A-Z0-9]+\.js')" | grep -q 'pathname.startsWith(`/api/`)&&' && echo LIVE_MEDIA_FIX_OK
+```
+
+If portraits or logos break before a UI rollout, proxy `/api` on the application vhost to the API host. See `docs/deploy/apache-app-ekklesianexus.conf.example`.
 
 UAT, after a reviewed `uat` build configuration exists:
 

@@ -1,3 +1,5 @@
+import { officialBrand } from '@core/config/official-brand';
+
 export const MEDIA_IMAGE_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp';
 
 export const MEDIA_IMAGE_MAX_BYTES_DEFAULT = 3 * 1024 * 1024;
@@ -10,6 +12,16 @@ export interface SignedMediaUrls {
 }
 
 const LOOPBACK_MEDIA_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+function absoluteApiMediaPath(pathAndQuery: string): string {
+  try {
+    const origin = new URL(officialBrand.apiBaseUrl).origin;
+
+    return `${origin}${pathAndQuery.startsWith('/') ? pathAndQuery : `/${pathAndQuery}`}`;
+  } catch {
+    return pathAndQuery;
+  }
+}
 
 /**
  * Normalize signed media URLs for <img src>.
@@ -36,6 +48,10 @@ export function resolveMediaDisplaySrc(url?: string | null): string | null {
     }
 
     return trimmed;
+  }
+
+  if (trimmed.startsWith('/api/')) {
+    return absoluteApiMediaPath(trimmed);
   }
 
   return trimmed;
