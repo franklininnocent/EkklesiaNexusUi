@@ -13,15 +13,25 @@ describe('media-url.util', () => {
       .toBe('https://signed.example/logo.webp');
   });
 
-  it('rewrites absolute API media urls to same-origin /api paths', () => {
+  it('rewrites loopback API media urls to same-origin /api paths', () => {
     expect(
       resolveMediaDisplaySrc(
         'http://127.0.0.1:8000/api/tenant/media/serve?token=abc&signature=def'
       )
     ).toBe('/api/tenant/media/serve?token=abc&signature=def');
+    expect(
+      resolveMediaDisplaySrc(
+        'http://localhost:8000/api/tenant/media/serve?token=abc&signature=def'
+      )
+    ).toBe('/api/tenant/media/serve?token=abc&signature=def');
     expect(resolveMediaDisplaySrc('/api/tenant/media/serve?token=abc')).toBe(
       '/api/tenant/media/serve?token=abc'
     );
+  });
+
+  it('keeps production API media urls absolute so the image is not loaded from the app host', () => {
+    const signed = 'https://api.ekklesianexus.com/api/tenant/media/serve?token=abc&signature=def';
+    expect(resolveMediaDisplaySrc(signed)).toBe(signed);
   });
 
   it('validates supported image files', () => {
