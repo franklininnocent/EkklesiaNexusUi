@@ -1,0 +1,311 @@
+<!-- Backdrop Overlay (only for sidepanel mode) -->
+<div 
+  *ngIf="mode === 'sidepanel' && isExpanded" 
+  class="drawer-backdrop animate-fade-in"
+  [style.z-index]="overlayZIndex"
+  (click)="onClose()"
+  aria-hidden="true">
+</div>
+
+<!-- Advanced Search Toggle Button -->
+<div class="search-toggle-container" *ngIf="mode === 'inline'">
+  <button 
+    type="button"
+    class="btn-toggle-search"
+    (click)="toggle()"
+    [class.active]="isExpanded"
+    aria-label="Toggle advanced search">
+    <span class="icon">🔍</span>
+    <span class="text">{{ isExpanded ? 'Hide' : 'Show' }} Advanced Search</span>
+    <span class="arrow" [class.rotated]="isExpanded">▼</span>
+    <span *ngIf="hasActiveFilters()" class="filter-count">{{ getActiveFilters().length }}</span>
+  </button>
+</div>
+
+<!-- Active Filters Chips (always visible when filters exist) -->
+<div *ngIf="hasActiveFilters() && mode === 'inline'" class="active-filters animate-fade-in">
+  <div class="filters-header">
+    <span class="filters-label">Active Filters:</span>
+    <button 
+      type="button"
+      class="btn-clear-all"
+      (click)="onClear()"
+      aria-label="Clear all filters">
+      Clear All
+    </button>
+  </div>
+  <div class="filters-chips">
+    <div 
+      *ngFor="let filter of getActiveFilters()" 
+      class="filter-chip animate-scale-in">
+      <span class="chip-label">{{ filter.label }}:</span>
+      <span class="chip-value">{{ filter.displayValue }}</span>
+      <button 
+        type="button"
+        class="chip-remove"
+        (click)="removeFilter(filter)"
+        [attr.aria-label]="'Remove filter: ' + filter.label">
+        ✕
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Advanced Search Panel (Inline Mode) -->
+<div 
+  *ngIf="mode === 'inline' && isExpanded" 
+  class="search-panel animate-slide-down"
+  role="region"
+  aria-label="Advanced search filters">
+  
+  <div class="search-fields">
+    <div 
+      *ngFor="let field of fields" 
+      class="search-field">
+      
+      <label [for]="'search-' + field.key" class="field-label">
+        {{ field.label }}
+      </label>
+
+      <!-- Text Input -->
+      <input
+        *ngIf="field.type === 'text'"
+        type="text"
+        [id]="'search-' + field.key"
+        [name]="field.key"
+        [placeholder]="field.placeholder || 'Search by ' + field.label.toLowerCase()"
+        [(ngModel)]="field.value"
+        (ngModelChange)="onFieldChange(field, $event)"
+        class="field-input">
+
+      <!-- Number Input -->
+      <input
+        *ngIf="field.type === 'number'"
+        type="number"
+        [id]="'search-' + field.key"
+        [name]="field.key"
+        [placeholder]="field.placeholder || 'Enter ' + field.label.toLowerCase()"
+        [(ngModel)]="field.value"
+        (ngModelChange)="onFieldChange(field, $event)"
+        class="field-input">
+
+      <!-- Date Input -->
+      <input
+        *ngIf="field.type === 'date'"
+        type="date"
+        [id]="'search-' + field.key"
+        [name]="field.key"
+        [(ngModel)]="field.value"
+        (ngModelChange)="onFieldChange(field, $event)"
+        class="field-input">
+
+      <!-- Select Dropdown (Searchable) -->
+      <ng-select
+        *ngIf="field.type === 'select'"
+        [id]="'search-' + field.key"
+        [name]="field.key"
+        [items]="getSelectOptions(field)"
+        bindLabel="label"
+        bindValue="value"
+        [(ngModel)]="field.value"
+        (ngModelChange)="onFieldChange(field, $event)"
+        [searchable]="true"
+        [clearable]="true"
+        [placeholder]="'All ' + field.label"
+        class="field-select-searchable">
+      </ng-select>
+
+      <!-- Boolean Checkbox -->
+      <label 
+        *ngIf="field.type === 'boolean'"
+        class="field-checkbox-wrapper">
+        <input
+          type="checkbox"
+          [id]="'search-' + field.key"
+          [name]="field.key"
+          [(ngModel)]="field.value"
+          (ngModelChange)="onFieldChange(field, $event)"
+          class="field-checkbox">
+        <span class="checkbox-label">{{ field.placeholder || 'Yes' }}</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="search-actions">
+    <button 
+      type="button"
+      class="cf-btn"
+      (click)="onClear()"
+      aria-label="Clear search filters">
+      Clear
+    </button>
+    <button 
+      type="button"
+      class="cf-btn cf-btn-primary"
+      (click)="onSearch()"
+      aria-label="Apply search filters">
+      🔍 Search
+    </button>
+  </div>
+</div>
+
+<!-- Filter Drawer (sidepanel mode) -->
+<div 
+  #drawerRef
+  *ngIf="mode === 'sidepanel'" 
+  class="filter-drawer"
+  [class.open]="isExpanded"
+  [style.z-index]="overlayZIndex"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId">
+
+  <!-- Header -->
+  <header class="filter-drawer__header">
+    <div class="filter-drawer__heading">
+      <h2 [id]="titleId" class="filter-drawer__title">Filters</h2>
+      <span
+        *ngIf="hasActiveFilters()"
+        class="cf-badge cf-badge--info filter-drawer__count"
+        aria-live="polite">
+        {{ getActiveFilters().length }} active
+      </span>
+    </div>
+    <button 
+      type="button"
+      class="filter-drawer__close"
+      (click)="onClose()"
+      aria-label="Close filters">
+      <svg viewBox="0 0 24 24" class="cf-icon-sm" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Scrollable Filter Body (the only scroll region) -->
+  <div class="filter-drawer__body">
+    <div
+      *ngFor="let group of fieldGroups"
+      class="filter-drawer__group">
+      <p *ngIf="group.name" class="filter-drawer__group-caption">{{ group.name }}</p>
+
+      <div
+        *ngFor="let field of group.fields"
+        class="filter-drawer__field"
+        [class.is-active]="isFieldActive(field)">
+
+        <label
+          *ngIf="field.type !== 'boolean'"
+          [for]="'search-side-' + field.key"
+          class="filter-drawer__label">
+          {{ field.label }}
+          <span *ngIf="isFieldActive(field)" class="filter-drawer__active-dot" aria-hidden="true"></span>
+        </label>
+
+        <!-- Text Input -->
+        <input
+          *ngIf="field.type === 'text'"
+          type="text"
+          [id]="'search-side-' + field.key"
+          [name]="field.key"
+          [placeholder]="field.placeholder || 'Search by ' + field.label.toLowerCase()"
+          [(ngModel)]="field.value"
+          (ngModelChange)="onFieldChange(field, $event)"
+          class="filter-drawer__input">
+
+        <!-- Number Input -->
+        <input
+          *ngIf="field.type === 'number'"
+          type="number"
+          [id]="'search-side-' + field.key"
+          [name]="field.key"
+          [placeholder]="field.placeholder || 'Enter ' + field.label.toLowerCase()"
+          [(ngModel)]="field.value"
+          (ngModelChange)="onFieldChange(field, $event)"
+          class="filter-drawer__input">
+
+        <!-- Date Input -->
+        <input
+          *ngIf="field.type === 'date'"
+          type="date"
+          [id]="'search-side-' + field.key"
+          [name]="field.key"
+          [(ngModel)]="field.value"
+          (ngModelChange)="onFieldChange(field, $event)"
+          class="filter-drawer__input">
+
+        <!-- Select Dropdown (Searchable) -->
+        <ng-select
+          *ngIf="field.type === 'select'"
+          [id]="'search-side-' + field.key"
+          [name]="field.key"
+          [items]="getSelectOptions(field)"
+          bindLabel="label"
+          bindValue="value"
+          [(ngModel)]="field.value"
+          (ngModelChange)="onFieldChange(field, $event)"
+          [searchable]="true"
+          [clearable]="true"
+          [placeholder]="'All ' + field.label"
+          class="filter-drawer__select">
+        </ng-select>
+
+        <!-- Boolean Checkbox -->
+        <label 
+          *ngIf="field.type === 'boolean'"
+          class="filter-drawer__checkbox">
+          <input
+            type="checkbox"
+            [id]="'search-side-' + field.key"
+            [name]="field.key"
+            [(ngModel)]="field.value"
+            (ngModelChange)="onFieldChange(field, $event)">
+          <span class="filter-drawer__checkbox-label">{{ field.placeholder || field.label }}</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Applied Filters (non-scrolling utility area, above footer) -->
+  <div *ngIf="hasActiveFilters()" class="filter-drawer__applied">
+    <div class="filter-drawer__applied-head">
+      <span class="filter-drawer__applied-label">Applied filters</span>
+      <button 
+        type="button"
+        class="cf-btn-text filter-drawer__clear"
+        (click)="onClear()">
+        Clear all
+      </button>
+    </div>
+    <div class="filter-drawer__chips">
+      <span
+        *ngFor="let filter of getActiveFilters()"
+        class="cf-badge cf-badge--info filter-drawer__chip">
+        {{ filter.label }}: {{ filter.displayValue }}
+        <button 
+          type="button"
+          class="filter-drawer__chip-remove"
+          (click)="removeFilter(filter)"
+          [attr.aria-label]="'Remove filter: ' + filter.label">
+          ×
+        </button>
+      </span>
+    </div>
+  </div>
+
+  <!-- Footer Actions -->
+  <footer class="filter-drawer__footer">
+    <button 
+      type="button"
+      class="cf-btn filter-drawer__reset"
+      (click)="onClear()">
+      Reset
+    </button>
+    <button 
+      type="button"
+      class="cf-btn cf-btn-primary"
+      (click)="onSearch()">
+      Apply Filters
+    </button>
+  </footer>
+</div>

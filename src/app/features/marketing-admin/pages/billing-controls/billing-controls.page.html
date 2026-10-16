@@ -1,0 +1,340 @@
+<section class="cf-page billing-workspace">
+  <app-page-header
+    title="Billing & payment controls"
+    subtitle="Global switches, gateways, and offline methods"
+    backLink="/settings/billing"
+    backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading…</p>
+    } @else {
+      @if (error()) {
+        <p class="cf-inline-alert cf-panel" role="alert">{{ error() }}</p>
+      }
+
+      <div class="billing-workspace__stats">
+        <article class="cf-panel billing-workspace__stat">
+          <span class="billing-workspace__stat-label">Pending offline claims</span>
+          <strong class="billing-workspace__stat-value">{{ operationsPendingClaims }}</strong>
+        </article>
+        <article class="cf-panel billing-workspace__stat">
+          <span class="billing-workspace__stat-label">Orders awaiting payment</span>
+          <strong class="billing-workspace__stat-value">{{ operationsAwaitingOrders }}</strong>
+        </article>
+        <article class="cf-panel billing-workspace__stat">
+          <span class="billing-workspace__stat-label">Webhook queue</span>
+          <strong class="billing-workspace__stat-value">{{ webhookPending }} pending · {{ webhookFailed }} failed</strong>
+        </article>
+      </div>
+
+      <div class="billing-workspace__settings-grid">
+        <section class="cf-panel billing-workspace__settings-card">
+          <h2 class="billing-workspace__section-title">Billing availability</h2>
+          <p class="billing-workspace__section-lead">Disabling checkout does not stop webhooks, refunds, or history.</p>
+          <dl>
+            <dt>Customer payments</dt>
+            <dd>{{ customerPaymentActions }}</dd>
+            <dt>Online checkout</dt>
+            <dd>{{ onlineCheckout }}</dd>
+            <dt>Offline claims</dt>
+            <dd>{{ offlineClaims }}</dd>
+          </dl>
+          <button type="button" class="cf-btn cf-btn-primary" (click)="openAvailability()">Edit availability</button>
+        </section>
+
+        <section class="cf-panel billing-workspace__settings-card">
+          <h2 class="billing-workspace__section-title">Razorpay test</h2>
+          <p class="billing-workspace__section-lead">Key ID: {{ testPublicKeyId || 'Not set' }}</p>
+          <button type="button" class="cf-btn" (click)="openGatewayTest()">Configure test gateway</button>
+        </section>
+
+        <section class="cf-panel billing-workspace__settings-card">
+          <h2 class="billing-workspace__section-title">Razorpay live</h2>
+          <p class="billing-workspace__section-lead">
+            Key ID: {{ livePublicKeyId || 'Not set' }} · Live checkout: {{ liveCheckoutEnabled ? 'On' : 'Off' }}
+          </p>
+          <button type="button" class="cf-btn cf-btn-primary" (click)="openGatewayLive()">Configure live gateway</button>
+        </section>
+
+        <section class="cf-panel billing-workspace__settings-card">
+          <h2 class="billing-workspace__section-title">Offline methods</h2>
+          <p class="billing-workspace__section-lead">{{ offlineMethods.length }} method(s) configured</p>
+          <ul class="cf-list-compact">
+            <li *ngFor="let m of offlineMethods">
+              {{ m.label }} — {{ m.enabled ? 'Enabled' : 'Disabled' }}
+              <button type="button" class="cf-btn cf-btn-sm" (click)="openOfflineMethod(m)">Edit</button>
+            </li>
+          </ul>
+        </section>
+      </div>
+    }
+  </div>
+</section>
+
+<app-modal-shell
+  *ngIf="availabilityOpen"
+  title="Billing availability"
+  description="Changes apply to all tenants. A reason is required."
+  size="lg"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeAvailability()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-availability-form" (ngSubmit)="saveControls()">
+    <label>
+      Customer payments
+      <select [(ngModel)]="customerPaymentActions" name="customerPaymentActions">
+        <option value="disabled">Disabled</option>
+        <option value="enabled">Enabled</option>
+      </select>
+    </label>
+    <label>
+      Online checkout
+      <select [(ngModel)]="onlineCheckout" name="onlineCheckout">
+        <option value="disabled">Disabled</option>
+        <option value="enabled">Enabled</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+    </label>
+    <label>
+      Offline claims
+      <select [(ngModel)]="offlineClaims" name="offlineClaims">
+        <option value="disabled">Disabled</option>
+        <option value="enabled">Enabled</option>
+      </select>
+    </label>
+    <label class="full-width">
+      Maintenance message
+      <input type="text" [(ngModel)]="maintenanceMessage" name="maintenanceMessage" />
+    </label>
+    <label>
+      Maintenance until
+      <input type="datetime-local" [(ngModel)]="maintenanceUntil" name="maintenanceUntil" />
+    </label>
+    <label>
+      Revert checkout to
+      <select [(ngModel)]="maintenanceRevertTo" name="maintenanceRevertTo">
+        <option value="enabled">Enabled</option>
+        <option value="disabled">Disabled</option>
+      </select>
+    </label>
+    <label class="full-width">
+      Reason <span class="cf-required">*</span>
+      <textarea rows="2" [(ngModel)]="reason" name="reason" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeAvailability()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-availability-form" class="cf-btn cf-btn-primary" [disabled]="saving()">Save</button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="gatewayTestOpen"
+  title="Razorpay test gateway"
+  description="Sandbox credentials for checkout and webhook testing. Secrets are stored encrypted; leave blank to keep existing values."
+  size="md"
+  headerVariant="compact"
+  bodyPadding="none"
+  closeAriaLabel="Close Razorpay test gateway"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeGatewayTest()">
+  <form
+    class="cf-split-form-body billing-gateway-modal"
+    id="billing-gateway-test"
+    (ngSubmit)="saveGateway('test')"
+    novalidate>
+    <section class="cf-split-section" aria-labelledby="billing-gateway-test-credentials">
+      <h3 id="billing-gateway-test-credentials" class="cf-split-section__title">Credentials</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="billing_gateway_test_key_id">Key ID</label>
+          <input
+            id="billing_gateway_test_key_id"
+            type="text"
+            [(ngModel)]="testPublicKeyId"
+            name="testPublicKeyId"
+            autocomplete="off"
+            [disabled]="saving()"
+          />
+        </div>
+        <div class="cf-split-field cf-split-field--full">
+          <label for="billing_gateway_test_api_secret">API secret</label>
+          <input
+            id="billing_gateway_test_api_secret"
+            type="password"
+            [(ngModel)]="testApiSecret"
+            name="testApiSecret"
+            autocomplete="new-password"
+            [disabled]="saving()"
+          />
+          <p class="cf-split-field__hint">Leave blank to keep the current secret.</p>
+        </div>
+        <div class="cf-split-field cf-split-field--full">
+          <label for="billing_gateway_test_webhook_secret">Webhook secret</label>
+          <input
+            id="billing_gateway_test_webhook_secret"
+            type="password"
+            [(ngModel)]="testWebhookSecret"
+            name="testWebhookSecret"
+            autocomplete="new-password"
+            [disabled]="saving()"
+          />
+          <p class="cf-split-field__hint">Leave blank to keep the current secret.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="billing-gateway-test-audit">
+      <h3 id="billing-gateway-test-audit" class="cf-split-section__title">Audit</h3>
+      <div class="cf-split-field cf-split-field--full">
+        <label for="billing_gateway_test_reason">
+          Reason <span class="cf-split-req" aria-hidden="true">*</span>
+        </label>
+        <textarea
+          id="billing_gateway_test_reason"
+          rows="3"
+          [(ngModel)]="gatewayReason"
+          name="gatewayReasonTest"
+          maxlength="500"
+          aria-required="true"
+          [disabled]="saving()"
+          required
+        ></textarea>
+        <p class="cf-split-field__hint">Required for the billing change log.</p>
+      </div>
+    </section>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeGatewayTest()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-gateway-test" class="cf-btn cf-btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="gatewayLiveOpen"
+  title="Razorpay live gateway"
+  description="Production credentials and checkout switch. Turning on live checkout affects real customer payments."
+  size="md"
+  headerVariant="compact"
+  bodyPadding="none"
+  closeAriaLabel="Close Razorpay live gateway"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeGatewayLive()">
+  <form
+    class="cf-split-form-body billing-gateway-modal"
+    id="billing-gateway-live"
+    (ngSubmit)="saveGateway('live')"
+    novalidate>
+    <section class="cf-split-section" aria-labelledby="billing-gateway-live-checkout">
+      <h3 id="billing-gateway-live-checkout" class="cf-split-section__title">Checkout</h3>
+      <label class="cf-split-toggle cf-split-toggle--block">
+        <input
+          type="checkbox"
+          [(ngModel)]="liveCheckoutEnabled"
+          name="liveCheckoutEnabled"
+          [disabled]="saving()"
+        />
+        <span>
+          Live checkout enabled
+          <small>When on, tenants can complete subscription payments with live Razorpay keys.</small>
+        </span>
+      </label>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="billing-gateway-live-credentials">
+      <h3 id="billing-gateway-live-credentials" class="cf-split-section__title">Credentials</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="billing_gateway_live_key_id">Key ID</label>
+          <input
+            id="billing_gateway_live_key_id"
+            type="text"
+            [(ngModel)]="livePublicKeyId"
+            name="livePublicKeyId"
+            autocomplete="off"
+            [disabled]="saving()"
+          />
+        </div>
+        <div class="cf-split-field cf-split-field--full">
+          <label for="billing_gateway_live_api_secret">API secret</label>
+          <input
+            id="billing_gateway_live_api_secret"
+            type="password"
+            [(ngModel)]="liveApiSecret"
+            name="liveApiSecret"
+            autocomplete="new-password"
+            [disabled]="saving()"
+          />
+          <p class="cf-split-field__hint">Leave blank to keep the current secret.</p>
+        </div>
+        <div class="cf-split-field cf-split-field--full">
+          <label for="billing_gateway_live_webhook_secret">Webhook secret</label>
+          <input
+            id="billing_gateway_live_webhook_secret"
+            type="password"
+            [(ngModel)]="liveWebhookSecret"
+            name="liveWebhookSecret"
+            autocomplete="new-password"
+            [disabled]="saving()"
+          />
+          <p class="cf-split-field__hint">Leave blank to keep the current secret.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="billing-gateway-live-audit">
+      <h3 id="billing-gateway-live-audit" class="cf-split-section__title">Audit</h3>
+      <div class="cf-split-field cf-split-field--full">
+        <label for="billing_gateway_live_reason">
+          Reason <span class="cf-split-req" aria-hidden="true">*</span>
+        </label>
+        <textarea
+          id="billing_gateway_live_reason"
+          rows="3"
+          [(ngModel)]="gatewayReason"
+          name="gatewayReasonLive"
+          maxlength="500"
+          aria-required="true"
+          [disabled]="saving()"
+          required
+        ></textarea>
+        <p class="cf-split-field__hint">Required for the billing change log.</p>
+      </div>
+    </section>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeGatewayLive()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-gateway-live" class="cf-btn cf-btn-primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="offlineMethodEdit"
+  [title]="'Offline method — ' + offlineMethodEdit.label"
+  size="md"
+  [isSubmitting]="saving()"
+  (closeRequested)="closeOfflineMethod()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-offline-method" (ngSubmit)="saveOfflineMethod()">
+    <label class="full-width">
+      <input type="checkbox" [(ngModel)]="offlineMethodEnabled" name="offlineMethodEnabled" />
+      Enabled for tenants
+    </label>
+    <label class="full-width">
+      Instructions shown to tenants
+      <textarea rows="4" [(ngModel)]="offlineMethodInstructions" name="offlineMethodInstructions"></textarea>
+    </label>
+    <label class="full-width">
+      Reason <span class="cf-required">*</span>
+      <input type="text" [(ngModel)]="offlineMethodReason" name="offlineMethodReason" required />
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeOfflineMethod()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-offline-method" class="cf-btn cf-btn-primary" [disabled]="saving()">Save</button>
+  </ng-container>
+</app-modal-shell>

@@ -1,0 +1,1138 @@
+import { Injectable, Injector, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject, tap, map, catchError, throwError, of, timeout, finalize } from 'rxjs';
+import { Router } from '@angular/router';
+import { environment } from '@environments/environment';
+import { AuthResponse, LoginRequest, RegisterRequest, User } from '@core/models';
+import { PhoneCodeService } from '@core/services/phone-code.service';
+import { getCountryCallingCode, CountryCode } from 'libphonenumber-js';
+import { canViewMySubscription as canViewMySubscriptionAccess } from '@shared/utils/subscription-access.util';
+import { SupportSessionService } from '@features/support-center/services/support-session.service';
+import { EntitlementService } from './entitlement.service';
+import { SubscriptionAccessService } from './subscription-access.service';
+import { ChurchCurrencyService } from '@core/services/church-currency.service';
+import { ChurchCurrency } from '@core/models/church-currency.model';
+
+/**
+ * Tokens are stored in localStorage for Passport compatibility. Moving to
+ * HttpOnly cookies requires coordinated API, CSRF, and refresh-token work —
+ * not a frontend-only change.
+ */
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private phoneCodeService = inject(PhoneCodeService);
+  private supportSessions = inject(SupportSessionService);
+  private injector = inject(Injector);
+  private churchCurrency = inject(ChurchCurrencyService);
+  private readonly authEndpointPrefix = '/auth';
+  
+  private currentUserSubject = new BehaviorSubject<User | null>(this.getUserFromStorage());
+  public currentUser$ = this.currentUserSubject.asObservable();
+
+  constructor() {
+    const stored = this.getUserFromStorage();
+    if (stored?.tenant) {
+      this.churchCurrency.hydrate((stored.tenant as { currency?: ChurchCurrency | null }).currency);
+    }
+  }
+
+  register(data: RegisterRequest): Observable<AuthResponse> {
+    this.beginReauthentication();
+    return this.postWithFallback<AuthResponse>('/register', data)
+      .pipe(
+        tap(response => this.handleAuthSuccess(response))
+      );
+  }
+
+  login(credentials: LoginRequest): Observable<AuthResponse> {
+    this.beginReauthentication();
+    return this.postWithFallback<AuthResponse>('/login', credentials)
+      .pipe(
+        tap(response => this.handleAuthSuccess(response))
+      );
+  }
+
+  logout(): Observable<any> {
+    return this.postWithFallback('/logout', {})
+      .pipe(
+        timeout(5000),
+        catchError(() => of(null)),
+        finalize(() => this.clearAuthState())
+      );
+  }
+
+  /** Clear tokens, tenant context, and support session without calling the API. */
+  clearAuthState(): void {
+    this.handleLogout();
+  }
+
+  getCurrentUser(): Observable<User> {
+    return this.getWithFallback<{ success: boolean; data: User; message: string }>('/get-user')
+      .pipe(
+        // Extract the user data from the response
+        map(response => response.data)
+      );
+  }
+
+  refreshUser(): void {
+    this.getCurrentUser().subscribe({
+      next: (user) => {
+        this.setUser(user);
+      },
+      error: () => {
+        this.handleLogout();
+      }
+    });
+  }
+
+  /** Persist the current user into localStorage and the auth BehaviorSubject. */
+  syncCurrentUser(user: User): void {
+    this.setUser(user);
+  }
+
+  uploadMyProfileImage(file: File): Observable<{ success: boolean; data: User; message: string }> {
+    const formData = new FormData();
+    formData.append('profile_image', file);
+
+    return this.postWithFallback<{ success: boolean; data: User; message: string }>(
+      '/profile-image',
+      formData
+    );
+  }
+
+  deleteMyProfileImage(): Observable<{ success: boolean; data: User; message: string }> {
+    return this.deleteWithFallback<{ success: boolean; data: User; message: string }>('/profile-image');
+  }
+
+  changePassword(payload: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  }): Observable<{ success: boolean; message: string; data: AuthResponse }> {
+    return this.postWithFallback<{ success: boolean; message: string; data: AuthResponse }>(
+      '/password/change',
+      payload
+    ).pipe(
+      tap((response) => {
+        if (response?.data?.access_token) {
+          localStorage.setItem(environment.tokenKey, response.data.access_token);
+          localStorage.setItem(environment.refreshTokenKey, response.data.refresh_token);
+          localStorage.setItem(environment.expiryTimeKey, response.data.expiry_time);
+        }
+      })
+    );
+  }
+
+  mustChangePassword(user?: User | null): boolean {
+    const subject = user ?? this.currentUserValue;
+    return !!subject?.force_password_change;
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(environment.tokenKey);
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
+
+  refreshTokens(refreshToken: string): Observable<AuthResponse> {
+    return this.postWithFallback<AuthResponse>('/refresh', { refresh_token: refreshToken })
+      .pipe(
+        tap(response => this.handleAuthSuccess(response))
+      );
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(environment.refreshTokenKey);
+  }
+
+  private handleAuthSuccess(response: AuthResponse): void {
+    // Prevent a prior platform Support session from leaking into a new login identity.
+    this.supportSessions.clearSession();
+
+    // Store tokens only. User hydration is owned by AuthEffects (loadUser / post-login).
+    // A parallel getCurrentUser() here raced the effects and could 401-clear the fresh session.
+    localStorage.setItem(environment.tokenKey, response.access_token);
+    localStorage.setItem(environment.refreshTokenKey, response.refresh_token);
+    localStorage.setItem(environment.expiryTimeKey, response.expiry_time);
+    localStorage.setItem(environment.userIdKey, response.user_id?.toString() || '');
+    if (response.role_id) {
+      localStorage.setItem(environment.roleIdKey, response.role_id.toString());
+    }
+  }
+
+  private setToken(token: string): void {
+    localStorage.setItem(environment.tokenKey, token);
+  }
+
+  private postWithFallback<T>(path: string, payload: unknown): Observable<T> {
+    const primaryUrl = this.buildPrimaryAuthUrl(path);
+    const fallbackUrl = this.buildFallbackAuthUrl(path);
+
+    return this.http.post<T>(primaryUrl, payload).pipe(
+      catchError((error) => {
+        if (!this.shouldRetryOnFallback(error, primaryUrl, fallbackUrl)) {
+          return throwError(() => error);
+        }
+
+        return this.http.post<T>(fallbackUrl, payload);
+      })
+    );
+  }
+
+  private getWithFallback<T>(path: string): Observable<T> {
+    const primaryUrl = this.buildPrimaryAuthUrl(path);
+    const fallbackUrl = this.buildFallbackAuthUrl(path);
+
+    return this.http.get<T>(primaryUrl).pipe(
+      catchError((error) => {
+        if (!this.shouldRetryOnFallback(error, primaryUrl, fallbackUrl)) {
+          return throwError(() => error);
+        }
+
+        return this.http.get<T>(fallbackUrl);
+      })
+    );
+  }
+
+  private deleteWithFallback<T>(path: string): Observable<T> {
+    const primaryUrl = this.buildPrimaryAuthUrl(path);
+    const fallbackUrl = this.buildFallbackAuthUrl(path);
+
+    return this.http.delete<T>(primaryUrl).pipe(
+      catchError((error) => {
+        if (!this.shouldRetryOnFallback(error, primaryUrl, fallbackUrl)) {
+          return throwError(() => error);
+        }
+
+        return this.http.delete<T>(fallbackUrl);
+      })
+    );
+  }
+
+  private shouldRetryOnFallback(error: any, primaryUrl: string, fallbackUrl: string): boolean {
+    if (error?.status !== 0) {
+      return false;
+    }
+
+    if (!fallbackUrl || primaryUrl === fallbackUrl) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private buildPrimaryAuthUrl(path: string): string {
+    return `${environment.apiUrl}${this.authEndpointPrefix}${path}`;
+  }
+
+  private buildFallbackAuthUrl(path: string): string {
+    if (typeof window === 'undefined' || !window.location?.origin) {
+      return this.buildPrimaryAuthUrl(path);
+    }
+
+    return `${window.location.origin}/api${this.authEndpointPrefix}${path}`;
+  }
+
+  private setUser(user: User): void {
+    localStorage.setItem(environment.userKey, JSON.stringify(user));
+    this.currentUserSubject.next(user);
+    this.churchCurrency.hydrate((user as { tenant?: { currency?: ChurchCurrency | null } }).tenant?.currency);
+
+    // Update tenant country code cache and phone code globally
+    try {
+      const tenant = (user as any)?.tenant;
+      if (tenant) {
+        // Priority 1: Use country object from backend (most reliable)
+        const tenantCountry = tenant.country;
+        if (tenantCountry) {
+          // Use phone_code from database if available
+          if (tenantCountry.phone_code) {
+            const phoneCode = tenantCountry.phone_code.startsWith('+') 
+              ? tenantCountry.phone_code 
+              : `+${tenantCountry.phone_code}`;
+            this.phoneCodeService.setPhoneCode(phoneCode);
+            try { localStorage.setItem('tenant_country_code', tenantCountry.iso2); } catch {}
+            try { localStorage.setItem('tenant_country_id', tenantCountry.id.toString()); } catch {}
+            return; // Successfully updated, exit early
+          }
+          // Fallback to ISO2 code
+          else if (tenantCountry.iso2) {
+            const upper = tenantCountry.iso2.toUpperCase();
+            try { localStorage.setItem('tenant_country_code', upper); } catch {}
+            try { localStorage.setItem('tenant_country_id', tenantCountry.id.toString()); } catch {}
+            try {
+              const code = getCountryCallingCode(upper as CountryCode);
+              if (code) {
+                this.phoneCodeService.setPhoneCode(`+${code}`);
+              }
+            } catch {}
+            return; // Successfully updated, exit early
+          }
+        }
+        
+        // Priority 2: Try legacy country_code or country.iso2
+        const iso2: string | undefined = tenant.country_code || tenant.country?.iso2;
+        if (iso2 && typeof iso2 === 'string' && iso2.length >= 2) {
+          const upper = iso2.toUpperCase();
+          try { localStorage.setItem('tenant_country_code', upper); } catch {}
+          try {
+            const code = getCountryCallingCode(upper as CountryCode);
+            if (code) {
+              this.phoneCodeService.setPhoneCode(`+${code}`);
+            }
+          } catch {}
+        }
+        
+        // Store country_id if available
+        if (tenant.country_id) {
+          try { localStorage.setItem('tenant_country_id', tenant.country_id.toString()); } catch {}
+        }
+      }
+    } catch (error) {
+      console.error('Error updating phone code from user:', error);
+    }
+  }
+
+  private getUserFromStorage(): User | null {
+    const userStr = localStorage.getItem(environment.userKey);
+    return userStr ? JSON.parse(userStr) : null;
+  }
+
+  /** Drop stale tenant user before login/register so subscription interceptor does not block auth APIs. */
+  private beginReauthentication(): void {
+    localStorage.removeItem(environment.userKey);
+    this.currentUserSubject.next(null);
+    this.injector.get(SubscriptionAccessService).clear();
+  }
+
+  private handleLogout(): void {
+    this.supportSessions.clearSession();
+    this.churchCurrency.clear();
+    try {
+      localStorage.removeItem('tenant_country_code');
+      localStorage.removeItem('tenant_country_id');
+    } catch {
+      // ignore storage errors
+    }
+    localStorage.removeItem(environment.tokenKey);
+    localStorage.removeItem(environment.refreshTokenKey);
+    localStorage.removeItem(environment.expiryTimeKey);
+    localStorage.removeItem(environment.userIdKey);
+    localStorage.removeItem(environment.roleIdKey);
+    localStorage.removeItem(environment.userKey);
+    localStorage.removeItem(environment.tenantKey);
+    // Backward-compat cleanup for any legacy auth keys.
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('tenant_id');
+    this.currentUserSubject.next(null);
+    this.router.navigate(['/auth/login']);
+  }
+
+  get currentUserValue(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  /**
+   * Check if the current user has a specific permission.
+   * 
+   * @param permission Permission name (e.g., 'users.create', 'roles.update')
+   * @returns True if user has the permission, false otherwise
+   */
+  hasPermission(permission: string): boolean {
+    const user = this.currentUserValue;
+    if (!user || !user.permissions) {
+      return false;
+    }
+    return user.permissions.some(p => p.name === permission);
+  }
+
+  /** Parish context from home tenant or platform Support overlay. */
+  hasParishContext(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (user.tenant_id) {
+      return true;
+    }
+
+    return this.isPlatformActor(user) && this.supportSessions.isSessionLive;
+  }
+
+  /**
+   * Platform operator: Ekklesia roles or SupportAdmin.
+   * Never derived from Support session or tenant context alone.
+   */
+  isPlatformActor(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.hasEkklesiaRole(user)) {
+      return true;
+    }
+
+    const roleName = user.role_name || user.role?.name;
+    if (roleName === 'SupportAdmin') {
+      return true;
+    }
+
+    return !!user.roles?.some((role) => role.name === 'SupportAdmin');
+  }
+
+  isTenantActor(user: User | null = this.currentUserValue): boolean {
+    return !!user && !this.isPlatformActor(user);
+  }
+
+  /**
+   * Ekklesia roles only (SuperAdmin, EkklesiaAdmin, EkklesiaManager, EkklesiaUser).
+   * Does not include SupportAdmin.
+   */
+  hasEkklesiaRole(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (user.has_ekklesia_role === true) {
+      return true;
+    }
+
+    if (user.has_ekklesia_role === false) {
+      return false;
+    }
+
+    const ekklesiaRoles = ['SuperAdmin', 'EkklesiaAdmin', 'EkklesiaManager', 'EkklesiaUser'];
+    if (user.role_name && ekklesiaRoles.includes(user.role_name)) {
+      return true;
+    }
+
+    if (user.role?.name && ekklesiaRoles.includes(user.role.name)) {
+      return true;
+    }
+
+    return (
+      user.is_super_admin === true ||
+      user.role_name === 'SuperAdmin' ||
+      user.role?.name === 'SuperAdmin' ||
+      user.role_name === 'EkklesiaAdmin' ||
+      user.role?.name === 'EkklesiaAdmin'
+    );
+  }
+
+  /** SuperAdmin and EkklesiaAdmin only — platform tenant administration. */
+  canManageTenants(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.isPlatformActor(user)) {
+      return false;
+    }
+
+    if (user.is_super_admin === true) {
+      return true;
+    }
+
+    const adminRoles = ['SuperAdmin', 'Super Admin', 'EkklesiaAdmin', 'Ekklesia Admin'];
+    if (user.role_name && adminRoles.includes(user.role_name)) {
+      return true;
+    }
+
+    if (user.role?.name && adminRoles.includes(user.role.name)) {
+      return true;
+    }
+
+    return !!user.roles?.some((role) => adminRoles.includes(role.name));
+  }
+
+  /**
+   * Tenant-scoped permission check.
+   * Mirrors backend AuthorizesTenantPermission::allows().
+   */
+  hasTenantPermission(permission: string): boolean {
+    const user = this.currentUserValue;
+    if (!user) {
+      return false;
+    }
+
+    if (this.isPlatformActor(user) && this.supportSessions.isSessionLive) {
+      return true;
+    }
+
+    if (this.isSuperAdmin() || user.is_super_admin) {
+      return true;
+    }
+
+    if (user.is_primary_admin) {
+      return true;
+    }
+
+    if (user.tenant_id && this.isTenantAdmin()) {
+      return true;
+    }
+
+    return this.hasPermission(permission);
+  }
+
+  /**
+   * Platform ecclesiastical permission check.
+   * Mirrors backend AuthorizesEcclesiasticalPermission::allowsPlatform().
+   */
+  hasEcclesiasticalPermission(permission: string): boolean {
+    const user = this.currentUserValue;
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || user.is_super_admin) {
+      return true;
+    }
+
+    if (!user.has_ekklesia_role) {
+      return false;
+    }
+
+    if (user.is_primary_admin) {
+      return true;
+    }
+
+    const legacy = this.legacyEcclesiasticalPermissionName(permission);
+    return this.hasPermission(permission) || (legacy ? this.hasPermission(legacy) : false);
+  }
+
+  private legacyEcclesiasticalPermissionName(permission: string): string | null {
+    const legacyMap: Record<string, string> = {
+      'bishops.view': 'view_bishops',
+      'bishops.create': 'create_bishops',
+      'bishops.update': 'edit_bishops',
+      'bishops.archive': 'delete_bishops',
+      'dioceses.view': 'view_dioceses',
+      'dioceses.create': 'create_dioceses',
+      'dioceses.update': 'edit_dioceses',
+      'dioceses.delete': 'delete_dioceses',
+    };
+
+    return legacyMap[permission] ?? null;
+  }
+
+  /**
+   * Check if the current user has any of the given permissions.
+   * 
+   * @param permissions Array of permission names
+   * @returns True if user has at least one permission, false otherwise
+   */
+  hasAnyPermission(permissions: string[]): boolean {
+    const user = this.currentUserValue;
+    if (!user || !user.permissions) {
+      return false;
+    }
+    return permissions.some(permission => 
+      user.permissions!.some(p => p.name === permission)
+    );
+  }
+
+  /**
+   * Check if the current user has all of the given permissions.
+   * 
+   * @param permissions Array of permission names
+   * @returns True if user has all permissions, false otherwise
+   */
+  hasAllPermissions(permissions: string[]): boolean {
+    const user = this.currentUserValue;
+    if (!user || !user.permissions) {
+      return false;
+    }
+    return permissions.every(permission => 
+      user.permissions!.some(p => p.name === permission)
+    );
+  }
+
+  /**
+   * Check if the current user has a specific role.
+   * 
+   * @param roleName Role name (e.g., 'Administrator', 'Manager')
+   * @returns True if user has the role, false otherwise
+   */
+  hasRole(roleName: string): boolean {
+    const user = this.currentUserValue;
+    if (!user || !user.roles) {
+      return false;
+    }
+    return user.roles.some(r => r.name === roleName);
+  }
+
+  /**
+   * Check if the current user is a Super Admin.
+   * 
+   * @returns True if user is Super Admin, false otherwise
+   */
+  isSuperAdmin(user: User | null = this.currentUserValue): boolean {
+    if (!user) return false;
+
+    const hasSuperAdminRole =
+      (user.roles || []).some((role) => role?.name === 'SuperAdmin' || role?.name === 'Super Admin');
+
+    // Never treat generic has_ekklesia_role as SuperAdmin (covers Manager/User too).
+    return user.is_super_admin === true ||
+           hasSuperAdminRole ||
+           user.role_name === 'SuperAdmin' ||
+           user.role?.name === 'SuperAdmin';
+  }
+
+  /** Default tenant admin or SuperAdmin in a parish support session. */
+  canViewTenantAuditLogs(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin(user)) {
+      return true;
+    }
+
+    const primaryAdminRaw = (user as { is_primary_admin?: boolean | number | string }).is_primary_admin;
+    const isPrimaryAdmin =
+      primaryAdminRaw === true || primaryAdminRaw === 1 || primaryAdminRaw === '1';
+
+    return !!user.tenant_id && isPrimaryAdmin && this.planIncludes('AUDIT_LOG');
+  }
+
+  /** Mirrors the API's plan check for audit viewing; resolved lazily (EntitlementService depends on AuthService). */
+  private planIncludes(featureCode: string): boolean {
+    try {
+      return this.injector.get(EntitlementService).hasFeature(featureCode);
+    } catch {
+      return true;
+    }
+  }
+
+  /** Complete platform audit trails (bishops, dioceses, cross-tenant insights, subscription history). */
+  canViewPlatformCompleteAudit(user: User | null = this.currentUserValue): boolean {
+    return this.isSuperAdmin(user);
+  }
+
+  /** Support Center operational session events. */
+  canViewSupportOperationalAudit(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin(user)) {
+      return true;
+    }
+
+    const hasSupportAdminRole = (user.roles || []).some((role) => role?.name === 'SupportAdmin');
+
+    return hasSupportAdminRole || user.role_name === 'SupportAdmin';
+  }
+
+  /**
+   * Check if the current user is an Ekklesia Admin.
+   * 
+   * @returns True if user is Ekklesia Admin, false otherwise
+   */
+  isEkklesiaAdmin(): boolean {
+    const user = this.currentUserValue;
+    if (!user) return false;
+    
+    // Never treat generic has_ekklesia_role as EkklesiaAdmin.
+    return this.hasRole('EkklesiaAdmin') || 
+           this.hasRole('Ekklesia Admin') ||
+           user.role_name === 'EkklesiaAdmin' ||
+           user.role?.name === 'EkklesiaAdmin';
+  }
+
+  /**
+   * Check if the current user is a Tenant Administrator.
+   * 
+   * @returns True if user is a Tenant Administrator, false otherwise
+   */
+  isTenantAdmin(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    const tenantAdminRoleNames = ['Administrator', 'Church Administrator'];
+
+    return tenantAdminRoleNames.some((roleName) =>
+      user.roles?.some((role) => role.name === roleName) ||
+      user.role_name === roleName ||
+      user.role?.name === roleName
+    );
+  }
+
+  canManageOwnProfileImage(user: User | null = this.currentUserValue): boolean {
+    if (!user?.tenant_id) {
+      return false;
+    }
+
+    if (user.is_primary_admin) {
+      return true;
+    }
+
+    return this.isTenantAdmin(user);
+  }
+
+  canAccessRbac(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+
+    const isEkklesiaManager =
+      user.role_name === 'EkklesiaManager' ||
+      user.role?.name === 'EkklesiaManager' ||
+      !!user.roles?.some((role) => role.name === 'EkklesiaManager');
+
+    if (isEkklesiaManager) {
+      return true;
+    }
+
+    const isTenantAdmin = !!user.tenant_id && this.isTenantAdmin();
+    const hasRbacViewPermission = this.hasAnyPermission(['roles.view', 'permissions.view']);
+
+    return isTenantAdmin || hasRbacViewPermission;
+  }
+
+  /**
+   * Settings → Forgot Password Requests (mirrors backend approver audience).
+   * Always evaluate the passed-in user (sidebar/store), not only currentUserValue.
+   */
+  canViewPasswordRecoveryRequests(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    const isSuper = this.isSuperAdminUser(user);
+    const isPrimaryAdmin = !!user.tenant_id && !!user.is_primary_admin;
+    const hasRecoveryPerm = this.userHasAnyPermission(user, [
+      'password.recovery.requests.view',
+      'password.recovery.requests.process',
+    ]);
+
+    return isSuper || isPrimaryAdmin || hasRecoveryPerm;
+  }
+
+  canProcessPasswordRecoveryRequests(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdminUser(user)) {
+      return true;
+    }
+
+    if (user.tenant_id && !!user.is_primary_admin) {
+      return true;
+    }
+
+    return this.userHasAnyPermission(user, ['password.recovery.requests.process']);
+  }
+
+  private isSuperAdminUser(user: User): boolean {
+    return (
+      user.is_super_admin === true ||
+      user.role_name === 'SuperAdmin' ||
+      user.role_name === 'Super Admin' ||
+      user.role?.name === 'SuperAdmin' ||
+      user.role?.name === 'Super Admin' ||
+      !!user.roles?.some((role) => role.name === 'SuperAdmin' || role.name === 'Super Admin')
+    );
+  }
+
+  private userHasAnyPermission(user: User, permissions: string[]): boolean {
+    if (!user.permissions?.length) {
+      return false;
+    }
+
+    return permissions.some((permission) =>
+      user.permissions!.some((entry) => entry.name === permission)
+    );
+  }
+
+  canManageRbac(user: User | null = this.currentUserValue): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+
+    const isEkklesiaManager =
+      user.role_name === 'EkklesiaManager' ||
+      user.role?.name === 'EkklesiaManager' ||
+      !!user.roles?.some((role) => role.name === 'EkklesiaManager');
+
+    if (isEkklesiaManager) {
+      return true;
+    }
+
+    // Tenant manage requires administrator role OR explicit manage/assign permissions.
+    // View-only (roles.view / permissions.view) must not unlock mutating UI.
+    if (user.tenant_id && this.isTenantAdmin()) {
+      return true;
+    }
+
+    return this.hasAnyPermission([
+      'roles.create',
+      'roles.update',
+      'roles.delete',
+      'roles.assign',
+      'permissions.assign',
+      'permissions.create',
+      'permissions.update',
+      'permissions.delete',
+    ]);
+  }
+
+  /**
+   * Whether the user may open Settings → My Subscription.
+   * Shared by route guard, settings tile, banner CTA, and soft-gate redirects.
+   */
+  canViewMySubscription(user: User | null = this.currentUserValue): boolean {
+    return canViewMySubscriptionAccess(user);
+  }
+
+  canAccessDonations(
+    user: User | null = this.currentUserValue,
+    options: { hasActiveSupportSession?: boolean } = {}
+  ): boolean {
+    if (!user) {
+      return false;
+    }
+
+    // Platform admins need parish context (home tenant or active Support session).
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return !!user.tenant_id || !!options.hasActiveSupportSession;
+    }
+
+    if (!user.tenant_id) {
+      return this.isPlatformActor(user) && this.canAccessSupportCenter(user) && !!options.hasActiveSupportSession;
+    }
+
+    const tenantAdminRoleNames = ['Administrator', 'Church Administrator'];
+    const hasTenantAdminRole = tenantAdminRoleNames.some((roleName) =>
+      (user.roles || []).some((role) => role?.name === roleName) ||
+      user.role_name === roleName ||
+      user.role?.name === roleName
+    );
+
+    const primaryAdminRaw = (user as any).is_primary_admin;
+    const isPrimaryAdmin = primaryAdminRaw === true || primaryAdminRaw === 1 || primaryAdminRaw === '1';
+    if (isPrimaryAdmin || hasTenantAdminRole) {
+      return true;
+    }
+
+    // Keep donations menu/route behavior aligned with working RBAC visibility.
+    if (this.canAccessRbac(user)) {
+      return true;
+    }
+
+    const permissionNames = [
+      'donations.view',
+      'donations.collect',
+      'donations.manage',
+      'donations.create',
+      'donations.edit',
+      'donations.delete',
+      'donations.reports',
+      'donations.export',
+      'reports.view',
+      'reports.export'
+    ];
+
+    return permissionNames.some((permissionName) =>
+      (user.permissions || []).some((permission) => permission?.name === permissionName)
+    );
+  }
+
+  canAccessSupport(user: User | null = this.currentUserValue): boolean {
+    if (!user?.tenant_id) {
+      return false;
+    }
+
+    if (this.isTenantAdmin(user) || user.is_primary_admin) {
+      return true;
+    }
+
+    return (user.permissions || []).some((permission) => permission?.name === 'support.tickets.view');
+  }
+
+  /** Platform Support Center (/support-center) — sessions, ops tickets, grants, audit. */
+  canAccessSupportCenter(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.isPlatformActor(user)) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+
+    return this.hasAnyPermission([
+      'support.sessions.start',
+      'support.sessions.view',
+      'support.ops.tickets.view',
+      'support.configuration.manage',
+      'support.audit.view',
+      'support.grants.view',
+      'support.grants.manage',
+    ]);
+  }
+
+  /** Website-wide Web Settings (platform Ekklesia operators). */
+  canAccessWebSettings(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.hasEkklesiaRole(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasAnyPermission(['web_settings.view', 'web_settings.update']);
+  }
+
+  canUpdateWebSettings(user: User | null = this.currentUserValue): boolean {
+    if (!this.canAccessWebSettings(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('web_settings.update');
+  }
+
+  canViewContactEnquiries(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.hasEkklesiaRole(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasAnyPermission([
+      'contact_enquiries.view',
+      'contact_enquiries.update',
+      'contact_enquiries.retry_email',
+      'contact_enquiries.delete',
+    ]);
+  }
+
+  canUpdateContactEnquiries(user: User | null = this.currentUserValue): boolean {
+    if (!this.canViewContactEnquiries(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('contact_enquiries.update');
+  }
+
+  canRetryContactEnquiryEmail(user: User | null = this.currentUserValue): boolean {
+    if (!this.canViewContactEnquiries(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('contact_enquiries.retry_email');
+  }
+
+  canDeleteContactEnquiries(user: User | null = this.currentUserValue): boolean {
+    if (!this.canViewContactEnquiries(user)) {
+      return false;
+    }
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return true;
+    }
+    return this.hasPermission('contact_enquiries.delete');
+  }
+
+  /** Platform Application Access (/application-access) — security monitoring. */
+  canAccessApplicationAccess(user: User | null = this.currentUserValue): boolean {
+    if (!user || !this.hasEkklesiaRole(user)) {
+      return false;
+    }
+
+    if (this.isSuperAdmin()) {
+      return true;
+    }
+
+    return this.hasPermission('application_access.view');
+  }
+
+  /**
+   * Tenant Ministries & Associations CRUD (/ministries) — not platform Insights.
+   * SuperAdmin/EkklesiaAdmin need home tenant_id or an active Support session.
+   */
+  canAccessMinistries(
+    user: User | null = this.currentUserValue,
+    options: { hasActiveSupportSession?: boolean } = {}
+  ): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return !!user.tenant_id || !!options.hasActiveSupportSession;
+    }
+
+    if (!user.tenant_id) {
+      return false;
+    }
+
+    // Align with MinistriesAssociationsPermissionSeeder tenant role sync list.
+    const tenantRoleNames = ['Administrator', 'Parish Priest', 'Church Pastor'];
+    const hasTenantMinistryRole = tenantRoleNames.some((roleName) =>
+      (user.roles || []).some((role) => role?.name === roleName) ||
+      user.role_name === roleName ||
+      user.role?.name === roleName
+    );
+
+    const primaryAdminRaw = (user as any).is_primary_admin;
+    const isPrimaryAdmin = primaryAdminRaw === true || primaryAdminRaw === 1 || primaryAdminRaw === '1';
+    if (isPrimaryAdmin || hasTenantMinistryRole) {
+      return true;
+    }
+
+    const permissionNames = [
+      'ministries.view',
+      'ministries.create',
+      'ministries.edit',
+      'ministries.delete',
+      'ministries.manage_members',
+      'ministries.manage_leadership',
+      'ministries.configure',
+    ];
+
+    return permissionNames.some((permissionName) =>
+      (user.permissions || []).some((permission) => permission?.name === permissionName)
+    );
+  }
+
+  canAccessMassIntentions(
+    user: User | null = this.currentUserValue,
+    options: { hasActiveSupportSession?: boolean } = {}
+  ): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return !!user.tenant_id || !!options.hasActiveSupportSession;
+    }
+
+    if (!user.tenant_id) {
+      return false;
+    }
+
+    const tenantRoleNames = ['Administrator', 'Parish Priest'];
+    const hasRole = tenantRoleNames.some(
+      (roleName) =>
+        (user.roles || []).some((role) => role?.name === roleName) ||
+        user.role_name === roleName ||
+        user.role?.name === roleName
+    );
+
+    const primaryAdminRaw = (user as { is_primary_admin?: boolean | number | string }).is_primary_admin;
+    const isPrimaryAdmin = primaryAdminRaw === true || primaryAdminRaw === 1 || primaryAdminRaw === '1';
+    if (isPrimaryAdmin || hasRole) {
+      return true;
+    }
+
+    const permissionNames = [
+      'mass.intentions.view',
+      'mass.intentions.create',
+      'mass.intentions.review',
+      'mass.intentions.schedule',
+      'mass.intentions.fulfil',
+    ];
+
+    return permissionNames.some((permissionName) =>
+      (user.permissions || []).some((permission) => permission?.name === permissionName)
+    );
+  }
+
+  canAccessBcc(
+    user: User | null = this.currentUserValue,
+    options: { hasActiveSupportSession?: boolean } = {}
+  ): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return !!user.tenant_id || !!options.hasActiveSupportSession;
+    }
+
+    if (!user.tenant_id) {
+      return false;
+    }
+
+    const tenantRoleNames = ['Administrator', 'Parish Priest', 'Church Pastor'];
+    const hasTenantBccRole = tenantRoleNames.some(
+      (roleName) =>
+        (user.roles || []).some((role) => role?.name === roleName) ||
+        user.role_name === roleName ||
+        user.role?.name === roleName
+    );
+
+    const primaryAdminRaw = (user as any).is_primary_admin;
+    const isPrimaryAdmin = primaryAdminRaw === true || primaryAdminRaw === 1 || primaryAdminRaw === '1';
+    if (isPrimaryAdmin || hasTenantBccRole) {
+      return true;
+    }
+
+    return [
+      'bcc.view',
+      'bcc.create',
+      'bcc.edit',
+      'bcc.delete',
+      'bcc.manage_members',
+      'bcc.manage_leadership',
+    ].some((permissionName) =>
+      (user.permissions || []).some((permission) => permission?.name === permissionName)
+    );
+  }
+
+  canAccessPastoral(
+    user: User | null = this.currentUserValue,
+    options: { hasActiveSupportSession?: boolean } = {}
+  ): boolean {
+    if (!user) {
+      return false;
+    }
+
+    if (this.isSuperAdmin() || this.isEkklesiaAdmin()) {
+      return !!user.tenant_id || !!options.hasActiveSupportSession;
+    }
+
+    if (!user.tenant_id) {
+      return false;
+    }
+
+    const tenantRoleNames = ['Administrator', 'Parish Priest', 'Church Pastor'];
+    const hasPastoralRole = tenantRoleNames.some(
+      (roleName) =>
+        (user.roles || []).some((role) => role?.name === roleName) ||
+        user.role_name === roleName ||
+        user.role?.name === roleName
+    );
+
+    const primaryAdminRaw = (user as any).is_primary_admin;
+    const isPrimaryAdmin = primaryAdminRaw === true || primaryAdminRaw === 1 || primaryAdminRaw === '1';
+    if (isPrimaryAdmin || hasPastoralRole) {
+      return true;
+    }
+
+    return ['pastoral.care.view', 'pastoral.care.create', 'pastoral.care.assign'].some((permissionName) =>
+      (user.permissions || []).some((permission) => permission?.name === permissionName)
+    );
+  }
+}
+

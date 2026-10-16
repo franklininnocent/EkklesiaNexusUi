@@ -1,0 +1,99 @@
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.cf-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 0.25rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  min-width: 32px;
+  border: 1px solid var(--cf-panel-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--cf-panel-bg, #fff);
+  color: var(--cf-muted, #64748b);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(79, 70, 229, 0.45);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &--sm {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 6px;
+  }
+
+  &--labeled {
+    width: auto;
+    min-width: 0;
+    padding: 0 0.45rem;
+  }
+
+  &--sm.cf-icon-btn--labeled {
+    min-height: 28px;
+    height: 28px;
+  }
+
+  &--view:hover:not(:disabled) {
+    background: var(--cf-indigo-soft, #eef2ff);
+    border-color: #c7d2fe;
+    color: var(--cf-primary, #4338ca);
+  }
+
+  &--print:hover:not(:disabled) {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: var(--cf-forest, #047857);
+  }
+
+  &--void:hover:not(:disabled) {
+    background: var(--cf-critical-soft, #fef2f2);
+    border-color: #fecaca;
+    color: var(--cf-critical, #dc2626);
+  }
+
+  &--reissue:hover:not(:disabled) {
+    background: var(--cf-amber-soft, #fffbeb);
+    border-color: #fde68a;
+    color: var(--cf-amber, #d97706);
+  }
+
+  &__icon {
+    display: block;
+    width: var(--cf-icon-md);
+    height: var(--cf-icon-md);
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+
+  &--sm &__icon {
+    width: var(--cf-icon-md);
+    height: var(--cf-icon-md);
+  }
+
+  &__label {
+    font-size: var(--cf-btn-sm-font-size, 0.78rem);
+    font-weight: 500;
+    line-height: 1;
+    pointer-events: none;
+  }
+}

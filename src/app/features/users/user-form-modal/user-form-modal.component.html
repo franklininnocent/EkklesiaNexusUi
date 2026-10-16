@@ -1,0 +1,369 @@
+<app-modal-shell
+  *ngIf="show"
+  [title]="isEditMode ? 'Edit User' : 'Create New User'"
+  size="lg"
+  headerVariant="compact"
+  bodyPadding="none"
+  [closeAriaLabel]="isEditMode ? 'Close edit user' : 'Close create user'"
+  [isSubmitting]="isSubmitting"
+  (closeRequested)="closeModal()"
+>
+  <form
+    id="user-form"
+    class="cf-split-form-body user-form-modal"
+    (ngSubmit)="onSubmit()"
+    #userForm="ngForm"
+    novalidate
+  >
+    <p class="cf-meta" *ngIf="isEditMode && user">{{ user.name }} · {{ user.email }}</p>
+
+    <div *ngIf="isEditingSelf" class="cf-split-form-alert user-form-modal__alert--warning" role="status">
+      <strong>Viewing your own account.</strong>
+      You cannot edit your own account details. Contact an administrator if you need changes to name, email, contact number, roles, or account status.
+      <span *ngIf="isTenantAdminSelf"> You can update your profile photo from <strong>Profile</strong>.</span>
+    </div>
+
+    <p *ngIf="errorMessage" class="cf-split-form-alert cf-split-form-alert--error" role="alert">
+      {{ errorMessage }}
+    </p>
+
+    <!-- Parish leader link (optional) -->
+    <section class="cf-split-section" aria-labelledby="user-section-leader" *ngIf="!isEditingSelf">
+      <h3 id="user-section-leader" class="cf-split-section__title">
+        Parish leader <span class="cf-split-optional">optional</span>
+      </h3>
+      <p class="cf-meta user-form-modal__leader-hint">
+        Link this login to an active parish clergy leader from Church Profile. Name, email, and phone can be prefilled.
+      </p>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="clergy_search">Search parish leaders</label>
+
+          <div
+            class="user-form-modal__leader-selected"
+            *ngIf="selectedClergy; else clergySearchField"
+            role="status"
+          >
+            <div class="user-form-modal__leader-copy">
+              <strong>{{ selectedClergy.person_name }}</strong>
+              <p class="user-form-modal__leader-role" *ngIf="selectedClergy.role_title">
+                {{ selectedClergy.role_title }}
+              </p>
+              <p class="user-form-modal__leader-status">Linked parish leader.</p>
+            </div>
+            <button type="button" class="cf-btn" (click)="clearSelectedClergy()">Change</button>
+          </div>
+
+          <ng-template #clergySearchField>
+            <input
+              type="text"
+              id="clergy_search"
+              name="clergy_search"
+              [(ngModel)]="clergyQuery"
+              [ngModelOptions]="{ standalone: true }"
+              (input)="onClergyQueryInput()"
+              (keydown.enter)="onClergySearchEnter($event)"
+              autocomplete="off"
+              placeholder="Search by name or email"
+            />
+            <p class="cf-split-field__hint" *ngIf="clergySearching">Searching…</p>
+            <ul
+              class="user-form-modal__leader-results"
+              *ngIf="showClergyResults && clergyResults.length"
+            >
+              <li
+                *ngFor="let clergy of clergyResults"
+                (mousedown)="selectClergy(clergy, $event)"
+              >
+                <strong>{{ clergy.person_name }}</strong>
+                <span class="user-form-modal__leader-role" *ngIf="clergy.role_title">
+                  {{ clergy.role_title }}
+                </span>
+              </li>
+            </ul>
+            <p
+              class="cf-split-field__hint"
+              *ngIf="showClergyResults && !clergySearching && clergyResults.length === 0"
+            >
+              No available parish leaders match your search.
+            </p>
+          </ng-template>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account information -->
+    <section class="cf-split-section" aria-labelledby="user-section-account">
+      <h3 id="user-section-account" class="cf-split-section__title">Account information</h3>
+
+      <div class="cf-split-grid">
+        <div
+          class="cf-split-field cf-split-field--full"
+          *ngIf="canEditProfileImage || displayProfileImageUrl"
+        >
+          <app-cf-media-upload
+            #profileMediaUpload
+            label="Profile image"
+            hint="JPG, PNG, or WebP up to 3 MB."
+            inputId="profile_image"
+            [accept]="profileImageAccept"
+            [canManage]="canEditProfileImage"
+            [previewUrl]="existingProfileImagePreviewUrl"
+            [previewClickable]="!!existingProfileImagePreviewUrl && !selectedProfileImage"
+            (previewClick)="openSavedProfilePhotoViewer()"
+            (fileSelected)="onCfProfileImageSelected($event)"
+            (removeRequested)="removeSelectedProfileImage()"
+            (validationError)="onProfileImageValidationError($event)"
+          ></app-cf-media-upload>
+          <p class="cf-split-field__error" *ngIf="profileImageError" role="alert">{{ profileImageError }}</p>
+        </div>
+        <div class="cf-split-field">
+          <label for="name">
+            Full name <span class="cf-split-req" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            [(ngModel)]="formData.name"
+            (blur)="markFieldAsTouched('name')"
+            (input)="validateField('name')"
+            [disabled]="isEditingSelf"
+            placeholder="Enter full name"
+            aria-required="true"
+            [class.cf-split-field__control--invalid]="hasError('name')"
+          />
+          <p class="cf-split-field__error" *ngIf="hasError('name')">{{ getError('name') }}</p>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="email">
+            Email address <span class="cf-split-req" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="formData.email"
+            (blur)="markFieldAsTouched('email')"
+            (input)="validateField('email')"
+            [disabled]="isEditingSelf"
+            placeholder="user@example.com"
+            autocomplete="email"
+            aria-required="true"
+            [class.cf-split-field__control--invalid]="hasError('email')"
+          />
+          <p class="cf-split-field__error" *ngIf="hasError('email')">{{ getError('email') }}</p>
+        </div>
+
+        <div class="cf-split-field">
+          <app-phone-input
+            [label]="'Contact number'"
+            [id]="'contact_number'"
+            [name]="'contact_number'"
+            [required]="false"
+            [disabled]="isEditingSelf"
+            [maxLength]="15"
+            [minLength]="6"
+            [(ngModel)]="formData.contact_number"
+            ngDefaultControl
+          ></app-phone-input>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="user_type">User type</label>
+          <select
+            id="user_type"
+            name="user_type"
+            [(ngModel)]="formData.user_type"
+            [disabled]="isEditingSelf"
+          >
+            <option [ngValue]="1">Primary Contact</option>
+            <option [ngValue]="2">Secondary Contact</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Password -->
+    <section class="cf-split-section" aria-labelledby="user-section-password" *ngIf="!isEditMode">
+      <h3 id="user-section-password" class="cf-split-section__title">Password</h3>
+      <p class="cf-meta" *ngIf="isEditMode">Leave blank to keep the current password.</p>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <label for="password">
+            Password
+            <span class="cf-split-req" *ngIf="!isEditMode" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="formData.password"
+            (blur)="markFieldAsTouched('password')"
+            (input)="validateField('password'); validateField('password_confirmation')"
+            [placeholder]="isEditMode ? 'New password' : ''"
+            autocomplete="new-password"
+            [attr.aria-required]="!isEditMode"
+            [class.cf-split-field__control--invalid]="hasError('password')"
+          />
+          <p
+            class="cf-split-field__hint"
+            *ngIf="(!isEditMode || !!formData.password) && !hasError('password')"
+          >
+            At least 8 characters, with uppercase, lowercase, number, and special character.
+          </p>
+          <p class="cf-split-field__error" *ngIf="hasError('password')">{{ getError('password') }}</p>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="password_confirmation">
+            Confirm password
+            <span
+              class="cf-split-req"
+              *ngIf="!isEditMode || !!formData.password"
+              aria-hidden="true"
+            >*</span>
+          </label>
+          <input
+            type="password"
+            id="password_confirmation"
+            name="password_confirmation"
+            [(ngModel)]="formData.password_confirmation"
+            (blur)="markFieldAsTouched('password_confirmation')"
+            (input)="validateField('password_confirmation')"
+            autocomplete="new-password"
+            [class.cf-split-field__control--invalid]="hasError('password_confirmation')"
+          />
+          <p class="cf-split-field__error" *ngIf="hasError('password_confirmation')">
+            {{ getError('password_confirmation') }}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Role assignment -->
+    <section class="cf-split-section" aria-labelledby="user-section-roles">
+      <h3 id="user-section-roles" class="cf-split-section__title">
+        Role assignment <span class="cf-split-req" aria-hidden="true">*</span>
+      </h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <div class="user-form-modal__role-intro">
+            <p class="cf-split-field__hint user-form-modal__role-hint">
+              Select one or more roles to assign to this user.
+            </p>
+            <span class="user-form-modal__role-count" *ngIf="getRoleCount() > 0">
+              {{ getRoleCount() }} {{ getRoleCount() === 1 ? 'role' : 'roles' }} selected
+            </span>
+          </div>
+
+          <div *ngIf="loadingRoles" class="user-form-modal__role-status" role="status">
+            Loading roles…
+          </div>
+
+          <p *ngIf="rolesError" class="cf-split-form-alert cf-split-form-alert--error" role="alert">
+            {{ rolesError }}
+          </p>
+
+          <div
+            *ngIf="!loadingRoles && !rolesError"
+            class="user-form-modal__role-list"
+            role="group"
+            aria-labelledby="user-section-roles"
+          >
+            <label
+              *ngFor="let role of availableRoles"
+              class="user-form-modal__role-row"
+              [class.user-form-modal__role-row--selected]="isRoleSelected(role.id)"
+              [class.user-form-modal__role-row--disabled]="isEditingSelf"
+            >
+              <input
+                type="checkbox"
+                class="user-form-modal__role-checkbox"
+                [checked]="isRoleSelected(role.id)"
+                (change)="toggleRole(role.id)"
+                [disabled]="isEditingSelf"
+                [attr.aria-label]="role.name"
+              />
+              <span class="user-form-modal__role-check" aria-hidden="true"></span>
+              <span class="user-form-modal__role-body">
+                <span class="user-form-modal__role-name-row">
+                  <span class="user-form-modal__role-name">{{ role.name }}</span>
+                  <span class="user-form-modal__role-level">Level {{ role.level }}</span>
+                </span>
+                <span class="user-form-modal__role-description" *ngIf="role.description">
+                  {{ role.description }}
+                </span>
+              </span>
+            </label>
+
+            <div *ngIf="availableRoles.length === 0" class="user-form-modal__role-empty">
+              <p>No roles available</p>
+              <small>Create roles before adding users.</small>
+            </div>
+          </div>
+
+          <p class="cf-split-field__error" *ngIf="hasError('role_ids')">{{ getError('role_ids') }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account status -->
+    <section class="cf-split-section" aria-labelledby="user-section-status">
+      <h3 id="user-section-status" class="cf-split-section__title">Account status</h3>
+      <label
+        class="cf-split-toggle cf-split-toggle--block"
+        [class.user-form-modal__toggle--disabled]="isEditingSelf"
+      >
+        <input
+          type="checkbox"
+          [checked]="formData.active === 1"
+          [disabled]="isEditingSelf"
+          (change)="onActiveToggle()"
+        />
+        <span>
+          {{ formData.active === 1 ? 'Active' : 'Inactive' }}
+          <small>
+            {{
+              formData.active === 1
+                ? 'User can log in and access the system.'
+                : 'User cannot log in or access the system.'
+            }}
+          </small>
+        </span>
+      </label>
+    </section>
+
+    <div class="cf-split-form-actions">
+      <button
+        type="submit"
+        class="cf-btn cf-btn-primary"
+        [disabled]="isSubmitting"
+        [attr.aria-busy]="isSubmitting"
+      >
+        <app-cf-busy-label [busy]="isSubmitting" busyLabel="Saving">
+          {{ isEditMode ? 'Save changes' : 'Create' }}
+        </app-cf-busy-label>
+      </button>
+      <button
+        type="button"
+        class="cf-btn"
+        (click)="closeModal()"
+        [disabled]="isSubmitting"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</app-modal-shell>
+
+<app-image-viewer
+  *ngIf="photoViewer as viewer"
+  [src]="viewer.src"
+  [alt]="viewer.alt"
+  [title]="viewer.title"
+  [subtitle]="viewer.subtitle"
+  [nested]="true"
+  (closeRequested)="closePhotoViewer()"
+></app-image-viewer>

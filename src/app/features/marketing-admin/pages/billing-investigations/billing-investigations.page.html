@@ -1,0 +1,56 @@
+<section class="cf-page billing-workspace">
+  <app-page-header title="Billing investigations" subtitle="Payment mismatches and manual review" backLink="/settings/billing" backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    <section class="cf-panel billing-workspace__toolbar">
+      <span class="cf-muted">Open investigations</span>
+      <div class="billing-workspace__toolbar-actions">
+        <button type="button" class="cf-btn" (click)="reload()" [disabled]="loading()">Refresh</button>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="rows.length">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Tenant</th>
+                <th>Category</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ formatWhen(row['created_at']) }}</td>
+                <td>{{ row['tenant_name'] || row['tenant_id'] }}</td>
+                <td>{{ row['category'] }}</td>
+                <td>
+                  <button type="button" class="cf-btn cf-btn-sm cf-btn-primary" (click)="openResolve(row)">Resolve</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!rows.length" class="cf-muted">No open investigations.</p>
+      </section>
+    }
+  </div>
+</section>
+
+<app-modal-shell *ngIf="resolveRow" title="Resolve investigation" size="sm" [isSubmitting]="resolving()" (closeRequested)="closeResolve()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-investigation-resolve" (ngSubmit)="confirmResolve()">
+    <label class="full-width">
+      Resolution note <span class="cf-required">*</span>
+      <textarea rows="4" [(ngModel)]="resolveNote" name="resolveNote" maxlength="1000" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeResolve()" [disabled]="resolving()">Cancel</button>
+    <button type="submit" form="billing-investigation-resolve" class="cf-btn cf-btn-primary" [disabled]="resolving()">Resolve</button>
+  </ng-container>
+</app-modal-shell>

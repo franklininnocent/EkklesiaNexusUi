@@ -1,0 +1,339 @@
+@use '../../../donations/styles/stewardship-split-layout.scss';
+
+:host {
+  display: contents;
+}
+
+.cf-split-field input.cf-split-field__control--invalid,
+.cf-split-field textarea.cf-split-field__control--invalid {
+  border-color: var(--cf-critical);
+  background: var(--cf-critical-soft);
+}
+
+.cf-split-field input.cf-split-field__control--invalid:focus,
+.cf-split-field textarea.cf-split-field__control--invalid:focus {
+  border-color: var(--cf-critical);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+.cf-split-field__error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cf-critical);
+  line-height: 1.35;
+}
+
+.cf-split-field input:disabled,
+.cf-split-field textarea:disabled,
+.role-form-level__range:disabled {
+  background: var(--cf-slate-50);
+  color: var(--cf-muted);
+  cursor: not-allowed;
+}
+
+.role-form-alert--warning {
+  background: var(--cf-amber-soft);
+  color: var(--cf-amber);
+  border: 1px solid #fde68a;
+
+  strong {
+    display: inline;
+    font-weight: 600;
+  }
+}
+
+// Phase 2 — identity row: name + level capped width, description stays full width
+.role-form-identity {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(14rem, 18rem);
+  gap: 0.75rem 1.25rem;
+  max-width: 42rem;
+  align-items: start;
+}
+
+.role-form-description {
+  margin-top: 0.15rem;
+}
+
+.role-form-description__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.role-form-level-value {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--cf-radius-pill);
+  background: var(--cf-primary-soft);
+  color: var(--cf-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+// Phase 3 — slider inset aligned with markers; track vertically centered with name input
+.role-form-level {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.35rem 0.5rem 0;
+  box-sizing: border-box;
+}
+
+.role-form-level__range {
+  width: 100%;
+  height: 0.4rem;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--cf-slate-200);
+  border-radius: var(--cf-radius-pill);
+  outline: none;
+  cursor: pointer;
+  align-self: center;
+  min-height: 1rem;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    background: #fff;
+    border: 2px solid var(--cf-primary);
+    border-radius: 50%;
+    box-shadow: var(--cf-shadow);
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    background: #fff;
+    border: 2px solid var(--cf-primary);
+    border-radius: 50%;
+    box-shadow: var(--cf-shadow);
+    cursor: pointer;
+  }
+
+  &:disabled::-webkit-slider-thumb,
+  &:disabled::-moz-range-thumb {
+    border-color: var(--cf-slate-300);
+    cursor: not-allowed;
+  }
+}
+
+.role-form-level__markers {
+  display: flex;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.role-form-level__marker {
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--cf-muted);
+  font-weight: 500;
+
+  &.is-active {
+    color: var(--cf-primary);
+    font-weight: 700;
+  }
+}
+
+.role-form-char-count {
+  margin: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+
+  &.is-warning {
+    color: var(--cf-amber);
+  }
+
+  &.is-danger {
+    color: var(--cf-critical);
+    font-weight: 600;
+  }
+}
+
+.permissions-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+
+  .cf-split-section__title {
+    margin: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cf-primary);
+    outline-offset: 2px;
+    border-radius: var(--cf-radius-sm);
+  }
+}
+
+.permissions-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--cf-radius-pill);
+  background: var(--cf-primary-soft);
+  color: var(--cf-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.permissions-header__chevron {
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-left: auto;
+  border-right: 1.5px solid var(--cf-muted);
+  border-bottom: 1.5px solid var(--cf-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+
+  &.is-open {
+    transform: rotate(45deg);
+  }
+}
+
+.permissions-body {
+  min-width: 0;
+}
+
+.permissions-list {
+  min-width: 0;
+}
+
+.permissions-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  color: var(--cf-muted);
+  font-size: 0.85rem;
+
+  p {
+    margin: 0;
+  }
+
+  .spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--cf-slate-200);
+    border-top-color: var(--cf-primary);
+    border-radius: 50%;
+    animation: role-form-spin 0.8s linear infinite;
+  }
+}
+
+.permissions-status--error {
+  color: var(--cf-critical);
+}
+
+// Phase 8 — tenant info banner spacing
+.role-form-tenant-note {
+  margin-top: 0.25rem;
+  max-width: 48rem;
+  line-height: 1.45;
+}
+
+.role-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+.role-form-footer__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: auto;
+}
+
+.role-form-footer__pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--cf-radius-pill);
+  background: var(--cf-slate-50);
+  color: var(--cf-slate-700);
+  border: 1px solid var(--cf-panel-border);
+  font-size: 0.72rem;
+  line-height: 1.3;
+
+  strong {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.role-form-footer__pill--risk {
+  background: var(--cf-critical-soft);
+  border-color: #fecaca;
+  color: var(--cf-critical);
+}
+
+.role-form-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+// Phase 1 — disabled primary stays readable on blue fill
+.role-form-footer__actions .cf-btn-primary:disabled {
+  color: #fff;
+  opacity: 0.55;
+}
+
+@keyframes role-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .role-form-identity {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .permissions-header__chevron,
+  .permissions-status .spinner {
+    transition: none;
+    animation: none;
+  }
+}

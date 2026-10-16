@@ -1,0 +1,229 @@
+<section class="family-list cf-page">
+  <app-page-header
+    title="Family Management"
+    subtitle="Manage all families and their members"
+  >
+    <app-list-toolbar
+      searchPlaceholder="Search name or code…"
+      [searchValue]="searchTerm"
+      [filterCount]="getActiveFilterCount()"
+      (searchChange)="onListSearchChange($event)"
+      (filtersOpened)="showAdvancedSearch = true"
+    >
+      <button
+        type="button"
+        class="cf-btn cf-btn-primary"
+        cfDisableWhenReadOnly
+        cfSubscriptionGuard
+        (click)="createFamily()"
+        aria-label="Add new family"
+      >
+        Add Family
+      </button>
+    </app-list-toolbar>
+  </app-page-header>
+
+  <div
+    class="family-list__chips"
+    *ngIf="getActiveFilters().length > 0"
+    role="region"
+    aria-label="Active filters"
+  >
+    <span class="cf-meta">Active filters</span>
+    <div class="family-list__chip-list">
+      <span class="cf-badge cf-badge--info" *ngFor="let filter of getActiveFilters()">
+        {{ filter.label }}: {{ filter.displayValue }}
+        <button
+          type="button"
+          class="family-list__chip-remove"
+          (click)="removeFilter(filter)"
+          [attr.aria-label]="'Remove filter: ' + filter.label"
+        >
+          ×
+        </button>
+      </span>
+    </div>
+    <button type="button" class="cf-btn cf-btn--sm" (click)="clearAllFilters()">
+      Clear all
+    </button>
+  </div>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading && !loaded"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <app-loading-skeleton label="Loading families…" type="table" [rows]="5" [columns]="5"></app-loading-skeleton>
+  </div>
+
+  <div *ngIf="error && !loading" class="cf-inline-alert cf-panel" role="alert">
+    <p>{{ error }}</p>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="loadFamilies()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="loaded && !error">
+    <div class="cf-panel family-list__panel" *ngIf="families.length">
+      <app-data-table [clickableRows]="true" [loading]="loading" loadingLabel="Loading families…">
+        <thead>
+          <tr>
+            <th scope="col" class="sortable" (click)="sortBy('family_code')">
+              Family Code {{ getSortIcon('family_code') }}
+            </th>
+            <th scope="col" class="sortable" (click)="sortBy('head_of_family')">
+              Head of Family {{ getSortIcon('head_of_family') }}
+            </th>
+            <th scope="col" class="sortable" (click)="sortBy('bcc_name')">
+              BCC {{ getSortIcon('bcc_name') }}
+            </th>
+            <th scope="col">Members</th>
+            <th scope="col">Contact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let family of families; trackBy: trackByFamily"
+            tabindex="0"
+            (click)="viewFamily(family)"
+            (keydown.enter)="viewFamily(family)"
+          >
+            <td>
+              <div class="family-list__code-cell">
+                <strong class="family-list__code">{{ family.family_code }}</strong>
+                <app-status-badge
+                  *ngIf="family.status === 'inactive'"
+                  label="Inactive"
+                  tone="neutral"
+                ></app-status-badge>
+                <app-status-badge
+                  *ngIf="family.status === 'migrated'"
+                  label="Migrated"
+                  tone="info"
+                ></app-status-badge>
+              </div>
+            </td>
+            <td>
+              <div class="family-list__head" *ngIf="family.head_of_family; else noHead">
+                <ng-container *ngIf="getHeadImageUrl(family) && !isAvatarBroken(family); else initialsAvatar">
+                  <button
+                    type="button"
+                    class="family-list__avatar family-list__avatar--photo family-list__avatar-trigger"
+                    [attr.aria-label]="'View photo of ' + family.head_of_family"
+                    (click)="openPhotoViewer(family, $event)"
+                    (keydown.enter)="$event.stopPropagation()"
+                  >
+                    <img
+                      [src]="getHeadImageUrl(family)"
+                      alt=""
+                      loading="lazy"
+                      (error)="onAvatarError(family)"
+                    />
+                  </button>
+                </ng-container>
+                <ng-template #initialsAvatar>
+                  <div
+                    class="family-list__avatar family-list__avatar--initials"
+                    [ngClass]="getAvatarColorClass(family.head_of_family)"
+                  >
+                    {{ getInitials(family.head_of_family!) }}
+                  </div>
+                </ng-template>
+                <div class="family-list__head-info">
+                  <strong>{{ family.head_of_family }}</strong>
+                  <span class="cf-meta" *ngIf="family.family_name">{{ family.family_name }}</span>
+                </div>
+              </div>
+              <ng-template #noHead><span class="cf-meta">—</span></ng-template>
+            </td>
+            <td>
+              <app-status-badge
+                *ngIf="family.bcc"
+                [label]="family.bcc.name"
+                tone="info"
+              ></app-status-badge>
+              <span *ngIf="!family.bcc" class="cf-meta">Not assigned</span>
+            </td>
+            <td>{{ family.members?.length || 0 }}</td>
+            <td>
+              <ng-container *ngIf="getHeadContactInfo(family) as contact">
+                <div class="family-list__contact" *ngIf="contact.phone || contact.email; else noContact">
+                  <span *ngIf="contact.phone">{{ contact.phone }}</span>
+                  <span *ngIf="contact.email" class="cf-meta">{{ contact.email }}</span>
+                </div>
+                <ng-template #noContact><span class="cf-meta">—</span></ng-template>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </app-data-table>
+
+      <app-pagination
+        [currentPage]="currentPage"
+        [pageSize]="perPage"
+        [totalItems]="totalRecords"
+        [pageSizeOptions]="perPageOptions"
+        [showPageSizeSelector]="true"
+        [showPageInfo]="true"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+
+    <app-cf-empty-state
+      *ngIf="!loading && !families.length"
+      icon="◇"
+      [title]="hasActiveFiltersOrSearch ? 'No families match your filters' : 'No families yet'"
+      [description]="
+        hasActiveFiltersOrSearch
+          ? 'Try clearing search or filters.'
+          : 'Add your first family to get started.'
+      "
+    >
+      <button
+        *ngIf="!hasActiveFiltersOrSearch"
+        type="button"
+        class="cf-btn cf-btn-primary"
+        cfDisableWhenReadOnly
+        cfSubscriptionGuard
+        (click)="createFamily()"
+      >
+        Add Family
+      </button>
+      <button
+        *ngIf="hasActiveFiltersOrSearch"
+        type="button"
+        class="cf-btn"
+        (click)="clearAllFilters()"
+      >
+        Clear filters
+      </button>
+    </app-cf-empty-state>
+  </ng-container>
+
+  <app-family-form
+    *ngIf="showForm"
+    [family]="selectedFamily"
+    [bccs]="bccs"
+    (save)="onFormSave($event)"
+    (cancel)="onFormCancel()"
+  ></app-family-form>
+
+  <app-advanced-search-panel
+    mode="sidepanel"
+    [fields]="searchFields"
+    [isExpanded]="showAdvancedSearch"
+    (search)="onAdvancedSearch($event)"
+    (clear)="onClearAdvancedSearch()"
+    (close)="showAdvancedSearch = false"
+  ></app-advanced-search-panel>
+
+  <app-image-viewer
+    *ngIf="photoViewer as viewer"
+    [src]="viewer.src"
+    [alt]="viewer.alt"
+    [title]="viewer.title"
+    [subtitle]="viewer.subtitle"
+    (closeRequested)="closePhotoViewer()"
+  ></app-image-viewer>
+</section>

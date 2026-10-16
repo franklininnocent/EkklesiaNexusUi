@@ -1,0 +1,14 @@
+<div
+  class="subscription-status-banner"
+  *ngIf="snapshot as s"
+  role="status"
+  aria-live="polite"
+  [attr.data-tone]="isViewOnlyBanner() ? 'view-only' : s.status">
+  <div class="subscription-status-banner__copy">
+    <strong>{{ isViewOnlyBanner() ? 'Subscription Expired — View-Only Mode' : (s.status === 'EXPIRED' || s.status === 'SUSPENDED' ? 'Read-only mode' : 'Subscription notice') }}</strong>
+    <span>{{ message(s.status) }}</span>
+  </div>
+  <div class="subscription-status-banner__actions" *ngIf="canViewDetails">
+    <a routerLink="/settings/my-subscription" class="cf-btn cf-btn-primary">{{ isViewOnlyBanner() ? 'Renew Now' : 'My Subscription' }}</a>
+  </div>
+</div>

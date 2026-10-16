@@ -1,0 +1,124 @@
+<section class="cf-page cf-financial-dashboard donations-expenses">
+  <app-page-header
+    title="Parish Disbursements"
+    [titleLevel]="3"
+    subtitle="Lightweight record of parish expenses and disbursements — not full accounting.">
+    <a
+      routerLink="/donations"
+      class="cf-btn cf-btn-icon"
+      aria-label="Back to Overview"
+      title="Back to Overview"
+    >
+      <app-cf-action-icon name="arrow-left" />
+    </a>
+    <button
+          aria-label="Record Disbursement"
+          title="Record Disbursement" type="button" class="cf-btn cf-btn-icon cf-btn-primary" (click)="showForm = !showForm">
+          <app-cf-action-icon name="wallet" />
+    </button>
+  </app-page-header>
+
+  <app-modal-shell
+    *ngIf="showForm"
+    title="Record Disbursement"
+    size="sm"
+    headerVariant="compact"
+    bodyPadding="none"
+    closeAriaLabel="Close record disbursement"
+    [isSubmitting]="saving"
+    (closeRequested)="showForm = false"
+  >
+    <form class="cf-split-form-body" (ngSubmit)="submit()" novalidate>
+      <section class="cf-split-section" aria-labelledby="disbursement-section-details">
+        <h3 id="disbursement-section-details" class="cf-split-section__title">Disbursement details</h3>
+        <div class="cf-split-grid">
+          <div class="cf-split-field">
+            <label for="disb-category">Category <span class="cf-split-req" aria-hidden="true">*</span></label>
+            <input id="disb-category" [(ngModel)]="form.category" name="category" required aria-required="true" />
+          </div>
+          <div class="cf-split-field">
+            <label for="disb-amount">Amount <span class="cf-split-req" aria-hidden="true">*</span></label>
+            <input id="disb-amount" type="number" min="0.01" step="0.01" [(ngModel)]="form.amount" name="amount" required aria-required="true" />
+          </div>
+          <div class="cf-split-field">
+            <label for="disb-date">Date <span class="cf-split-req" aria-hidden="true">*</span></label>
+            <input id="disb-date" type="date" [(ngModel)]="form.expense_date" name="expense_date" required aria-required="true" />
+          </div>
+          <div class="cf-split-field">
+            <label for="disb-payee">Payee <span class="cf-split-optional">optional</span></label>
+            <input id="disb-payee" [(ngModel)]="form.payee" name="payee" />
+          </div>
+          <div class="cf-split-field">
+            <label for="disb-method">Method</label>
+            <select id="disb-method" [(ngModel)]="form.method" name="method">
+              <option value="cash">Cash</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+          <div class="cf-split-field cf-split-field--full">
+            <label for="disb-notes">Notes <span class="cf-split-optional">optional</span></label>
+            <textarea id="disb-notes" rows="2" [(ngModel)]="form.notes" name="notes"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="cf-split-form-actions">
+        <button
+          aria-label="Save"
+          title="Save" type="submit" class="cf-btn cf-btn-icon cf-btn-primary" [disabled]="saving">
+          <app-cf-action-icon name="save" />
+        </button>
+        <button type="button" class="cf-btn cf-btn-icon" (click)="showForm = false" [disabled]="saving" aria-label="Cancel" title="Cancel"><app-cf-action-icon name="x" /></button>
+      </div>
+    </form>
+  </app-modal-shell>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <app-loading-skeleton label="Loading disbursements…" type="table" [rows]="5" [columns]="5"></app-loading-skeleton>
+  </div>
+
+  <div class="cf-inline-alert cf-panel" *ngIf="!loading && error" role="alert">
+    <p>{{ error }}</p>
+  </div>
+
+  <app-stewardship-table-panel
+    *ngIf="!loading && !error && expenses.length"
+    title="Disbursement register"
+    [meta]="expenses.length + ' record' + (expenses.length === 1 ? '' : 's')"
+  >
+    <app-data-table>
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Category</th>
+          <th scope="col">Payee</th>
+          <th scope="col">Method</th>
+          <th scope="col" class="cf-table__num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of expenses">
+          <td>{{ row.expense_date | cfDate }}</td>
+          <td>{{ row.category }}</td>
+          <td>{{ row.payee || '—' }}</td>
+          <td>{{ row.method }}</td>
+          <td class="cf-table__num">{{ row.amount | cfCurrency }}</td>
+        </tr>
+      </tbody>
+    </app-data-table>
+  </app-stewardship-table-panel>
+
+  <app-cf-empty-state
+    *ngIf="!loading && !error && !expenses.length"
+    icon="wallet"
+    title="No disbursements recorded yet"
+    description="Use Record Disbursement to log parish expenses."
+  ></app-cf-empty-state>
+</section>

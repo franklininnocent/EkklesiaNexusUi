@@ -1,0 +1,596 @@
+@use '../styles/stewardship-split-layout.scss';
+
+.projects-page {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.proj-modal .cf-split-form-actions {
+  justify-content: flex-end;
+}
+
+:host ::ng-deep app-page-header .cf-page-header__actions {
+  flex: 1 1 22rem;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .projects-page__header-toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 42rem;
+}
+
+:host ::ng-deep .projects-page__header-toolbar .cf-list-toolbar {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--cf-toolbar-gap, 0.35rem);
+  width: 100%;
+}
+
+:host ::ng-deep .projects-page__header-toolbar .cf-list-toolbar__search {
+  flex: 1 1 auto;
+  min-width: 7rem;
+  width: auto;
+  max-width: none;
+}
+
+:host ::ng-deep .projects-page__header-toolbar .cf-list-toolbar__primary {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  :host ::ng-deep app-page-header.cf-page-header {
+    align-items: stretch;
+  }
+
+  :host ::ng-deep app-page-header .cf-page-header__actions {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  :host ::ng-deep .projects-page__header-toolbar {
+    max-width: none;
+  }
+
+  :host ::ng-deep .projects-page__header-toolbar .cf-list-toolbar {
+    flex-wrap: wrap;
+  }
+
+  :host ::ng-deep .projects-page__header-toolbar .cf-list-toolbar__search {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+@container (min-width: 36rem) {
+  .projects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 48rem) {
+  .projects-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  height: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
+  cursor: default;
+  text-align: left;
+}
+
+.project-card--selected {
+  border-color: var(--cf-primary);
+  box-shadow: 0 0 0 1px var(--cf-primary);
+}
+
+.project-card--attention {
+  border-color: color-mix(in srgb, var(--cf-amber) 45%, var(--cf-panel-border));
+}
+
+.project-card:hover:not(.project-card--selected) {
+  border-color: color-mix(in srgb, var(--cf-primary) 28%, var(--cf-panel-border));
+  box-shadow: var(--cf-shadow-sm);
+}
+
+.project-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.project-card__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.project-card__name {
+  margin: 0;
+  min-height: 2.15em;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.project-card__name-btn {
+  display: -webkit-box;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  overflow: hidden;
+  color: var(--cf-slate-900);
+  font-weight: 600;
+  font-size: inherit;
+  line-height: 1.2;
+  text-align: left;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+
+  &:hover {
+    color: var(--cf-primary);
+  }
+}
+
+.project-card__code,
+.project-card__summary {
+  margin: 0.05rem 0 0;
+  overflow: hidden;
+  color: var(--cf-muted);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card__summary {
+  min-height: 1.25em;
+}
+
+.project-card__status {
+  flex: 0 0 auto;
+}
+
+.project-card__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 0.4rem;
+  margin: 0;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--cf-slate-100);
+  border-radius: var(--cf-radius-sm);
+  background: var(--cf-slate-50);
+}
+
+.project-card__fact {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+  align-content: start;
+
+  dt {
+    margin: 0;
+    color: var(--cf-muted);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    overflow: hidden;
+    color: var(--cf-slate-900);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.project-card__fact--timeline {
+  grid-column: 1 / -1;
+}
+
+.project-card__timeline-note {
+  font-weight: 600;
+}
+
+.project-card__urgent {
+  color: var(--cf-critical);
+}
+
+.project-card__progress {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: auto;
+}
+
+.project-card__progress--empty {
+  margin: 0;
+  color: var(--cf-muted);
+  font-size: var(--cf-text-xs, 0.72rem);
+}
+
+.project-card__progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--cf-space-2);
+  color: var(--cf-muted);
+  font-size: var(--cf-text-xs, 0.72rem);
+}
+
+.project-card__bar {
+  height: 0.35rem;
+  overflow: hidden;
+  border-radius: var(--cf-radius-pill);
+  background: var(--cf-slate-100);
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--cf-primary);
+    transition: width 0.2s ease;
+  }
+}
+
+.project-card__bar--risk span {
+  background: var(--cf-amber);
+}
+
+.project-card__schedule,
+.project-detail-modal__schedule {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--cf-slate-600, #475569);
+}
+
+.project-card__schedule[data-installment-state='payments_recorded'],
+.project-detail-modal__schedule[data-installment-state='payments_recorded'] {
+  color: var(--cf-amber-700, #b45309);
+}
+
+.project-card__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  min-height: 1.75rem;
+  margin-top: 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--cf-slate-100);
+
+  .cf-btn-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    min-height: 1.75rem;
+  }
+}
+
+.proj-date-input {
+  position: relative;
+
+  input[type='date'] {
+    width: 100%;
+    padding-right: 2.25rem;
+  }
+
+  &__icon {
+    position: absolute;
+    top: 50%;
+    right: 0.65rem;
+    display: flex;
+    align-items: center;
+    color: var(--cf-muted);
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+}
+
+.project-detail-modal {
+  align-content: start;
+  gap: 0.45rem;
+  padding-top: 0;
+  container-type: inline-size;
+  container-name: project-detail;
+}
+
+.project-detail-modal .cf-split-identity {
+  margin: 0 -1.15rem;
+  padding: 0.55rem 1.15rem;
+  align-items: center;
+  background: var(--cf-slate-50);
+  border-bottom: 1px solid var(--cf-panel-border);
+}
+
+.project-detail-modal .cf-split-identity__meta {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.project-detail-modal__summary {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.project-detail-modal__metrics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  column-gap: 1.15rem;
+  width: 100%;
+}
+
+.project-detail-modal__metrics:has(.project-detail-modal__group--families) {
+  grid-template-columns: minmax(0, 5.6fr) minmax(0, 3.4fr);
+}
+
+.project-detail-modal__group {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.project-detail-modal__group--families {
+  padding-left: 1.15rem;
+  border-left: 1px solid var(--cf-panel-border);
+}
+
+.project-detail-modal__group-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--cf-muted);
+}
+
+.project-detail-modal__stats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  column-gap: 0.85rem;
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.project-detail-modal__stat {
+  display: grid;
+  align-content: start;
+  row-gap: 0.1rem;
+  min-width: 0;
+
+  dt {
+    margin: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--cf-muted);
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    min-width: 0;
+    color: var(--cf-slate-900);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+}
+
+.project-detail-modal__stat--collected dd {
+  color: var(--cf-primary);
+}
+
+.project-detail-modal__stat--risk dd {
+  color: var(--cf-amber-700, #b45309);
+}
+
+.project-detail-modal__pct {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-detail-modal__stat--progress .project-card__bar {
+  flex: 1 1 2.5rem;
+  width: auto;
+  min-width: 2.5rem;
+  max-width: 5.5rem;
+}
+
+.project-detail-modal .cf-attention-callout {
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.project-detail-modal__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.65rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.project-detail-modal__summary .project-detail-modal__schedule {
+  margin: 0;
+}
+
+.project-detail-modal__description {
+  margin: 0;
+  color: var(--cf-slate-600, #475569);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.project-detail-modal__description::before {
+  content: '·';
+  margin-right: 0.65rem;
+  color: var(--cf-slate-400, #94a3b8);
+}
+
+@container project-detail (max-width: 52rem) {
+  .project-detail-modal__metrics:has(.project-detail-modal__group--families) {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.5rem;
+  }
+
+  .project-detail-modal__group--families {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--cf-slate-100);
+  }
+}
+
+@container project-detail (max-width: 36rem) {
+  .project-detail-modal__stats {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-columns: unset;
+    row-gap: 0.4rem;
+  }
+}
+
+.project-detail-modal__notice {
+  flex: 1 1 100%;
+  margin: 0 0 0.15rem;
+  color: var(--cf-slate-900);
+  font-size: var(--cf-text-sm, 0.875rem);
+  line-height: 1.4;
+
+  a {
+    margin-left: 0.35rem;
+    font-weight: 600;
+  }
+}
+
+.project-detail-modal__notice--error {
+  color: var(--cf-critical);
+}
+
+.project-detail-modal__table {
+  max-height: min(26rem, 46vh);
+  overflow: auto;
+  min-width: 0;
+
+  .cf-table__num {
+    white-space: nowrap;
+  }
+}
+
+.project-detail-modal__roster {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  margin-top: 0.15rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--cf-slate-100);
+}
+
+.project-detail-modal__filters {
+  margin-top: 0;
+}
+
+.project-detail-modal__search {
+  flex: 1 1 12rem;
+  min-width: min(100%, 10rem);
+}
+
+.project-detail-modal__filters-clear {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .project-detail-modal__filters > * {
+    flex: 1 1 100%;
+  }
+
+  .project-detail-modal__filters-clear {
+    margin-left: 0;
+  }
+}
+
+.project-detail-modal__family {
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Detail dialog width follows the summary strip and the family table.
+ * Floor is the five-column table (family name, three currency amounts, percent).
+ * Ceiling is the design-system full dialog so funding figures and family counts
+ * can sit on one row. The shell already shrinks to the viewport below 768px.
+ */
+:host ::ng-deep app-modal-shell.project-detail-shell .cf-modal-shell__dialog {
+  width: min(var(--cf-modal-width-full), 100%);
+}
+
+:host ::ng-deep .cf-modal-shell__title {
+  overflow-wrap: anywhere;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    border-bottom: 1px solid var(--cf-panel-border);
+    padding: 0.55rem;
+    text-align: left;
+  }
+}
+
+.cf-inline-alert.cf-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-2);
+
+  p {
+    flex: 1 1 auto;
+    margin: 0;
+  }
+}

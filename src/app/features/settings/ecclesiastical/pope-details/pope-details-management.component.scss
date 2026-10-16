@@ -1,0 +1,295 @@
+.pope-mgmt {
+  display: grid;
+  gap: var(--cf-space-4, 1rem);
+
+  &--embedded {
+    gap: var(--cf-space-3, 0.75rem);
+  }
+
+  &.cf-page {
+    padding: var(--cf-page-pad);
+    gap: var(--cf-page-gap);
+  }
+}
+
+.pope-mgmt__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cf-space-3, 0.75rem);
+  flex-wrap: wrap;
+}
+
+.pope-mgmt__title {
+  margin: 0 0 0.2rem;
+  font-size: var(--cf-text-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--cf-slate-900, #111827);
+}
+
+.pope-mgmt__subtitle {
+  margin: 0;
+}
+
+.pope-mgmt__alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-3, 0.75rem);
+  flex-wrap: wrap;
+
+  p {
+    margin: 0;
+  }
+}
+
+.pope-mgmt__section-label {
+  margin: 0 0 var(--cf-space-3, 0.75rem);
+  font-size: var(--cf-text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--cf-slate-700, #374151);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+// Current Pope profile strip
+.pope-mgmt__profile-body {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-4, 1rem);
+}
+
+.pope-mgmt__avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--cf-panel-border, #e5e7eb);
+  background: var(--cf-slate-50, #f9fafb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pope-mgmt__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pope-mgmt__avatar-placeholder {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.pope-mgmt__profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pope-mgmt__profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-2, 0.5rem);
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.pope-mgmt__profile-name {
+  font-size: var(--cf-text-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--cf-slate-900, #111827);
+}
+
+.pope-mgmt__profile-meta {
+  margin: 0;
+}
+
+// Edit panel
+.pope-mgmt__edit-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: var(--cf-space-4, 1rem);
+  align-items: start;
+}
+
+.pope-mgmt__photo-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-2, 0.5rem);
+  align-items: center;
+}
+
+.pope-mgmt__photo-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--cf-panel-border, #e5e7eb);
+  background: var(--cf-slate-50, #f9fafb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pope-mgmt__photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pope-mgmt__photo-placeholder {
+  font-size: 2rem;
+  line-height: 1;
+  opacity: 0.4;
+}
+
+.pope-mgmt__photo-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--cf-text-xs, 0.75rem);
+}
+
+.pope-mgmt__photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-1, 0.25rem);
+  align-items: stretch;
+  width: 100%;
+}
+
+.pope-mgmt__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pope-mgmt__file-info {
+  margin: 0;
+  text-align: center;
+  word-break: break-all;
+}
+
+.pope-mgmt__delete-btn {
+  color: var(--cf-critical, #dc2626);
+}
+
+// Form
+.pope-mgmt__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-4, 1rem);
+}
+
+.pope-mgmt__form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--cf-space-3, 0.75rem);
+}
+
+.pope-mgmt__field--full {
+  grid-column: 1 / -1;
+}
+
+.pope-mgmt__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-1, 0.25rem);
+}
+
+.pope-mgmt__label {
+  font-size: var(--cf-text-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--cf-slate-700, #374151);
+}
+
+.pope-mgmt__required {
+  color: var(--cf-critical, #dc2626);
+}
+
+.pope-mgmt__input {
+  width: 100%;
+  padding: var(--cf-space-2, 0.5rem) var(--cf-space-3, 0.75rem);
+  border: 1px solid var(--cf-panel-border, #d1d5db);
+  border-radius: 6px;
+  font-size: var(--cf-text-sm, 0.875rem);
+  color: var(--cf-slate-900, #111827);
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-height: var(--cf-control-height, 36px);
+
+  &:focus {
+    outline: none;
+    border-color: var(--cf-primary, #6b2c91);
+    box-shadow: 0 0 0 3px rgba(107, 44, 145, 0.12);
+  }
+
+  &:disabled {
+    background: var(--cf-slate-50, #f9fafb);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &--error {
+    border-color: var(--cf-critical, #dc2626);
+  }
+}
+
+.pope-mgmt__field-error {
+  margin: 0;
+  font-size: var(--cf-text-xs, 0.75rem);
+  color: var(--cf-critical, #dc2626);
+}
+
+.pope-mgmt__field-hint {
+  margin: 0;
+}
+
+.pope-mgmt__form-actions {
+  display: flex;
+  gap: var(--cf-space-2, 0.5rem);
+  flex-wrap: wrap;
+  padding-top: var(--cf-space-2, 0.5rem);
+  border-top: 1px solid var(--cf-panel-border, #e5e7eb);
+}
+
+@media (max-width: 768px) {
+  .pope-mgmt__edit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pope-mgmt__photo-col {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .pope-mgmt__photo-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+  }
+
+  .pope-mgmt__form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pope-mgmt__form-actions {
+    flex-direction: column;
+
+    .cf-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

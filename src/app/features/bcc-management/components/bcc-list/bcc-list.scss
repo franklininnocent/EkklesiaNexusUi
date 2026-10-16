@@ -1,0 +1,78 @@
+/* BCC list — CF chrome. Detail modal lives in app-bcc-detail-modal. */
+
+.bcc-list__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.bcc-list__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.bcc-list__chip-remove {
+  margin-left: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.1rem;
+}
+
+.bcc-list__code-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.bcc-list__code {
+  color: var(--cf-primary);
+}
+
+/* Panel container matching Add organization / Members list `.cf-panel` content block. */
+.bcc-list__panel {
+  display: grid;
+  gap: var(--cf-space-3);
+}
+
+.bcc-list__capacity {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 6rem;
+}
+
+.bcc-list__capacity-bar {
+  height: 6px;
+  border-radius: var(--cf-radius-pill);
+  background: var(--cf-slate-100);
+  overflow: hidden;
+}
+
+.bcc-list__capacity-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cf-primary);
+
+  &.capacity-medium {
+    background: var(--cf-amber);
+  }
+
+  &.capacity-high {
+    background: var(--cf-critical);
+  }
+}
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}

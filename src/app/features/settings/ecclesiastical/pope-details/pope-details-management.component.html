@@ -1,0 +1,255 @@
+<div
+  class="pope-mgmt"
+  [class.pope-mgmt--embedded]="embedded"
+  [class.cf-page]="!embedded"
+>
+  <!-- Standalone page header -->
+  <app-page-header
+    *ngIf="!embedded"
+    title="Pope Details Management"
+    subtitle="Manage global Pope information displayed across all churches"
+  >
+    <button
+      *ngIf="canManage && !loading"
+      type="button"
+      class="cf-btn cf-btn--sm"
+      (click)="loadPopeDetails()"
+      [disabled]="loading"
+      aria-label="Refresh pope details"
+    >
+      Refresh
+    </button>
+  </app-page-header>
+
+  <!-- Embedded tab toolbar -->
+  <header *ngIf="embedded" class="pope-mgmt__toolbar">
+    <div class="pope-mgmt__toolbar-copy">
+      <h2 class="pope-mgmt__title">Pope Details Management</h2>
+      <p class="pope-mgmt__subtitle cf-meta">Global Pope information displayed across all churches</p>
+    </div>
+    <button
+      *ngIf="canManage && !loading"
+      type="button"
+      class="cf-btn cf-btn--sm"
+      (click)="loadPopeDetails()"
+      [disabled]="loading"
+      aria-label="Refresh pope details"
+    >
+      Refresh
+    </button>
+  </header>
+
+  <!-- Permission denied -->
+  <div *ngIf="!canManage" class="cf-inline-alert cf-panel pope-mgmt__alert" role="alert">
+    <p>You do not have permission to manage Pope details. Only Super Administrators can access this feature.</p>
+  </div>
+
+  <ng-container *ngIf="canManage">
+    <!-- Loading -->
+    <div
+      *ngIf="loading && !loaded"
+      class="cf-loading-block cf-panel"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <app-loading-skeleton label="Loading pope details…" type="card" [rows]="4"></app-loading-skeleton>
+    </div>
+
+    <ng-container *ngIf="loaded">
+      <!-- Load error -->
+      <div *ngIf="loadError" class="cf-inline-alert cf-panel pope-mgmt__alert" role="alert">
+        <p>{{ loadError }}</p>
+        <button type="button" class="cf-btn cf-btn-primary cf-btn--sm" (click)="retryLoad()">Try again</button>
+      </div>
+
+      <ng-container *ngIf="!loadError">
+        <!-- Empty state when no pope name configured -->
+        <app-cf-empty-state
+          *ngIf="!hasCurrentPope() && !loading"
+          icon="👑"
+          title="No Pope details configured"
+          description="Set the global Pope name, title, and portrait so they appear in church profiles and ecclesiastical records."
+          [hasActions]="false"
+        ></app-cf-empty-state>
+
+        <!-- Current Pope profile strip -->
+        <section
+          *ngIf="hasCurrentPope()"
+          class="pope-mgmt__profile cf-panel"
+          aria-labelledby="pope-current-heading"
+        >
+          <h3 id="pope-current-heading" class="pope-mgmt__section-label">Current Pope</h3>
+          <div class="pope-mgmt__profile-body">
+            <div class="pope-mgmt__avatar" aria-hidden="true">
+              <img
+                *ngIf="imagePreview"
+                [src]="imagePreview"
+                [alt]="popePhotoAlt()"
+                class="pope-mgmt__avatar-img"
+              />
+              <span *ngIf="!imagePreview" class="pope-mgmt__avatar-placeholder">👑</span>
+            </div>
+            <div class="pope-mgmt__profile-info">
+              <div class="pope-mgmt__profile-name-row">
+                <strong class="pope-mgmt__profile-name">{{ popeDisplayName() }}</strong>
+                <span class="cf-badge cf-badge--info" aria-label="Status: Current">Current</span>
+              </div>
+              <p class="pope-mgmt__profile-meta cf-meta">
+                <span *ngIf="popeDetails?.pope_title">{{ popeDetails?.pope_title }}</span>
+                <span *ngIf="popeDetails?.pope_title && popeDetails?.pope_effective_from"> · </span>
+                <span *ngIf="popeDetails?.pope_effective_from">
+                  Effective {{ formatDate($safeNavigationMigration(popeDetails?.pope_effective_from)) }}
+                </span>
+                <span *ngIf="(popeDetails?.pope_title || popeDetails?.pope_effective_from)"> · </span>
+                <span>{{ imageStatusLabel() }}</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Edit panel -->
+        <section class="pope-mgmt__edit cf-panel" aria-labelledby="pope-edit-heading">
+          <h3 id="pope-edit-heading" class="pope-mgmt__section-label">Edit Pope Details</h3>
+
+          <div class="pope-mgmt__edit-grid">
+            <!-- Photo column -->
+            <div class="pope-mgmt__photo-col">
+              <div class="pope-mgmt__photo-preview">
+                <img
+                  *ngIf="imagePreview"
+                  [src]="imagePreview"
+                  [alt]="popePhotoAlt()"
+                  class="pope-mgmt__photo-img"
+                />
+                <span *ngIf="!imagePreview" class="pope-mgmt__photo-placeholder" aria-hidden="true">👤</span>
+              </div>
+              <p class="cf-meta pope-mgmt__photo-hint">JPG, PNG, WebP · Max 3 MB</p>
+              <div class="pope-mgmt__photo-actions">
+                <input
+                  type="file"
+                  id="pope-image-input"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  (change)="onFileSelected($event)"
+                  [disabled]="uploading"
+                  class="pope-mgmt__file-input"
+                  aria-label="Upload pope portrait image"
+                />
+                <label for="pope-image-input" class="cf-btn cf-btn--sm" [class.cf-btn--disabled]="uploading">
+                  {{ selectedFile ? 'Change' : 'Upload' }}
+                </label>
+                <button
+                  *ngIf="selectedFile"
+                  type="button"
+                  class="cf-btn cf-btn--sm"
+                  (click)="removeImage()"
+                  [disabled]="uploading"
+                >
+                  Cancel
+                </button>
+                <button
+                  *ngIf="selectedFile"
+                  type="button"
+                  class="cf-btn cf-btn-primary cf-btn--sm"
+                  (click)="uploadImage()"
+                  [disabled]="uploading"
+                >
+                  {{ uploading ? 'Uploading…' : 'Save image' }}
+                </button>
+                <button
+                  *ngIf="!selectedFile && popeDetails?.pope_image_url"
+                  type="button"
+                  class="cf-btn cf-btn--sm pope-mgmt__delete-btn"
+                  (click)="deleteImage()"
+                  [disabled]="uploading"
+                  aria-label="Delete pope portrait image"
+                >
+                  Delete
+                </button>
+              </div>
+              <p *ngIf="selectedFile" class="cf-meta pope-mgmt__file-info">
+                {{ selectedFile.name }}
+                ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
+              </p>
+            </div>
+
+            <!-- Form column -->
+            <form
+              [formGroup]="popeForm"
+              (ngSubmit)="savePopeDetails()"
+              class="pope-mgmt__form"
+            >
+              <div class="pope-mgmt__form-grid">
+                <div class="pope-mgmt__field">
+                  <label for="pope_name" class="pope-mgmt__label">
+                    Pope Name <span class="pope-mgmt__required" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="pope_name"
+                    formControlName="pope_name"
+                    class="pope-mgmt__input"
+                    [class.pope-mgmt__input--error]="hasFieldError('pope_name')"
+                    placeholder="Enter Pope's full name"
+                    [disabled]="saving"
+                    autocomplete="off"
+                  />
+                  <p *ngIf="hasFieldError('pope_name')" class="pope-mgmt__field-error" role="alert">
+                    {{ getFieldError('pope_name') }}
+                  </p>
+                </div>
+
+                <div class="pope-mgmt__field">
+                  <label for="pope_title" class="pope-mgmt__label">Pope Title</label>
+                  <input
+                    type="text"
+                    id="pope_title"
+                    formControlName="pope_title"
+                    class="pope-mgmt__input"
+                    [class.pope-mgmt__input--error]="hasFieldError('pope_title')"
+                    placeholder="e.g., Pope Francis"
+                    [disabled]="saving"
+                    autocomplete="off"
+                  />
+                  <p *ngIf="hasFieldError('pope_title')" class="pope-mgmt__field-error" role="alert">
+                    {{ getFieldError('pope_title') }}
+                  </p>
+                </div>
+
+                <div class="pope-mgmt__field pope-mgmt__field--full">
+                  <label for="pope_effective_from" class="pope-mgmt__label">Effective From</label>
+                  <input
+                    type="date"
+                    id="pope_effective_from"
+                    formControlName="pope_effective_from"
+                    class="pope-mgmt__input"
+                    [disabled]="saving"
+                  />
+                  <p class="cf-meta pope-mgmt__field-hint">Date when this pope became effective</p>
+                </div>
+              </div>
+
+              <div class="pope-mgmt__form-actions">
+                <button
+                  type="submit"
+                  class="cf-btn cf-btn-primary"
+                  [disabled]="popeForm.invalid || saving"
+                >
+                  {{ saving ? 'Saving…' : 'Save Details' }}
+                </button>
+                <button
+                  type="button"
+                  class="cf-btn"
+                  (click)="loadPopeDetails()"
+                  [disabled]="saving || loading"
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</div>

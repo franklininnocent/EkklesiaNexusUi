@@ -1,0 +1,337 @@
+.tenant-manager {
+  max-width: 100%;
+  width: 100%;
+
+  &.cf-page {
+    padding: var(--cf-page-pad);
+    gap: var(--cf-space-2);
+  }
+}
+
+.tenant-manager__command-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-2);
+  min-height: var(--cf-control-height);
+  padding-bottom: var(--cf-space-2);
+  border-bottom: 1px solid var(--cf-panel-border);
+}
+
+.tenant-manager__command-bar__start {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cf-space-3);
+  min-width: 0;
+}
+
+.tenant-manager__command-bar__end {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+
+  app-list-toolbar {
+    width: 100%;
+    max-width: 52rem;
+  }
+}
+
+.tenant-manager__title {
+  margin: 0;
+  font-size: var(--cf-text-lg, 1.125rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--cf-slate-900);
+}
+
+.tenant-manager__summary {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  font-size: var(--cf-text-meta, 0.75rem);
+  color: var(--cf-color-text-muted, var(--cf-muted));
+}
+
+.tenant-manager__summary-item strong {
+  font-weight: 600;
+  color: var(--cf-slate-900);
+}
+
+.tenant-manager__summary-sep {
+  opacity: 0.5;
+}
+
+.tenant-manager__view-toggle {
+  flex-shrink: 0;
+}
+
+.tenant-manager__create-btn {
+  white-space: nowrap;
+}
+
+.tenant-manager__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.tenant-manager__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.tenant-manager__chip-remove {
+  margin-left: var(--cf-space-1);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--cf-text-sm);
+  line-height: 1;
+  padding: 0;
+}
+
+.tenant-manager__result-count {
+  margin: 0;
+}
+
+.tenant-manager__panel--loading {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.tenant-manager__table-panel {
+  display: grid;
+  gap: var(--cf-space-3);
+  padding: var(--cf-space-3);
+}
+
+.tenant-manager__table-panel .cf-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--cf-panel-bg);
+}
+
+.tenant-manager__table-panel .cf-table__actions-col,
+.tenant-manager__table-panel .cf-table__actions-cell {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--cf-panel-bg);
+}
+
+.tenant-manager__table-panel .cf-table tbody tr {
+  height: 2.5rem;
+}
+
+.tenant-manager__checkbox-col {
+  width: 2rem;
+  text-align: center;
+}
+
+.tenant-manager__name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-2);
+  min-width: 0;
+}
+
+.tenant-manager__name-meta {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+
+  strong {
+    font-size: var(--cf-text-sm);
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.tenant-manager__avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--cf-radius-sm);
+  border: 1px solid var(--cf-panel-border);
+  background: var(--cf-slate-50);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.tenant-manager__avatar--card {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.tenant-manager__avatar-fallback {
+  font-size: var(--cf-text-meta);
+  font-weight: 600;
+  color: var(--cf-slate-700);
+}
+
+.tenant-manager__health {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--cf-badge-pad-y) var(--cf-badge-pad-x);
+  border-radius: 999px;
+  font-size: var(--cf-text-meta);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.tenant-manager__health--healthy {
+  color: var(--cf-forest);
+  background: var(--cf-forest-soft);
+}
+
+.tenant-manager__health--attention {
+  color: var(--cf-amber);
+  background: var(--cf-amber-soft);
+}
+
+.tenant-manager__health--risk {
+  color: var(--cf-critical);
+  background: var(--cf-critical-soft);
+}
+
+.tenant-manager__card-panel {
+  display: grid;
+  gap: var(--cf-space-3);
+}
+
+.tenant-manager__card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: var(--cf-space-3);
+}
+
+.tenant-manager__card {
+  display: grid;
+  gap: var(--cf-space-2);
+  max-height: 10rem;
+  padding: var(--cf-space-3);
+  border: 1px solid var(--cf-panel-border);
+  border-radius: var(--cf-radius);
+  background: var(--cf-panel-bg);
+  box-shadow: var(--cf-shadow);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--cf-primary);
+    box-shadow: var(--cf-shadow);
+    outline: none;
+  }
+}
+
+.tenant-manager__card-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--cf-space-2);
+  min-width: 0;
+}
+
+.tenant-manager__card-title {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+
+  strong {
+    font-size: var(--cf-text-sm);
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.tenant-manager__card-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--cf-space-1) var(--cf-space-3);
+  margin: 0;
+
+  div {
+    display: grid;
+    gap: 0.05rem;
+    min-width: 0;
+  }
+
+  dt {
+    margin: 0;
+    font-size: var(--cf-text-meta);
+    color: var(--cf-color-text-muted, var(--cf-muted));
+    line-height: 1.2;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--cf-text-sm);
+    color: var(--cf-slate-900);
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.tenant-manager__card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cf-space-1);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tenant-manager__card:hover .tenant-manager__card-actions,
+.tenant-manager__card:focus-within .tenant-manager__card-actions {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .tenant-manager__command-bar {
+    align-items: flex-start;
+  }
+
+  .tenant-manager__command-bar__end {
+    width: 100%;
+  }
+
+  .tenant-manager__summary {
+    width: 100%;
+  }
+
+  .tenant-manager__card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tenant-manager__card-actions {
+    opacity: 1;
+  }
+}

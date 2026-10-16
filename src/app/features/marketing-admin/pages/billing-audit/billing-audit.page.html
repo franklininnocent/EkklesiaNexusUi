@@ -1,0 +1,34 @@
+<section class="cf-page billing-workspace">
+  <app-page-header title="Billing audit" subtitle="Commercial and payment control changes" backLink="/settings/billing" backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading audit events…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="rows.length">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Action</th>
+                <th>Tenant</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ formatWhen(row['created_at']) }}</td>
+                <td>{{ row['action'] }}</td>
+                <td>{{ row['tenant_id'] ?? '—' }}</td>
+                <td>{{ row['reason'] ?? '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!rows.length" class="cf-muted">No billing audit events yet.</p>
+      </section>
+    }
+  </div>
+</section>

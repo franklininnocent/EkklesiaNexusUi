@@ -1,0 +1,302 @@
+/* List chrome: match Ministries organization-list / Family list (thin feature SCSS).
+   Detail modal styles retained — modal markup lives in this template. */
+@use '../../../../donations/styles/stewardship-split-layout.scss';
+
+.sacrament-list__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.sacrament-list__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.sacrament-list__chip-remove {
+  margin-left: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.1rem;
+}
+
+/* Panel container matching list pages `.cf-panel` content block. */
+.sacrament-list__panel {
+  display: grid;
+  gap: var(--cf-space-3);
+}
+
+.sacrament-list__name {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+
+  strong {
+    color: var(--cf-slate-900);
+    font-weight: 600;
+  }
+
+  &:hover strong,
+  &:focus-visible strong {
+    color: var(--cf-primary);
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cf-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+.sacrament-list__overflow {
+  position: relative;
+  display: inline-flex;
+}
+
+.sacrament-list__overflow-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  z-index: 20;
+  min-width: 12rem;
+  padding: 0.35rem;
+  background: var(--cf-panel-bg, #fff);
+  border: 1px solid var(--cf-panel-border);
+  border-radius: var(--cf-radius-sm);
+  box-shadow: var(--cf-shadow);
+}
+
+.sacrament-list__overflow-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cf-slate-800, #1e293b);
+  text-decoration: none;
+  font-size: var(--cf-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sacrament-list__overflow-item:hover,
+.sacrament-list__overflow-item:focus {
+  background: var(--cf-slate-50);
+  outline: none;
+}
+
+.sacrament-list__overflow-item--danger {
+  color: var(--cf-critical);
+}
+
+.sacrament-list__overflow-divider {
+  height: 1px;
+  margin: 0.25rem 0.35rem;
+  background: var(--cf-panel-border);
+}
+
+.sacrament-list__cell--primary {
+  min-width: 0;
+}
+
+.sacrament-list__row-overflow {
+  position: relative;
+  display: inline-flex;
+}
+
+.sacrament-list__row-actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.35rem;
+  border: 0;
+  border-radius: var(--cf-radius-sm);
+  background: transparent;
+  color: var(--cf-slate-700);
+  font-size: var(--cf-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--cf-slate-100);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cf-primary);
+    outline-offset: 2px;
+  }
+}
+
+.sacrament-list__row-overflow-menu {
+  right: 0;
+  z-index: 30;
+  min-width: 11rem;
+}
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+@media (max-width: 768px) {
+  .sacrament-list__overflow-menu {
+    right: auto;
+    left: 0;
+  }
+
+  .sacrament-list__row-overflow-menu {
+    right: 0;
+    left: auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Sacrament Details modal (unchanged presentation — co-located with list)
+   --------------------------------------------------------------------------- */
+
+.sacrament-detail-identity {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: -0.15rem 0 0;
+}
+
+.sacrament-detail-summary {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 -1.15rem;
+  padding: 0.75rem 1.15rem;
+  background: var(--cf-slate-50);
+  border-top: 1px solid var(--cf-panel-border);
+  border-bottom: 1px solid var(--cf-panel-border);
+}
+
+.sacrament-detail-complete {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.sacrament-detail-complete__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cf-slate-900);
+  letter-spacing: 0.02em;
+}
+
+.sacrament-detail-complete__section + .sacrament-detail-complete__section {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--cf-slate-100);
+}
+
+.sacrament-detail-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cf-muted);
+}
+
+.sacrament-detail-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cf-slate-900);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.sacrament-detail-value--notes {
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.sacrament-detail-modal .cf-split-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sacrament-detail-modal .cf-split-grid.sacrament-detail-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sacrament-detail-modal .cf-split-field {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .sacrament-detail-modal .cf-split-grid,
+  .sacrament-detail-modal .cf-split-grid.sacrament-detail-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .sacrament-detail-modal .cf-split-grid,
+  .sacrament-detail-modal .cf-split-grid.sacrament-detail-grid--2 {
+    grid-template-columns: 1fr;
+  }
+
+  .sacrament-detail-summary {
+    margin: 0 -1.15rem;
+  }
+}
+
+.sacrament-detail-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.15rem;
+  color: var(--cf-muted);
+  font-size: 0.9rem;
+
+  p {
+    margin: 0;
+  }
+}
+
+.sacrament-detail-loading__spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--cf-slate-100);
+  border-top-color: var(--cf-primary);
+  border-radius: 50%;
+  animation: sacrament-detail-spin 0.8s linear infinite;
+}
+
+@keyframes sacrament-detail-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sacrament-detail-modal .cf-split-form-actions {
+  justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sacrament-detail-loading__spinner {
+    animation: none;
+    border-top-color: var(--cf-slate-100);
+  }
+}

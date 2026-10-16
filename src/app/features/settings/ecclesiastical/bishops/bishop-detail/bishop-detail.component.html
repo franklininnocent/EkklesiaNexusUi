@@ -1,0 +1,116 @@
+<div class="bishop-detail-page cf-page">
+  <app-page-header
+    [title]="bishop?.full_name || (loading ? 'Loading...' : 'Detail')"
+    [subtitle]="titleName()"
+    backLink="/settings/ecclesiastical/bishops"
+    backLabel="Bishops"
+    [statusLabel]="bishop ? (bishop.status || 'Unknown') : undefined"
+    [statusTone]="bishopStatusTone">
+    <a routerLink="/settings/ecclesiastical/bishop-updates" class="cf-btn">Suggestions</a>
+    <button *ngIf="bishop" type="button" class="cf-btn cf-btn-primary" (click)="onEdit()">Edit</button>
+    <button *ngIf="bishop" type="button" class="cf-btn cf-btn-danger" (click)="onDelete()">Delete</button>
+  </app-page-header>
+
+  <app-loading-skeleton *ngIf="loading" type="card" [rows]="8"></app-loading-skeleton>
+
+  <ng-container *ngIf="!loading && bishop">
+    <app-tab-strip
+      [tabs]="tabItems"
+      [activeId]="activeTab"
+      mode="inpage"
+      ariaLabel="Bishop detail sections"
+      (tabChange)="onTabChange($event)">
+    </app-tab-strip>
+
+    <section *ngIf="activeTab === 'person'" id="bishop-panel-person" role="tabpanel" aria-labelledby="bishop-tab-person">
+      <div class="bishop-detail animate-fade-in-up">
+        <div class="bishop-identity">
+          <div class="photo-container">
+            <app-bishop-avatar
+              [name]="bishop.full_name"
+              [source]="bishop"
+              size="xl"
+            ></app-bishop-avatar>
+            <label *ngIf="canManageImages" class="photo-upload cf-btn">
+              {{ uploadingPhoto ? 'Uploading…' : 'Upload photo' }}
+              <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" hidden (change)="onPhotoSelected($event)" [disabled]="uploadingPhoto">
+            </label>
+            <button
+              *ngIf="canManageImages && bishopPhotoUrl"
+              type="button"
+              class="cf-btn"
+              [disabled]="uploadingPhoto"
+              (click)="onRemovePhoto()"
+            >
+              Remove photo
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-card">
+            <h2 class="card-title">Personal Information</h2>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Full Name</span><span class="info-value">{{ bishop.full_name }}</span></div>
+              <div class="info-item" *ngIf="bishop.date_of_birth"><span class="info-label">Date of Birth</span><span class="info-value">{{ formatDate(bishop.date_of_birth) }} <span class="age-badge">{{ calculateAge(bishop.date_of_birth) }}</span></span></div>
+            </div>
+          </div>
+
+          <div class="detail-card">
+            <h2 class="card-title">Ecclesiastical Information</h2>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Title</span><span class="info-value">{{ titleName() || 'N/A' }}</span></div>
+              <div class="info-item" *ngIf="bishop.ordained_priest_date"><span class="info-label">Ordained Priest</span><span class="info-value">{{ formatDate(bishop.ordained_priest_date) }}</span></div>
+              <div class="info-item" *ngIf="bishop.ordained_bishop_date"><span class="info-label">Ordained Bishop</span><span class="info-value">{{ formatDate(bishop.ordained_bishop_date) }}</span></div>
+            </div>
+          </div>
+
+          <div class="detail-card" *ngIf="bishop.archdiocese">
+            <h2 class="card-title">Legacy Diocese Link</h2>
+            <p class="cf-meta">Canonical assignments live under Appointments.</p>
+            <button type="button" class="cf-btn" (click)="viewDiocese(bishop.archdiocese!.id)">View {{ bishop.archdiocese.name }}</button>
+          </div>
+
+          <div class="detail-card full-width" *ngIf="bishop.biography">
+            <h2 class="card-title">Biography</h2>
+            <p>{{ bishop.biography }}</p>
+          </div>
+
+          <div class="detail-card full-width" *ngIf="bishop.email || bishop.phone">
+            <h2 class="card-title">Contact</h2>
+            <div class="contact-grid">
+              <div class="contact-item" *ngIf="bishop.email"><span class="contact-label">Email</span><a [href]="'mailto:' + bishop.email">{{ bishop.email }}</a></div>
+              <div class="contact-item" *ngIf="bishop.phone"><span class="contact-label">Phone</span><a [href]="'tel:' + bishop.phone">{{ bishop.phone }}</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab === 'appointments'" id="bishop-panel-appointments" role="tabpanel" aria-labelledby="bishop-tab-appointments">
+      <app-bishop-appointments-tab [bishopId]="bishop.id"></app-bishop-appointments-tab>
+    </section>
+
+    <section *ngIf="activeTab === 'audit'" id="bishop-panel-audit" role="tabpanel" aria-labelledby="bishop-tab-audit">
+      <app-bishop-audit-tab [bishopId]="bishop.id"></app-bishop-audit-tab>
+    </section>
+  </ng-container>
+</div>
+
+<app-bishop-form-modal
+  [show]="showFormModal"
+  [bishop]="bishop"
+  (saved)="onFormSaved()"
+  (cancelled)="showFormModal = false">
+</app-bishop-form-modal>
+
+<app-confirmation-modal
+  [show]="showDeleteModal"
+  title="Delete Bishop"
+  [message]="'Are you sure you want to delete ' + (bishop?.full_name || 'this bishop') + '? This action cannot be undone.'"
+  confirmText="Delete"
+  cancelText="Cancel"
+  confirmButtonClass="btn-danger"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()">
+</app-confirmation-modal>

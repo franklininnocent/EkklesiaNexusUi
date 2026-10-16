@@ -1,0 +1,17 @@
+@use '../../styles/marketing-admin.shared';
+
+.hero-editor {
+  display: grid;
+  gap: var(--cf-space-2, 0.5rem);
+}
+
+.hero-editor__intro {
+  margin-bottom: var(--cf-space-2, 0.5rem);
+}
+
+.hero-editor__locked {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: var(--cf-space-2, 0.5rem);
+  background: var(--cf-slate-50);
+}

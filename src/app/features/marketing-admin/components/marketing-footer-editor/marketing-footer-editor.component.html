@@ -1,0 +1,43 @@
+<section class="marketing-structure">
+  <h3 class="marketing-structure__heading">Footer</h3>
+  <label class="marketing-structure__field">
+    <span>Statement</span>
+    <textarea
+      rows="2"
+      [ngModel]="model.statement"
+      (ngModelChange)="updateStatement($event)"
+      maxlength="500"></textarea>
+  </label>
+  <p class="marketing-structure__hint">Footer links ( /privacy, /terms, or hash anchors only )</p>
+  <table class="marketing-structure__table">
+    <thead>
+      <tr>
+        <th scope="col">Label</th>
+        <th scope="col">Href</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of model.links; let i = index">
+        <td>
+          <input
+            type="text"
+            [value]="row.label"
+            (input)="updateLink(i, 'label', $any($event.target).value)"
+            maxlength="64" />
+        </td>
+        <td>
+          <input
+            type="text"
+            [value]="row.href"
+            (input)="updateLink(i, 'href', $any($event.target).value)"
+            maxlength="128" />
+        </td>
+        <td>
+          <button type="button" class="marketing-structure__link-btn" (click)="removeLink(i)">Remove</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button type="button" class="cf-btn" (click)="addLink()">Add footer link</button>
+</section>

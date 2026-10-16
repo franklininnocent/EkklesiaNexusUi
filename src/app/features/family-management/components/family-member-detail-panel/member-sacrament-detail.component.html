@@ -1,0 +1,67 @@
+<article class="sacrament-tile" [class.is-complete]="tileComplete">
+  <header class="sacrament-tile__header">
+    <div class="sacrament-tile__title-wrap">
+      <span class="sacrament-tile__dot" aria-hidden="true"></span>
+      <h4 class="sacrament-tile__title">{{ sacramentType.name }}</h4>
+      <span
+        class="pill sacrament-tile__status"
+        [class.pill--active]="hasRegisterRecord || profileCompleted"
+        [class.pill--warning]="hasRegisterRecord && registerRecord?.status === 'conditional'"
+        [class.pill--critical]="hasRegisterRecord && registerRecord?.status === 'voided'"
+        [attr.title]="hasRegisterRecord ? 'Parish register status' : 'Profile summary: ' + statusLabel"
+      >
+        {{ statusLabel }}
+      </span>
+    </div>
+    <app-edit-icon-button
+      *ngIf="editable"
+      size="sm"
+      [ariaLabel]="'Edit ' + sacramentType.name + ' profile summary'"
+      (clicked)="onEdit()"
+    />
+  </header>
+
+  <div class="sacrament-tile__body">
+    <ng-container *ngIf="hasRegisterRecord">
+      <p class="sacrament-tile__section-label">Parish register record</p>
+      <dl class="field-list">
+        <div class="field" *ngFor="let row of registerDisplayFields">
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+      </dl>
+      <div class="sacrament-tile__actions" *ngIf="registerViewPath as viewPath">
+        <a class="sacrament-tile__link" [routerLink]="viewPath">View register record</a>
+        <a class="sacrament-tile__link" *ngIf="showCertificateLink" [routerLink]="viewPath">View certificate</a>
+      </div>
+    </ng-container>
+
+    <p
+      *ngIf="canViewRegister && !hasRegisterRecord"
+      class="sacrament-tile__empty"
+    >
+      No parish register record
+    </p>
+
+    <ng-container *ngIf="showProfileSummarySection">
+      <p class="sacrament-tile__section-label">Profile summary</p>
+      <dl class="field-list">
+        <div class="field" *ngFor="let row of displayFields">
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+      </dl>
+      <div class="sacrament-tile__chips" *ngIf="displayChips.length">
+        <span class="pill pill--muted" *ngFor="let chip of displayChips">{{ chip }}</span>
+      </div>
+    </ng-container>
+
+    <p *ngIf="marriageNeedsResolution" class="sacrament-tile__empty">
+      This marriage is not clearly linked to one spouse. Review the family so both husband and wife show the same marriage.
+    </p>
+
+    <p *ngIf="showNoProfileSummary && !hasRegisterRecord" class="sacrament-tile__empty">
+      No profile summary added yet
+    </p>
+  </div>
+</article>

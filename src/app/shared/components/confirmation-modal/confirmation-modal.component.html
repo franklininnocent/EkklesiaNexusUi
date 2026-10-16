@@ -1,0 +1,58 @@
+<app-modal-shell
+  *ngIf="show"
+  [title]="title"
+  size="xs"
+  [nested]="nested"
+  [isSubmitting]="isBusy"
+  closeAriaLabel="Close confirmation"
+  (closeRequested)="onCloseRequested()"
+>
+  <p class="cf-confirm__message">{{ message }}</p>
+
+  <div class="cf-form-field" *ngIf="showDescriptionInput">
+    <label class="cf-form-field__label" for="cf-confirm-description">
+      {{ descriptionLabel }}
+    </label>
+    <textarea
+      id="cf-confirm-description"
+      name="description"
+      class="cf-form-field__control"
+      [(ngModel)]="description"
+      [placeholder]="descriptionPlaceholder"
+      [maxlength]="descriptionMaxLength"
+      [disabled]="isBusy"
+      rows="4"
+      aria-describedby="cf-confirm-char-count"
+    ></textarea>
+    <div class="cf-form-field__hint" id="cf-confirm-char-count">
+      <span
+        [class.cf-confirm__warn]="remainingCharacters < 50"
+        [class.cf-confirm__error]="isDescriptionTooLong"
+      >
+        {{ remainingCharacters }} characters remaining
+        <span *ngIf="isDescriptionTooShort"> · at least {{ descriptionMinLength }} characters</span>
+      </span>
+    </div>
+  </div>
+
+  <div modalFooter>
+    <button
+      type="button"
+      class="cf-btn"
+      (click)="onCancel()"
+      [disabled]="isBusy"
+    >
+      {{ cancelText }}
+    </button>
+    <button
+      type="button"
+      [class]="confirmBtnClass"
+      (click)="onConfirm()"
+      [disabled]="isBusy || isDescriptionTooLong || isDescriptionMissing || isDescriptionTooShort"
+    >
+      <span *ngIf="!isBusy">{{ confirmText }}</span>
+      <app-cf-brand-loader *ngIf="isBusy" size="button" label="Working" [showLabel]="false" />
+      <span *ngIf="isBusy" class="cf-sr-only">Working…</span>
+    </button>
+  </div>
+</app-modal-shell>

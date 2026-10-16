@@ -1,0 +1,30 @@
+<app-modal-shell
+  *ngIf="open"
+  [title]="title(kind)"
+  size="xs"
+  closeAriaLabel="Close"
+  (closeRequested)="close()"
+>
+  <p class="cf-confirm__message" *ngIf="kind === 'view_only'">
+    Your subscription expired on
+    <strong>{{ $safeNavigationMigration(access.snapshotSignal()?.subscription_ends_at) | cfDate }}</strong>,
+    and your grace period ended on
+    <strong>{{ $safeNavigationMigration(access.snapshotSignal()?.grace_ends_at) | cfDate }}</strong>.
+    Your account is now in view-only mode. Creating, updating, deleting, exporting, and downloading are restricted.
+    Renew your subscription to restore full access.
+  </p>
+
+  <p class="cf-confirm__message" *ngIf="kind === 'locked'">
+    Your subscription and view-only period have ended. Parish records are not available until your subscription is renewed.
+    Contact your administrator or EkklesiaNexus for assistance.
+  </p>
+
+  <p class="cf-confirm__message" *ngIf="kind === 'read_only'">
+    Subscription access is restricted. You can view records, but you cannot save changes until access is restored.
+  </p>
+
+  <div modalFooter>
+    <button type="button" class="cf-btn" (click)="close()">Close</button>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="renew()">Renew subscription</button>
+  </div>
+</app-modal-shell>

@@ -1,0 +1,36 @@
+<section class="marketing-structure">
+  <h3 class="marketing-structure__heading">Primary navigation</h3>
+  <p class="marketing-structure__hint">Use hash links for homepage sections (#features, #contact) or /privacy and /terms. External URLs are not allowed.</p>
+  <table class="marketing-structure__table">
+    <thead>
+      <tr>
+        <th scope="col">Label</th>
+        <th scope="col">Href</th>
+        <th scope="col"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of items; let i = index">
+        <td>
+          <input
+            type="text"
+            [value]="row.label"
+            (input)="updateRow(i, 'label', $any($event.target).value)"
+            maxlength="64" />
+        </td>
+        <td>
+          <input
+            type="text"
+            [value]="row.href"
+            (input)="updateRow(i, 'href', $any($event.target).value)"
+            maxlength="128"
+            placeholder="#contact" />
+        </td>
+        <td>
+          <button type="button" class="marketing-structure__link-btn" (click)="removeRow(i)">Remove</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button type="button" class="cf-btn" (click)="addRow()">Add link</button>
+</section>

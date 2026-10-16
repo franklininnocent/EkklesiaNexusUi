@@ -1,0 +1,117 @@
+<div class="pct-scroll" *ngIf="plans().length">
+  <table class="pct" *ngIf="hasTableBody(); else emptyState">
+    <caption class="sr-only">Compare subscription plans by feature and limits</caption>
+    <colgroup>
+      <col class="pct__col-feature" />
+      <col class="pct__col-plan" *ngFor="let plan of plans(); trackBy: trackPlan" />
+    </colgroup>
+    <thead>
+      <tr class="pct__plan-row">
+        <th scope="col" class="pct__corner">Feature</th>
+        <th
+          scope="col"
+          *ngFor="let plan of plans(); trackBy: trackPlan"
+          class="pct__plan-head"
+          [class.pct__plan-head--current]="isCurrent(plan)"
+          [class.pct__plan-head--featured]="plan.is_featured && !isCurrent(plan)">
+          <div class="pct__plan-head-inner">
+            <span class="pct__plan-name">{{ plan.name }}</span>
+            <span class="pct__badge pct__badge--current" *ngIf="isCurrent(plan)">Current</span>
+            <span class="pct__badge pct__badge--featured" *ngIf="plan.badge_label && !isCurrent(plan)">{{ plan.badge_label }}</span>
+            <p class="pct__plan-tagline" *ngIf="plan.short_description">{{ plan.short_description }}</p>
+            <div class="pct__plan-price" *ngIf="showPlanPrice(plan)">
+              <ng-container *ngIf="plan.monthly_price as monthly">
+                <strong>{{ monthly | cfCurrency: plan.currency_code : 0 }}</strong>
+                <span class="pct__plan-price-unit">/ month</span>
+              </ng-container>
+              <span class="pct__plan-price-alt" *ngIf="plan.annual_price as annual">
+                or {{ annual | cfCurrency: plan.currency_code : 0 }} / year
+              </span>
+            </div>
+            <p class="pct__plan-price pct__plan-price--custom" *ngIf="plan.pricing_type === 'CUSTOM' && !showPlanPrice(plan)">
+              <strong>Custom pricing</strong>
+            </p>
+            <ul class="pct__plan-limits" *ngIf="plan.limits?.length">
+              <li *ngFor="let limit of plan.limits">
+                {{ limit.name }}:
+                <strong>{{ limit.unlimited || limit.value === null ? 'Unlimited' : (limit.value | number) }}</strong>
+              </li>
+            </ul>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let group of capabilityGroups(); trackBy: trackGroup">
+        <tr class="pct__group-row">
+          <th scope="colgroup" [attr.colspan]="plans().length + 1">
+            <span class="pct__group-title">{{ group.title }}</span>
+            <span class="pct__group-intro" *ngIf="group.intro">{{ group.intro }}</span>
+          </th>
+        </tr>
+        <tr *ngFor="let row of group.rows; trackBy: trackRow" class="pct__data-row">
+          <th scope="row" class="pct__feature-cell">
+            <span class="pct__feature-name">{{ row.label }}</span>
+            <p class="pct__feature-desc" *ngIf="row.note">{{ row.note }}</p>
+          </th>
+          <td
+            *ngFor="let plan of plans(); trackBy: trackPlan"
+            class="pct__value-cell"
+            [class.pct__value-cell--current]="isCurrent(plan)">
+            <span class="pct__cell" [class.pct__cell--yes]="cellIncluded(plan, row.code)" [class.pct__cell--no]="!cellIncluded(plan, row.code)">
+              <span class="pct__cell-icon" aria-hidden="true">{{ cellIncluded(plan, row.code) ? '✓' : '—' }}</span>
+              <span class="sr-only">{{ cellAria(plan, row.code, row.label) }}</span>
+            </span>
+          </td>
+        </tr>
+      </ng-container>
+
+      <ng-container *ngIf="limitGroups().length">
+        <tr class="pct__group-row">
+          <th scope="colgroup" [attr.colspan]="plans().length + 1">
+            <span class="pct__group-title">Usage limits</span>
+          </th>
+        </tr>
+        <tr *ngFor="let row of limitGroups()[0].items; trackBy: trackRow" class="pct__data-row">
+          <th scope="row" class="pct__feature-cell">
+            <span class="pct__feature-name">{{ row.name }}</span>
+          </th>
+          <td
+            *ngFor="let plan of plans(); trackBy: trackPlan"
+            class="pct__value-cell"
+            [class.pct__value-cell--current]="isCurrent(plan)">
+            <span class="pct__cell pct__cell--limit">{{ cellText(plan, row) }}</span>
+          </td>
+        </tr>
+      </ng-container>
+
+      <ng-container *ngIf="showCatalogFallback()">
+        <ng-container *ngFor="let group of catalogGroups(); trackBy: trackGroupCatalog">
+        <tr class="pct__group-row">
+          <th scope="colgroup" [attr.colspan]="plans().length + 1">
+            <span class="pct__group-title">{{ group.label }}</span>
+          </th>
+        </tr>
+        <tr *ngFor="let row of group.items; trackBy: trackRow" class="pct__data-row">
+          <th scope="row" class="pct__feature-cell">
+            <span class="pct__feature-name">{{ row.name }}</span>
+            <p class="pct__feature-desc" *ngIf="featureDescription(row.code)">{{ featureDescription(row.code) }}</p>
+          </th>
+          <td
+            *ngFor="let plan of plans(); trackBy: trackPlan"
+            class="pct__value-cell"
+            [class.pct__value-cell--current]="isCurrent(plan)">
+            <span class="pct__cell" [class.pct__cell--yes]="cellText(plan, row) === '✓'" [class.pct__cell--limit]="cellText(plan, row) !== '✓' && cellText(plan, row) !== '—'">
+              {{ cellText(plan, row) }}
+            </span>
+          </td>
+        </tr>
+        </ng-container>
+      </ng-container>
+    </tbody>
+  </table>
+
+  <ng-template #emptyState>
+    <p class="pct__empty">Feature comparison is not available yet. Try again in a moment.</p>
+  </ng-template>
+</div>

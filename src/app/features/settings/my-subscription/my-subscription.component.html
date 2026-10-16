@@ -1,0 +1,442 @@
+<div class="my-subscription cf-page">
+  <app-page-header
+    title="My Subscription"
+    subtitle="Your church plan, access status, and included features"
+    backLink="/settings"
+    backLabel="Settings">
+  </app-page-header>
+
+  <!-- Loading -->
+  <div
+    *ngIf="loading"
+    class="my-sub-loading"
+    role="status"
+    aria-live="polite"
+    aria-busy="true">
+    <app-loading-skeleton label="Loading subscription…" type="card" [rows]="6"></app-loading-skeleton>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading && error" class="cf-inline-alert my-sub-alert my-sub-alert--error" role="alert">
+    <div class="my-sub-alert__copy">
+      <strong>Could not load subscription</strong>
+      <p>{{ error }}</p>
+    </div>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="load()">Try again</button>
+  </div>
+
+  <!-- Empty -->
+  <app-cf-empty-state
+    *ngIf="!loading && !error && !summary"
+    title="No subscription details"
+    description="Subscription information is not available for this church yet. Contact your administrator if you need help."
+    icon="◎"
+    [hasActions]="false">
+  </app-cf-empty-state>
+
+  <ng-container *ngIf="!loading && !error && summary as s">
+    <!-- Priority 1: Access / status notice -->
+    <div
+      *ngIf="showAccessNotice(s)"
+      class="my-sub-notice"
+      role="status"
+      aria-live="polite"
+      [attr.data-tone]="s.status">
+      <div class="my-sub-notice__copy">
+        <strong>{{ accessHeadline(s) }}</strong>
+        <span>{{ accessDetail(s) }}</span>
+      </div>
+      <app-status-badge [label]="statusLabel(s.status)" [tone]="statusTone(s.status)"></app-status-badge>
+    </div>
+
+    <div class="my-sub-overview-grid">
+      <!-- Priority 2: Current subscription overview -->
+      <section class="my-sub-panel my-sub-panel--snapshot" aria-labelledby="my-sub-overview-title">
+        <header class="my-sub-panel__header">
+          <div>
+            <h2 id="my-sub-overview-title">Current subscription</h2>
+            <p>Plan and status for this church</p>
+          </div>
+        </header>
+
+        <dl class="my-sub-facts my-sub-facts--snapshot">
+          <div class="my-sub-fact">
+            <dt>Plan</dt>
+            <dd>{{ planName }}</dd>
+          </div>
+          <div class="my-sub-fact" *ngIf="overview?.terms?.contracted_price as price">
+            <dt>Price</dt>
+            <dd>
+              {{ price | cfCurrency: overview!.terms!.currency_code }} {{ intervalLabel(overview!.terms!.billing_interval) }}
+              <small class="my-sub-muted" *ngIf="overview!.terms!.tax as tax">
+                {{ tax.inclusive ? 'includes' : 'plus' }} {{ overview!.terms!.tax_label }}
+                ({{ tax.tax | cfCurrency: overview!.terms!.currency_code }})
+              </small>
+            </dd>
+          </div>
+          <div class="my-sub-fact">
+            <dt>Status</dt>
+            <dd>
+              <app-status-badge [label]="statusLabel(s.status)" [tone]="statusTone(s.status)"></app-status-badge>
+            </dd>
+          </div>
+          <div class="my-sub-fact" *ngIf="showTrialField(s)">
+            <dt>Trial ends</dt>
+            <dd>{{ formatDate(s.trial_ends_at) }}</dd>
+          </div>
+          <div class="my-sub-fact">
+            <dt>Subscription ends</dt>
+            <dd>{{ subscriptionEndsLabel(s) }}</dd>
+          </div>
+          <div
+            class="my-sub-fact"
+            *ngIf="s.grace_ends_at && (s.status === 'GRACE_PERIOD' || s.status === 'EXPIRED')">
+            <dt>Grace ends</dt>
+            <dd>{{ formatDate(s.grace_ends_at) }}</dd>
+          </div>
+          <div class="my-sub-fact">
+            <dt>Feature access</dt>
+            <dd>
+              <app-status-badge
+                [label]="s.allows_gated_access ? 'Available' : 'Unavailable'"
+                [tone]="s.allows_gated_access ? 'success' : 'critical'">
+              </app-status-badge>
+            </dd>
+          </div>
+        </dl>
+
+        <p class="my-sub-access-note" *ngIf="overview?.pending_change as change">
+          Your plan changes to <strong>{{ change.plan_name }}</strong>
+          <ng-container *ngIf="change.scheduled_for"> on {{ formatDate(change.scheduled_for) }}</ng-container>.
+        </p>
+        <p class="my-sub-muted my-sub-version-note" *ngIf="usingSubscribedVersion" role="status">
+          Your church is on plan version <strong>v{{ currentPlanIdentity?.subscribed_version_number }}</strong>.
+          The catalog now shows <strong>v{{ currentPlanIdentity?.catalog_version_number }}</strong> for new assignments —
+          your features below reflect the version you are pinned to until Ekklesia approves a plan change.
+        </p>
+      </section>
+
+      <!-- Priority 3: How much of the plan is used -->
+      <section class="my-sub-panel my-sub-panel--snapshot" aria-labelledby="my-sub-plan-title">
+        <header class="my-sub-panel__header">
+          <div>
+            <h2 id="my-sub-plan-title">Plan limits</h2>
+            <p>How much of {{ planName }} your church is using</p>
+          </div>
+        </header>
+
+        <ul class="my-sub-usage" *ngIf="overview?.usage?.length; else legacyLimits">
+          <li *ngFor="let row of overview!.usage; trackBy: trackByUsage" class="my-sub-usage__row" [attr.data-level]="row.level">
+            <strong class="my-sub-usage__name">{{ row.name }}</strong>
+            <div
+              *ngIf="!row.unlimited && row.limit !== null"
+              class="my-sub-usage__bar"
+              role="progressbar"
+              [attr.aria-valuenow]="usagePercent(row)"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-label]="row.name + ': ' + usageText(row)">
+              <span [style.width.%]="usagePercent(row)"></span>
+            </div>
+            <span *ngIf="row.unlimited || row.limit === null" class="my-sub-usage__bar my-sub-usage__bar--none" aria-hidden="true"></span>
+            <span class="my-sub-usage__count">{{ usageText(row) }}</span>
+            <span class="my-sub-usage__level">{{ usageLevelLabel(row.level) }}</span>
+          </li>
+        </ul>
+        <ng-template #legacyLimits>
+          <dl class="my-sub-facts my-sub-facts--compact">
+            <div class="my-sub-fact">
+              <dt>User limit</dt>
+              <dd>{{ formatUsers(s.max_users) }}</dd>
+            </div>
+            <div class="my-sub-fact">
+              <dt>Storage limit</dt>
+              <dd>{{ formatStorage(s.max_storage_mb) }}</dd>
+            </div>
+          </dl>
+        </ng-template>
+      </section>
+
+      <!-- Priority 4: Features -->
+      <section
+        class="my-sub-panel my-sub-panel--features"
+        aria-labelledby="my-sub-features-title"
+        *ngIf="enabledFeatures.length || s.features?.length">
+        <header class="my-sub-panel__header">
+          <div>
+            <h2 id="my-sub-features-title">Included features</h2>
+            <p>What this plan covers for your church</p>
+          </div>
+        </header>
+        <div class="my-sub-feature-groups" *ngIf="enabledFeatureGroups.length; else legacyFeatures">
+          <section *ngFor="let group of enabledFeatureGroups" class="my-sub-feature-group">
+            <h3 class="my-sub-feature-group__title">{{ group.label }}</h3>
+            <ul class="my-sub-features">
+              <li *ngFor="let feature of group.items">
+                <strong>{{ feature.name }}</strong>
+                <span class="my-sub-muted" *ngIf="feature.description">{{ feature.description }}</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+        <ng-template #legacyFeatures>
+          <ul class="my-sub-features">
+            <li *ngFor="let feature of s.features">{{ featureLabel(feature) }}</li>
+          </ul>
+        </ng-template>
+      </section>
+    </div>
+
+    <!-- Priority 5: Requests to Ekklesia -->
+    <section class="my-sub-panel" aria-labelledby="my-sub-requests-title" *ngIf="openRequest || requests.length">
+      <header class="my-sub-panel__header">
+        <div>
+          <h2 id="my-sub-requests-title">Plan requests</h2>
+          <p>Requests your church has sent to EkklesiaNexus</p>
+        </div>
+      </header>
+      <div class="my-sub-alert" *ngIf="openRequest?.status === 'INFO_REQUESTED'" role="status">
+        <div class="my-sub-alert__copy">
+          <strong>EkklesiaNexus needs a little more information</strong>
+          <p>{{ openRequest!.review_notes }}</p>
+          <p>Choose the plan again below and add your answer in the message box.</p>
+        </div>
+      </div>
+      <ul class="my-sub-requests">
+        <li *ngFor="let request of requests; trackBy: trackByRequest">
+          <div>
+            <strong>{{ request.requested_plan?.name || 'Plan' }}</strong>
+            <span class="my-sub-muted"> · sent {{ formatDate(request.created_at) }}</span>
+            <p class="my-sub-muted" *ngIf="request.review_notes && request.status !== 'INFO_REQUESTED'">
+              {{ request.review_notes }}
+            </p>
+          </div>
+          <app-status-badge
+            [label]="requestStatusLabel(request.status)"
+            [tone]="requestStatusTone(request.status)">
+          </app-status-badge>
+        </li>
+      </ul>
+    </section>
+
+    <div *ngIf="comparisonError" class="cf-inline-alert my-sub-alert" role="alert">
+      <div class="my-sub-alert__copy">
+        <strong>Could not load plan comparison</strong>
+        <p>{{ comparisonError }}</p>
+      </div>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="load()">Try again</button>
+    </div>
+
+    <app-billing-history></app-billing-history>
+
+    <!-- Priority 6: Compare plans and ask for a change -->
+    <section class="my-sub-panel" aria-labelledby="my-sub-compare-title" *ngIf="plans.length" id="compare-plans">
+      <header class="my-sub-panel__header">
+        <div>
+          <h2 id="my-sub-compare-title">Compare plans</h2>
+          <p *ngIf="askedFeatureName; else genericCompare">
+            You were looking for <strong>{{ askedFeatureName }}</strong>. Plans that include it are marked.
+          </p>
+          <ng-template #genericCompare>
+            <p>Need more room or more features? Ask EkklesiaNexus to change your plan.</p>
+          </ng-template>
+        </div>
+      </header>
+
+      <div class="my-sub-alert" *ngIf="currentPlanUnmatched" role="status">
+        <div class="my-sub-alert__copy">
+          <strong>Your current plan is not in this comparison</strong>
+          <p>
+            We could not match this church's plan to a listed catalog plan.
+            No other plan has been selected in its place.
+          </p>
+        </div>
+      </div>
+
+      <app-plan-comparison
+        [plans]="plans"
+        [currentCode]="currentPlanCode"
+        [requestedCode]="openRequest?.status === 'PENDING' ? (openRequest!.requested_plan?.code ?? null) : null"
+        [highlightFeature]="askedFeature"
+        [selectable]="true"
+        [disabled]="!canRequest"
+        (choose)="choosePlan($event)"
+        (viewFeatures)="openPlanFeatures($event)">
+      </app-plan-comparison>
+
+      <h3 class="my-sub-compare-table-title">Feature comparison</h3>
+      <app-plan-compare-table
+        [plans]="plans"
+        [currentCode]="currentPlanCode"
+        [capabilitySections]="featureCapabilitySections"></app-plan-compare-table>
+
+      <form
+        *ngIf="selectedPlan as plan"
+        class="my-sub-request-form"
+        (ngSubmit)="submitRequest()"
+        aria-labelledby="my-sub-request-title">
+        <h3 id="my-sub-request-title">Request {{ plan.name }}</h3>
+        <div class="cf-inline-alert my-sub-preview" *ngIf="planChangePreviewLoading" role="status">Loading what would change…</div>
+        <div class="cf-inline-alert my-sub-preview my-sub-preview--error" *ngIf="planChangePreviewError" role="alert">{{ planChangePreviewError }}</div>
+        <section class="my-sub-preview cf-panel" *ngIf="planChangePreview && !planChangePreviewLoading" aria-label="Upgrade preview">
+          <p class="my-sub-muted">This is a preview only. Your plan does not change until Ekklesia approves the request.</p>
+          <ul class="my-sub-preview__gains" *ngIf="planChangePreview.features_gained.length">
+            <li *ngFor="let f of planChangePreview.features_gained">+ {{ f.name }}</li>
+          </ul>
+          <ul class="my-sub-preview__losses" *ngIf="planChangePreview.features_lost.length">
+            <li *ngFor="let f of planChangePreview.features_lost">− {{ f.name }}</li>
+          </ul>
+          <dl class="my-sub-preview__limits" *ngIf="planChangePreview.limit_changes.length">
+            <ng-container *ngFor="let row of planChangePreview.limit_changes">
+              <dt>{{ row.name }}</dt>
+              <dd>{{ row.from ?? 'Unlimited' }} → {{ row.to ?? 'Unlimited' }}</dd>
+            </ng-container>
+          </dl>
+          <p class="my-sub-muted" *ngIf="planChangePreview.data_preserved">Existing records stay on your church account; limits only affect new activity.</p>
+        </section>
+        <fieldset *ngIf="plan.pricing_type !== 'CUSTOM' && plan.billing_intervals.length > 1" class="my-sub-request-form__intervals">
+          <legend>How would you like to pay?</legend>
+          <label *ngFor="let interval of plan.billing_intervals">
+            <input
+              type="radio"
+              name="interval"
+              [value]="interval"
+              [(ngModel)]="requestInterval"
+              (ngModelChange)="onRequestIntervalChange()" />
+            {{ intervalOptionLabel(interval) }}
+          </label>
+        </fieldset>
+
+        <section
+          class="my-sub-checkout cf-panel"
+          *ngIf="billingSelfServeEnabled && plan.pricing_type !== 'CUSTOM'"
+          aria-label="Checkout">
+          <div class="cf-inline-alert" *ngIf="checkoutQuoteLoading" role="status">Loading price from server…</div>
+          <div class="cf-inline-alert my-sub-preview--error" *ngIf="checkoutQuoteError" role="alert">{{ checkoutQuoteError }}</div>
+          <dl class="my-sub-checkout__quote" *ngIf="checkoutQuote as q">
+            <div>
+              <dt>Amount payable</dt>
+              <dd>{{ q.gross | cfCurrency: q.currency_code }}</dd>
+            </div>
+            <div *ngIf="q.discount?.list_price">
+              <dt>Published price</dt>
+              <dd>{{ q.discount!.list_price | cfCurrency: q.currency_code }}</dd>
+            </div>
+            <div *ngIf="q.discount?.amount_off">
+              <dt>Your discount</dt>
+              <dd>− {{ q.discount!.amount_off | cfCurrency: q.currency_code }}</dd>
+            </div>
+            <div>
+              <dt>Tax</dt>
+              <dd>{{ q.tax | cfCurrency: q.currency_code }} ({{ q.tax_label || 'Tax' }})</dd>
+            </div>
+          </dl>
+          <p class="my-sub-muted" *ngIf="checkoutQuote">
+            Totals are calculated on the server. Payment is not complete until verified.
+          </p>
+          <p class="my-sub-request-form__error" *ngIf="checkoutError" role="alert">{{ checkoutError }}</p>
+          <div class="my-sub-request-form__actions" *ngIf="checkoutQuote">
+            <button
+              type="button"
+              class="cf-btn cf-btn-primary"
+              *ngIf="billingAvailability?.can_checkout_online"
+              [disabled]="checkoutBusy || !canPayOnline"
+              (click)="payOnline()">
+              {{ checkoutBusy ? 'Please wait…' : 'Pay online' }}
+            </button>
+            <button
+              type="button"
+              class="cf-btn cf-btn-secondary"
+              *ngIf="billingAvailability?.can_submit_offline_claim && !offlineInvoiceId"
+              [disabled]="checkoutBusy || !checkoutQuote"
+              (click)="prepareOfflinePayment()">
+              Pay offline
+            </button>
+          </div>
+        </section>
+        <label class="my-sub-request-form__message">
+          Message for EkklesiaNexus (optional)
+          <textarea
+            name="message"
+            rows="3"
+            maxlength="1000"
+            [(ngModel)]="requestMessage"
+            placeholder="For example: we are growing and need contribution plans"></textarea>
+        </label>
+        <p class="my-sub-muted" *ngIf="!billingSelfServeEnabled">
+          No payment is taken here. EkklesiaNexus will review your request and contact you.
+        </p>
+        <p class="my-sub-muted" *ngIf="billingSelfServeEnabled">
+          You can pay online or offline when enabled, or send a request for EkklesiaNexus to review.
+        </p>
+        <p class="my-sub-request-form__error" *ngIf="requestError" role="alert">{{ requestError }}</p>
+        <div class="my-sub-request-form__actions">
+          <button type="submit" class="cf-btn cf-btn-primary" [disabled]="submitting">
+            {{ submitting ? 'Sending…' : 'Send request' }}
+          </button>
+          <button type="button" class="cf-btn cf-btn-secondary" (click)="cancelRequest()" [disabled]="submitting">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Secondary: honest scope note (no payment UX) -->
+    <aside class="my-sub-footnote" aria-label="About subscription management">
+      <p *ngIf="!billingSelfServeEnabled">
+        This page shows your church's subscription and access status.
+        Plan changes and renewals are managed by EkklesiaNexus administrators — payment and billing are not handled here.
+      </p>
+      <p *ngIf="billingSelfServeEnabled">
+        This page shows your church's subscription, access status, and self-service billing when your administrator has enabled payments.
+      </p>
+      <p *ngIf="s.grace_period_days != null">
+        Grace period is currently {{ s.grace_period_days }} day<span *ngIf="s.grace_period_days !== 1">s</span> after the end date.
+      </p>
+    </aside>
+  </ng-container>
+</div>
+
+<app-modal-shell
+  *ngIf="offlineInvoiceId"
+  title="Offline payment"
+  description="Transfer the exact amount from your quote. Submitting a claim does not verify payment until your church administrator approves it."
+  size="lg"
+  [isSubmitting]="offlineClaimBusy"
+  (closeRequested)="closeOfflineClaimModal()">
+  <div *ngFor="let m of offlineMethods" class="my-sub-offline__method">
+    <strong>{{ m.label }}</strong>
+    <pre class="my-sub-offline__instructions">{{ offlineInstructionText(m) }}</pre>
+  </div>
+  <form class="cf-form-grid" id="my-sub-offline-claim" (ngSubmit)="submitOfflineClaim()">
+    <label class="full-width">
+      Bank / UPI reference (optional)
+      <input type="text" maxlength="120" [(ngModel)]="offlineReference" name="offlineReference" />
+    </label>
+    <label class="full-width">
+      Payment proof (optional photo)
+      <input type="file" accept="image/*" (change)="offlineEvidenceFile = $any($event.target).files?.[0] ?? null" />
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeOfflineClaimModal()" [disabled]="offlineClaimBusy">Cancel</button>
+    <button type="submit" form="my-sub-offline-claim" class="cf-btn cf-btn-primary" [disabled]="offlineClaimBusy">
+      {{ offlineClaimBusy ? 'Submitting…' : 'Submit payment claim' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell
+  *ngIf="featuresPlan"
+  [title]="featuresPlan.name + ' — features'"
+  size="lg"
+  (closeRequested)="closePlanFeatures()">
+  <p class="my-sub-muted" *ngIf="featuresPlan.using_subscribed_version">
+    Showing the version your church is on (may differ from the latest catalog version).
+  </p>
+  <app-plan-feature-details-panel [coverage]="featuresPlan.coverage ?? null"></app-plan-feature-details-panel>
+  <p *ngIf="!featuresPlan.coverage?.length" class="my-sub-muted">
+    Feature details could not be loaded. Refresh the page or try again later.
+  </p>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closePlanFeatures()">Close</button>
+  </ng-container>
+</app-modal-shell>

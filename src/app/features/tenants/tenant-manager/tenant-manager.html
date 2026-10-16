@@ -1,0 +1,353 @@
+<section class="tenant-manager cf-page">
+  <header class="tenant-manager__command-bar" aria-label="Tenants toolbar">
+    <div class="tenant-manager__command-bar__start">
+      <h1 class="tenant-manager__title">Tenants</h1>
+      <div class="tenant-manager__summary" role="status" aria-live="polite">
+        <span class="tenant-manager__summary-item">
+          Total: <strong>{{ totalTenants() }}</strong>
+        </span>
+        <span class="tenant-manager__summary-sep" aria-hidden="true">|</span>
+        <span class="tenant-manager__summary-item">
+          Active: <strong>{{ activeTenants() }}</strong>
+        </span>
+        <span class="tenant-manager__summary-sep" aria-hidden="true">|</span>
+        <span class="tenant-manager__summary-item">
+          Suspended: <strong>{{ suspendedTenants() }}</strong>
+        </span>
+      </div>
+    </div>
+
+    <div class="tenant-manager__command-bar__end">
+      <app-list-toolbar
+        searchPlaceholder="Search name, code, email…"
+        [searchValue]="searchTerm()"
+        [filterCount]="getActiveFilterCount()"
+        (searchChange)="onListSearchChange($event)"
+        (filtersOpened)="showAdvancedSearch.set(true)"
+      >
+        <div class="tenant-manager__view-toggle cf-dashboard-command-bar__view-toggle" role="group" aria-label="View mode">
+          <button
+            type="button"
+            [class.active]="currentView() === 'table'"
+            [attr.aria-pressed]="currentView() === 'table'"
+            (click)="setView('table')"
+            title="Table view"
+          >
+            Table
+          </button>
+          <button
+            type="button"
+            [class.active]="currentView() === 'card'"
+            [attr.aria-pressed]="currentView() === 'card'"
+            (click)="setView('card')"
+            title="Card view"
+          >
+            Cards
+          </button>
+        </div>
+
+        <span class="tenant-manager__create-btn-wrap" (click)="onCreateTriggerClick($event)">
+        <button
+          type="button"
+          class="cf-btn cf-btn-primary tenant-manager__create-btn"
+          (click)="openCreateModal()"
+          [disabled]="loading()"
+          title="Create new tenant"
+        >
+          Add tenant
+        </button>
+        </span>
+      </app-list-toolbar>
+    </div>
+  </header>
+
+  <div
+    class="tenant-manager__chips"
+    *ngIf="getActiveFilters().length > 0"
+    role="region"
+    aria-label="Active filters"
+  >
+    <span class="cf-meta">Active filters</span>
+    <div class="tenant-manager__chip-list">
+      <span class="cf-badge cf-badge--info" *ngFor="let filter of getActiveFilters()">
+        {{ filter.label }}: {{ filter.displayValue }}
+        <button
+          type="button"
+          class="tenant-manager__chip-remove"
+          (click)="removeFilter(filter)"
+          [attr.aria-label]="'Remove filter: ' + filter.label"
+        >
+          ×
+        </button>
+      </span>
+    </div>
+    <button type="button" class="cf-btn cf-btn--sm" (click)="clearAllFilters()">Clear all</button>
+  </div>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading() && !loaded()"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <app-loading-skeleton label="Loading tenants…" type="table" [rows]="8" [columns]="7"></app-loading-skeleton>
+  </div>
+
+  <div *ngIf="error() && !loading()" class="cf-inline-alert cf-panel" role="alert">
+    <p>{{ error() }}</p>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="retryLoad()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="loaded() && !error()">
+    <p
+      class="tenant-manager__result-count cf-meta"
+      *ngIf="filteredTotal() > 0"
+      role="status"
+      aria-live="polite"
+    >
+      {{ filteredTotal() }} tenant{{ filteredTotal() === 1 ? '' : 's' }} found
+      <span *ngIf="searchTerm().trim()">for “{{ searchTerm().trim() }}”</span>
+    </p>
+
+    <!-- Dense table view (default) -->
+    <div
+      class="cf-panel tenant-manager__table-panel"
+      *ngIf="currentView() === 'table' && tenants().length > 0"
+      [class.tenant-manager__panel--loading]="loading()"
+    >
+      <app-data-table [clickableRows]="true" [loading]="loading()" loadingLabel="Loading tenants…">
+        <thead>
+          <tr>
+            <th scope="col" class="tenant-manager__checkbox-col">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                (change)="toggleSelectAll($any($event.target).checked)"
+                aria-label="Select all tenants on this page"
+              />
+            </th>
+            <th
+              scope="col"
+              [appSortable]="'name'"
+              [direction]="getSortDirection('name')"
+              (sort)="onSort($event)"
+            >
+              Tenant
+            </th>
+            <th
+              scope="col"
+              [appSortable]="'active'"
+              [direction]="getSortDirection('active')"
+              (sort)="onSort($event)"
+            >
+              Status
+            </th>
+            <th
+              scope="col"
+              [appSortable]="'plan'"
+              [direction]="getSortDirection('plan')"
+              (sort)="onSort($event)"
+            >
+              Plan
+            </th>
+            <th
+              scope="col"
+              [appSortable]="'active_users_count'"
+              [direction]="getSortDirection('active_users_count')"
+              (sort)="onSort($event)"
+            >
+              Users
+            </th>
+            <th scope="col">Health</th>
+            <th
+              scope="col"
+              [appSortable]="'created_at'"
+              [direction]="getSortDirection('created_at')"
+              (sort)="onSort($event)"
+            >
+              Created
+            </th>
+            <th scope="col" class="cf-table__actions-col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let tenant of tenants(); trackBy: trackByTenant"
+            tabindex="0"
+            (click)="manageTenant(tenant)"
+            (keydown.enter)="manageTenant(tenant)"
+          >
+            <td class="tenant-manager__checkbox-col" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                [checked]="isTenantSelected(tenant.id)"
+                (change)="toggleTenantSelection(tenant.id, $any($event.target).checked)"
+                [attr.aria-label]="'Select ' + tenant.name"
+              />
+            </td>
+            <td>
+              <div class="tenant-manager__name-cell">
+                <div class="tenant-manager__avatar" aria-hidden="true">
+                  <img
+                    *ngIf="tenant.logo_full_url || tenant.logo_url"
+                    [src]="getTenantLogoUrl(tenant.logo_full_url || tenant.logo_url || '')"
+                    [alt]=""
+                    (error)="onLogoError($event)"
+                  />
+                  <span *ngIf="!tenant.logo_full_url && !tenant.logo_url" class="tenant-manager__avatar-fallback">
+                    {{ tenant.name.charAt(0) }}
+                  </span>
+                </div>
+                <div class="tenant-manager__name-meta">
+                  <strong>{{ tenant.name }}</strong>
+                  <span class="cf-meta">{{ getTenantDomain(tenant) }} · {{ formatTier(tenant.tenant_tier) }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <app-status-badge [label]="getStatusLabel(tenant)" [tone]="getStatusTone(tenant)"></app-status-badge>
+            </td>
+            <td>{{ formatPlan(tenant.plan) }}</td>
+            <td>{{ getActiveUserCount(tenant) }}</td>
+            <td>
+              <span class="tenant-manager__health" [ngClass]="'tenant-manager__health--' + getHealthTone(tenant)">
+                {{ getHealthLabel(tenant) }}
+              </span>
+            </td>
+            <td>{{ formatDate(tenant.created_at) }}</td>
+            <td class="cf-table__actions-cell" (click)="$event.stopPropagation()">
+              <div class="cf-row-actions">
+                <button
+                  type="button"
+                  class="cf-btn cf-btn--sm"
+                  (click)="manageTenant(tenant)"
+                  title="Manage tenant"
+                >
+                  Manage
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </app-data-table>
+
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize()"
+        [totalItems]="filteredTotal()"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+
+    <!-- Compact card view -->
+    <div
+      class="tenant-manager__card-panel"
+      *ngIf="currentView() === 'card' && tenants().length > 0"
+      [class.tenant-manager__panel--loading]="loading()"
+    >
+      <div
+        class="tenant-manager__card-grid"
+        role="list"
+        [attr.aria-label]="'Tenant cards, showing ' + tenants().length + ' of ' + filteredTotal() + ' tenants'"
+      >
+        <article
+          *ngFor="let tenant of tenants(); let i = index; trackBy: trackByTenant"
+          class="tenant-manager__card"
+          role="listitem"
+          tabindex="0"
+          (click)="manageTenant(tenant)"
+          (keydown)="onCardKeydown($event, tenant, i)"
+        >
+          <header class="tenant-manager__card-header">
+            <div class="tenant-manager__avatar tenant-manager__avatar--card" aria-hidden="true">
+              <img
+                *ngIf="tenant.logo_full_url || tenant.logo_url"
+                [src]="getTenantLogoUrl(tenant.logo_full_url || tenant.logo_url || '')"
+                [alt]=""
+                (error)="onLogoError($event)"
+              />
+              <span *ngIf="!tenant.logo_full_url && !tenant.logo_url" class="tenant-manager__avatar-fallback">
+                {{ tenant.name.charAt(0) }}
+              </span>
+            </div>
+            <div class="tenant-manager__card-title">
+              <strong>{{ tenant.name }}</strong>
+              <span class="cf-meta">{{ getTenantDomain(tenant) }}</span>
+            </div>
+            <app-status-badge [label]="getStatusLabel(tenant)" [tone]="getStatusTone(tenant)"></app-status-badge>
+          </header>
+
+          <dl class="tenant-manager__card-meta">
+            <div>
+              <dt>Plan</dt>
+              <dd>{{ formatPlan(tenant.plan) }}</dd>
+            </div>
+            <div>
+              <dt>Users</dt>
+              <dd>{{ getActiveUserCount(tenant) }}</dd>
+            </div>
+            <div>
+              <dt>Tier</dt>
+              <dd>{{ formatTier(tenant.tenant_tier) }}</dd>
+            </div>
+            <div>
+              <dt>{{ getPlanExpiryLabel(tenant) }}</dt>
+              <dd>{{ formatPlanExpiry(tenant) }}</dd>
+            </div>
+          </dl>
+
+          <footer class="tenant-manager__card-actions" (click)="$event.stopPropagation()">
+            <button type="button" class="cf-btn cf-btn--sm" (click)="manageTenant(tenant)">Manage</button>
+          </footer>
+        </article>
+      </div>
+
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize()"
+        [totalItems]="filteredTotal()"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+
+    <app-cf-empty-state
+      *ngIf="filteredTotal() === 0 && !hasActiveFiltersOrSearch()"
+      icon="◇"
+      title="No tenants yet"
+      description="Create your first tenant organization to get started."
+    >
+      <button type="button" class="cf-btn cf-btn-primary" (click)="openCreateModal()">Add tenant</button>
+    </app-cf-empty-state>
+
+    <app-cf-empty-state
+      *ngIf="filteredTotal() === 0 && hasActiveFiltersOrSearch()"
+      icon="◇"
+      title="No matching tenants"
+      description="Try adjusting your search or filters."
+    >
+      <button type="button" class="cf-btn cf-btn-primary" (click)="clearSearchAndFilters()">
+        Clear search and filters
+      </button>
+    </app-cf-empty-state>
+  </ng-container>
+</section>
+
+<app-advanced-search-panel
+  mode="sidepanel"
+  [fields]="searchFields"
+  [isExpanded]="showAdvancedSearch()"
+  (search)="onAdvancedSearch($event)"
+  (clear)="onClearAdvancedSearch()"
+  (close)="showAdvancedSearch.set(false)"
+></app-advanced-search-panel>
+
+<app-tenant-create-modal
+  *ngIf="showCreateModal()"
+  (close)="closeCreateModal()"
+  (tenantCreated)="onTenantCreated()"
+></app-tenant-create-modal>

@@ -1,0 +1,30 @@
+@use '../styles/stewardship-split-layout.scss';
+
+// Scoped override per the enterprise modal style guide §9/§12(5): the shared
+// .cf-split-form-actions rule has no justify-content (defaults to left), so a
+// modal may right-align its own footer via a component-scoped override.
+.cf-split-form-actions {
+  justify-content: flex-end;
+}
+
+.donations-expenses__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.donations-expenses__table th,
+.donations-expenses__table td {
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid var(--cf-border, #e2e8f0);
+  text-align: left;
+}
+
+.donations-expenses__empty,
+.donations-expenses__status {
+  margin: 0;
+  color: var(--cf-muted, #64748b);
+}
+
+.donations-expenses__error {
+  color: #dc2626;
+}

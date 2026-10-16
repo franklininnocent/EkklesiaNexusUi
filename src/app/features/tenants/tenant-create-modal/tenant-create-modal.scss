@@ -1,0 +1,121 @@
+@use '../../donations/styles/stewardship-split-layout.scss';
+
+// Right-align footer actions (enterprise-modal-style-guide.md §9).
+.cf-split-form-actions {
+  justify-content: flex-end;
+}
+
+.cf-split-field input.cf-split-field__control--invalid,
+.cf-split-field select.cf-split-field__control--invalid {
+  border-color: var(--cf-critical);
+  background: var(--cf-critical-soft);
+}
+
+.cf-split-field input.cf-split-field__control--invalid:focus,
+.cf-split-field select.cf-split-field__control--invalid:focus {
+  border-color: var(--cf-critical);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+.cf-split-field .cf-split-select.cf-split-field__control--invalid ::ng-deep .ng-select-container {
+  border-color: var(--cf-critical);
+  background: var(--cf-critical-soft);
+}
+
+.cf-split-field__error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cf-critical);
+  line-height: 1.35;
+}
+
+.tenant-create-plan-grid {
+  display: grid;
+  gap: var(--cf-space-3, 0.75rem);
+  margin: var(--cf-space-3, 0.75rem) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+
+  &--invalid {
+    outline: 2px solid var(--cf-critical);
+    outline-offset: 4px;
+    border-radius: var(--cf-radius-md, 8px);
+  }
+}
+
+.tenant-create-plan-card {
+  display: grid;
+  gap: var(--cf-space-2, 0.5rem);
+  padding: var(--cf-space-4, 1rem);
+  border: 1px solid var(--cf-panel-border, var(--gray-200));
+  border-radius: var(--cf-radius-md, 8px);
+  background: var(--cf-panel-bg, #fff);
+  cursor: pointer;
+  min-width: 0;
+
+  &--selected {
+    border-color: var(--cf-primary, var(--primary-color));
+    box-shadow: 0 0 0 1px var(--cf-primary, var(--primary-color));
+  }
+
+  &__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cf-space-2, 0.5rem);
+
+    strong {
+      font-size: var(--cf-text-base, 1rem);
+      font-weight: 600;
+    }
+
+    input {
+      margin: 0;
+    }
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: var(--cf-success-soft, #ecfdf3);
+    color: var(--cf-success, #067647);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  &__description,
+  &__price {
+    color: var(--cf-muted, var(--text-secondary));
+    font-size: var(--cf-text-sm, 0.875rem);
+    line-height: 1.4;
+  }
+
+  &__price {
+    font-weight: 600;
+    color: var(--cf-slate-900, var(--text-primary));
+  }
+
+  &__limits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cf-space-2, 0.5rem) var(--cf-space-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.75rem;
+    color: var(--cf-muted, var(--text-secondary));
+  }
+}
+
+.cf-split-form-alert .cf-btn {
+  margin-top: var(--cf-space-2, 0.5rem);
+}
+
+@media (min-width: 40rem) {
+  .tenant-create-plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

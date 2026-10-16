@@ -1,0 +1,45 @@
+<div class="ecclesiastical-container">
+  <!-- Module tab nav — child routes own app-page-header + .cf-page -->
+  <nav class="ecclesiastical-nav" aria-label="Ecclesiastical sections">
+    <a 
+      routerLink="overview" 
+      routerLinkActive="active"
+      class="nav-tab">
+      <span class="tab-icon">📊</span>
+      <span>Overview</span>
+    </a>
+    <a 
+      routerLink="dioceses" 
+      routerLinkActive="active"
+      class="nav-tab">
+      <span class="tab-icon">⛪</span>
+      <span>Dioceses</span>
+    </a>
+    <a 
+      routerLink="bishops" 
+      routerLinkActive="active"
+      class="nav-tab">
+      <span class="tab-icon">👤</span>
+      <span>Bishops</span>
+    </a>
+    <a 
+      routerLink="bishop-updates" 
+      routerLinkActive="active"
+      class="nav-tab">
+      <span class="tab-icon">📥</span>
+      <span>Suggestions</span>
+    </a>
+    <a 
+      *ngIf="hasEkklesiaRole"
+      routerLink="pope-details" 
+      routerLinkActive="active"
+      class="nav-tab">
+      <span class="tab-icon">👑</span>
+      <span>Pope Details</span>
+    </a>
+  </nav>
+
+  <div class="ecclesiastical-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

@@ -1,0 +1,119 @@
+.profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-space-3, 0.75rem);
+  max-width: 56rem;
+}
+
+.profile__identity {
+  padding: var(--cf-space-3, 0.75rem) var(--cf-space-4, 1rem);
+}
+
+.profile__identity-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--cf-space-3, 0.75rem) var(--cf-space-4, 1rem);
+}
+
+.profile__avatar-col {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.profile__identity-copy {
+  flex: 1;
+  min-width: 0;
+  padding-top: var(--cf-space-1, 0.25rem);
+}
+
+.profile__name {
+  margin: 0;
+  font-size: var(--cf-text-section-title, 1.125rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--cf-color-text-primary, var(--cf-slate-900));
+}
+
+.profile__email {
+  margin: var(--cf-space-1, 0.25rem) 0 0;
+}
+
+.profile__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2, 0.5rem);
+  margin-top: var(--cf-space-2, 0.5rem);
+}
+
+.profile__photo {
+  margin-top: var(--cf-space-3, 0.75rem);
+}
+
+.profile__photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2, 0.5rem) var(--cf-space-3, 0.75rem);
+}
+
+.profile__photo-upload {
+  cursor: pointer;
+
+  &.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+}
+
+.profile__photo-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cf-space-1, 0.25rem);
+}
+
+.profile__photo-hint {
+  margin: var(--cf-space-1, 0.25rem) 0 0;
+}
+
+.profile__photo-error {
+  margin: var(--cf-space-2, 0.5rem) 0 0;
+  font-size: 0.813rem;
+  color: var(--cf-critical, #b91c1c);
+}
+
+.profile__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--cf-space-3, 0.75rem);
+  align-items: start;
+}
+
+.profile__meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--cf-space-2, 0.5rem) var(--cf-space-4, 1rem);
+  margin: 0;
+
+  dt {
+    margin: 0;
+    font-weight: 600;
+    color: var(--cf-color-text-primary, var(--cf-slate-900));
+  }
+
+  dd {
+    margin: 0.125rem 0 0;
+  }
+}
+
+.profile__admin-note {
+  margin: var(--cf-space-3, 0.75rem) 0 0;
+}
+
+@media (min-width: 768px) {
+  .profile__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

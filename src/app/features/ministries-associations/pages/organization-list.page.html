@@ -1,0 +1,164 @@
+<section class="organization-list cf-page">
+  <app-page-header title="Ministries &amp; Associations" subtitle="Find and manage parish organizations.">
+    <app-list-toolbar
+      searchPlaceholder="Search name or code…"
+      [searchValue]="search"
+      [filterCount]="drawerFilterCount"
+      (searchChange)="onSearchChange($event)"
+      (filtersOpened)="showFilters = true"
+    >
+      <a *ngIf="canCreate" [routerLink]="newOrganizationLink" class="cf-btn cf-btn-primary organization-list__add">
+        Add organization
+      </a>
+    </app-list-toolbar>
+  </app-page-header>
+
+  <app-ministries-sub-nav></app-ministries-sub-nav>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading && !loaded"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <app-loading-skeleton label="Loading organizations…" type="table" [rows]="5" [columns]="6"></app-loading-skeleton>
+  </div>
+
+  <ng-container *ngIf="loaded">
+    <div class="cf-decision-strip" *ngIf="!loadError && !organizations.length && taxonomiesLoaded && !hasTaxonomies">
+      <div class="cf-decision-strip__copy">
+        <strong>Set up categories and types first</strong>
+        <span>Organizations need a category and type before you can add them.</span>
+      </div>
+      <div class="cf-decision-strip__actions">
+        <a [routerLink]="settingsLink" class="cf-btn cf-btn-primary">Go to Settings</a>
+      </div>
+    </div>
+
+    <div class="cf-inline-alert cf-panel" *ngIf="loadError" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="retryLoad()">Try again</button>
+    </div>
+
+    <div class="cf-panel organization-list__panel" *ngIf="!loadError && organizations.length">
+      <app-data-table [clickableRows]="false">
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              appSortable="name"
+              [direction]="sortBy === 'name' ? sortDir : null"
+              (sort)="onSort($event)"
+            >
+              Name
+            </th>
+            <th
+              scope="col"
+              appSortable="code"
+              [direction]="sortBy === 'code' ? sortDir : null"
+              (sort)="onSort($event)"
+            >
+              Code
+            </th>
+            <th
+              scope="col"
+              appSortable="category_name"
+              [direction]="sortBy === 'category_name' ? sortDir : null"
+              (sort)="onSort($event)"
+            >
+              Category
+            </th>
+            <th
+              scope="col"
+              appSortable="type_name"
+              [direction]="sortBy === 'type_name' ? sortDir : null"
+              (sort)="onSort($event)"
+            >
+              Type
+            </th>
+            <th
+              scope="col"
+              appSortable="active_member_count"
+              [direction]="sortBy === 'active_member_count' ? sortDir : null"
+              (sort)="onSort($event)"
+            >
+              Active members
+            </th>
+            <th
+              scope="col"
+              appSortable="status"
+              [direction]="sortBy === 'status' ? sortDir : null"
+              (sort)="onSort($event)"
+            >
+              Status
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let organization of organizations; trackBy: trackByOrganizationId">
+            <td class="organization-list__cell--primary">
+              <button
+                type="button"
+                class="organization-list__name"
+                (click)="openOrganization(organization)"
+                [attr.aria-label]="'View ' + organization.name"
+              >
+                <strong>{{ organization.name }}</strong>
+              </button>
+            </td>
+            <td>{{ organization.code }}</td>
+            <td>{{ organization.category?.name || '—' }}</td>
+            <td>{{ organization.type?.name || '—' }}</td>
+            <td>{{ activeMemberCount(organization) }}</td>
+            <td>
+              <app-status-badge [label]="statusLabel(organization.status)" [tone]="statusTone(organization.status)"></app-status-badge>
+            </td>
+          </tr>
+        </tbody>
+      </app-data-table>
+
+      <app-pagination
+        [currentPage]="currentPage"
+        [pageSize]="perPage"
+        [totalItems]="totalItems"
+        [pageSizeOptions]="perPageOptions"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+
+    <app-cf-empty-state
+      *ngIf="!loadError && !organizations.length"
+      icon="◇"
+      [title]="hasActiveFilters ? 'No organizations match your filters' : 'No organizations yet'"
+      [description]="
+        hasActiveFilters
+          ? 'Try clearing search or filters.'
+          : hasTaxonomies
+            ? 'Add your first ministry or association to get started.'
+            : 'Set up categories and types in Settings, then add an organization.'
+      "
+    >
+      <a
+        *ngIf="canCreate && hasTaxonomies && !hasActiveFilters"
+        [routerLink]="newOrganizationLink"
+        class="cf-btn cf-btn-primary"
+      >
+        Add organization
+      </a>
+      <a *ngIf="!hasTaxonomies" [routerLink]="settingsLink" class="cf-btn cf-btn-primary">
+        Go to Settings
+      </a>
+    </app-cf-empty-state>
+  </ng-container>
+
+  <app-advanced-search-panel
+    mode="sidepanel"
+    [fields]="searchFields"
+    [isExpanded]="showFilters"
+    (search)="onAdvancedSearch($event)"
+    (clear)="onClearAdvancedSearch()"
+    (close)="showFilters = false"
+  ></app-advanced-search-panel>
+</section>

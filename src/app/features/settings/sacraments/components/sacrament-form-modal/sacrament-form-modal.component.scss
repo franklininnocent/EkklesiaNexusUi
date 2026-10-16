@@ -1,0 +1,137 @@
+@use '../../../../donations/styles/stewardship-split-layout.scss';
+@use '../shared/sacrament-control-chrome' as sacramentChrome;
+
+@include sacramentChrome.sacrament-control-chrome;
+
+.cf-split-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--cf-radius-sm);
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+// ---------------------------------------------------------------------------
+// Official §15 data-heavy layout — scoped 3-column grid for this modal only.
+// Shared `.cf-split-grid` default stays 2-col in stewardship-split-layout.scss.
+// See docs/frontend/enterprise-modal-style-guide.md §15.
+// ---------------------------------------------------------------------------
+.sacrament-modal-form .cf-split-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .sacrament-modal-form .cf-split-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .sacrament-modal-form .cf-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Field-level invalid state for `.cf-split-*` forms — same pattern as
+// family-member-form-modal / bcc-form (not yet in shared stewardship layout).
+.cf-split-field input.cf-split-field__control--invalid,
+.cf-split-field select.cf-split-field__control--invalid {
+  border-color: var(--cf-critical);
+  background: var(--cf-critical-soft);
+}
+
+.cf-split-field input.cf-split-field__control--invalid:focus,
+.cf-split-field select.cf-split-field__control--invalid:focus {
+  border-color: var(--cf-critical);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+.cf-split-field .cf-split-select.cf-split-field__control--invalid {
+  ::ng-deep .ng-select-container {
+    border-color: var(--cf-critical);
+    background: var(--cf-critical-soft);
+  }
+
+  &.ng-select-focused ::ng-deep .ng-select-container {
+    border-color: var(--cf-critical);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+  }
+}
+
+.cf-split-field__error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cf-critical);
+  line-height: 1.35;
+}
+
+// Loading state while edit payload is fetched
+.sacrament-modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.15rem;
+  color: var(--cf-muted);
+  font-size: 0.9rem;
+}
+
+.sacrament-modal-loading__spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--cf-slate-100);
+  border-top-color: var(--cf-primary);
+  border-radius: 50%;
+  animation: sacrament-modal-spin 0.8s linear infinite;
+}
+
+@keyframes sacrament-modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Nested family picker / new-family embed — presentation only
+.sacrament-nested-block {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cf-panel-border);
+  border-radius: var(--cf-radius-sm);
+  background: var(--cf-slate-50);
+}
+
+.sacrament-nested-block--scroll {
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.sacrament-nested-block--success {
+  background: var(--cf-forest-soft);
+  border-color: var(--cf-forest-soft);
+}
+
+// Footer actions — bottom-right (enterprise modal §9 / §15)
+.cf-split-form-actions {
+  justify-content: flex-end;
+}
+
+.party-evidence-anchor.cf-field-focus-highlight {
+  outline: 2px solid #0f766e;
+  outline-offset: 4px;
+  border-radius: 8px;
+  animation: party-evidence-pulse 1.5s ease-out;
+}
+
+@keyframes party-evidence-pulse {
+  0% {
+    background-color: rgba(15, 118, 110, 0.18);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

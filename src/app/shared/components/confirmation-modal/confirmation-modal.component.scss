@@ -1,0 +1,56 @@
+:host {
+  display: contents;
+}
+
+.cf-confirm__message {
+  margin: 0 0 var(--cf-space-3);
+  font-family: var(--cf-font-sans);
+  font-size: var(--cf-text-body);
+  line-height: 1.5;
+  color: var(--cf-slate-700);
+}
+
+.cf-confirm__warn {
+  color: var(--cf-amber);
+}
+
+.cf-confirm__error {
+  color: var(--cf-critical);
+}
+
+.cf-confirm__spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cf-confirm-spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes cf-confirm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-confirm__spinner {
+    animation: none;
+    border-top-color: rgba(255, 255, 255, 0.35);
+    opacity: 0.7;
+  }
+}
+
+.cf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
