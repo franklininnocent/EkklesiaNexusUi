@@ -1,0 +1,11 @@
+:host {
+  display: contents;
+}
+
+.cf-confirm__message {
+  margin: 0;
+  font-family: var(--cf-font-sans);
+  font-size: var(--cf-text-body);
+  line-height: 1.5;
+  color: var(--cf-slate-700);
+}

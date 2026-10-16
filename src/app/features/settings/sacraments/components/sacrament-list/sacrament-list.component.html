@@ -1,0 +1,606 @@
+<section class="sacrament-list cf-page">
+  <app-page-header
+    title="Parish Sacrament Register"
+    subtitle="Baptisms, marriages, confirmations, and other sacramental records for this parish."
+  >
+    <a *ngIf="showSacramentsDashboard" routerLink="/sacraments" class="cf-btn">Dashboard</a>
+    <app-list-toolbar
+      searchPlaceholder="Search by recipient, type, minister, or certificate…"
+      [searchValue]="searchTerm"
+      [filterCount]="drawerFilterCount"
+      (searchChange)="onSearchChange($event)"
+      (filtersOpened)="openFilters()"
+    >
+      <button type="button" class="cf-btn cf-btn-primary" cfDisableWhenReadOnly (click)="onCreateSacrament()">
+        Add Sacrament
+      </button>
+      <div class="sacrament-list__overflow">
+        <button
+          type="button"
+          class="cf-btn"
+          [attr.aria-expanded]="showOverflowMenu"
+          aria-haspopup="true"
+          aria-label="More register actions"
+          (click)="showOverflowMenu = !showOverflowMenu"
+        >
+          More
+        </button>
+        <div class="sacrament-list__overflow-menu" *ngIf="showOverflowMenu" role="menu">
+          <a
+            *ngIf="holyOrdersEnabled"
+            role="menuitem"
+            class="sacrament-list__overflow-item"
+            routerLink="/sacraments/holy-orders/create"
+            (click)="showOverflowMenu = false"
+          >
+            Register Holy Orders
+          </a>
+          <a
+            *ngIf="canMigrate"
+            role="menuitem"
+            class="sacrament-list__overflow-item"
+            routerLink="/sacraments/migration"
+            (click)="showOverflowMenu = false"
+          >
+            Migration queue
+          </a>
+        </div>
+      </div>
+    </app-list-toolbar>
+  </app-page-header>
+
+  <div
+    class="sacrament-list__chips"
+    *ngIf="getActiveFilters().length > 0"
+    role="region"
+    aria-label="Active filters"
+  >
+    <span class="cf-meta">Active filters</span>
+    <div class="sacrament-list__chip-list">
+      <span
+        class="cf-badge cf-badge--info"
+        *ngFor="let filter of getActiveFilters()"
+        [attr.aria-label]="filter.label + ': ' + filter.displayValue"
+      >
+        {{ filter.label }}: {{ filter.displayValue }}
+        <button
+          type="button"
+          class="sacrament-list__chip-remove"
+          (click)="removeFilter(filter)"
+          [attr.aria-label]="'Remove filter: ' + filter.label"
+        >
+          ×
+        </button>
+      </span>
+    </div>
+    <button type="button" class="cf-btn cf-btn--sm" (click)="clearAllFilters()" aria-label="Clear all filters">
+      Clear all
+    </button>
+  </div>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading && !loaded"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <app-loading-skeleton label="Loading sacramental records…" type="table" [rows]="5" [columns]="7"></app-loading-skeleton>
+  </div>
+
+  <ng-container *ngIf="loaded">
+    <div class="cf-inline-alert cf-panel" *ngIf="loadError" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="retryLoad()">Try again</button>
+    </div>
+
+    <ng-container *ngIf="!loadError">
+      <div class="cf-panel sacrament-list__panel" *ngIf="sacraments.length">
+        <app-data-table [clickableRows]="false">
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                class="sortable"
+                (click)="onSort('recipient_name')"
+                [attr.aria-sort]="isSorted('recipient_name') ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'"
+              >
+                Recipient / Parties
+              </th>
+              <th
+                scope="col"
+                class="sortable"
+                (click)="onSort('sacrament_type_id')"
+                [attr.aria-sort]="isSorted('sacrament_type_id') ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'"
+              >
+                Sacrament
+              </th>
+              <th
+                scope="col"
+                class="sortable"
+                (click)="onSort('date_administered')"
+                [attr.aria-sort]="isSorted('date_administered') ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'"
+              >
+                Date
+              </th>
+              <th scope="col">Minister</th>
+              <th scope="col">Status</th>
+              <th scope="col">Certificate</th>
+              <th scope="col">Registry</th>
+              <th scope="col" class="cf-table__actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let sacrament of sacraments; trackBy: trackBySacramentId"
+            >
+              <td class="sacrament-list__cell--primary">
+                <button
+                  type="button"
+                  class="sacrament-list__name"
+                  (click)="viewCertificate(sacrament)"
+                  [attr.aria-label]="'View record for ' + (sacrament.recipient_name || 'sacrament')"
+                >
+                  <strong>{{ sacrament.recipient_name || '—' }}</strong>
+                </button>
+              </td>
+              <td>{{ sacrament.sacrament_type?.name || getSacramentTypeName(sacrament.sacrament_type_id) }}</td>
+              <td>{{ sacrament.date_administered | cfDate }}</td>
+              <td class="sacrament-list__cell--primary">
+                <span *ngIf="sacrament.minister_title">{{ sacrament.minister_title }} </span>
+                {{ sacrament.minister_name || '—' }}
+              </td>
+              <td>
+                <app-status-badge
+                  [label]="statusLabel(sacrament.status)"
+                  [tone]="statusTone(sacrament.status)"
+                ></app-status-badge>
+              </td>
+              <td>
+                {{
+                  supportsSacramentCertificate(sacrament)
+                    ? (sacrament.certificate_number || 'None')
+                    : '—'
+                }}
+              </td>
+              <td>{{ registrySummary(sacrament) }}</td>
+              <td class="cf-table__actions-cell" (click)="$event.stopPropagation()">
+                <div class="sacrament-list__row-overflow">
+                  <button
+                    type="button"
+                    class="sacrament-list__row-actions-trigger"
+                    [attr.aria-expanded]="openRowMenuId === sacrament.id"
+                    aria-haspopup="menu"
+                    [attr.aria-label]="'Actions for ' + (sacrament.recipient_name || 'sacrament')"
+                    (click)="toggleRowMenu(sacrament.id, $event)"
+                  >
+                    <span aria-hidden="true">...</span>
+                    <span class="sr-only">Actions</span>
+                  </button>
+                  <div
+                    *ngIf="openRowMenuId === sacrament.id"
+                    class="sacrament-list__overflow-menu sacrament-list__row-overflow-menu"
+                    role="menu"
+                    [attr.aria-label]="'Actions for ' + (sacrament.recipient_name || 'sacrament')"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="sacrament-list__overflow-item"
+                      (click)="onRowMenuAction('details', sacrament)"
+                    >
+                      View details
+                    </button>
+                    <button
+                      *ngIf="supportsSacramentCertificate(sacrament)"
+                      type="button"
+                      role="menuitem"
+                      class="sacrament-list__overflow-item"
+                      (click)="onRowMenuAction('certificate', sacrament)"
+                    >
+                      View Certificate
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="sacrament-list__overflow-item"
+                      (click)="onRowMenuAction('edit', sacrament)"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      *ngIf="canCorrectSacrament(sacrament)"
+                      type="button"
+                      role="menuitem"
+                      class="sacrament-list__overflow-item"
+                      (click)="onRowMenuAction('correct', sacrament)"
+                    >
+                      Correct
+                    </button>
+                    <div
+                      *ngIf="hasDestructiveRowActions(sacrament)"
+                      class="sacrament-list__overflow-divider"
+                      role="separator"
+                      aria-hidden="true"
+                    ></div>
+                    <button
+                      *ngIf="canVoidSacrament(sacrament)"
+                      type="button"
+                      role="menuitem"
+                      class="sacrament-list__overflow-item sacrament-list__overflow-item--danger"
+                      (click)="onRowMenuAction('void', sacrament)"
+                    >
+                      Void
+                    </button>
+                    <button
+                      *ngIf="isTenantAdmin"
+                      type="button"
+                      role="menuitem"
+                      class="sacrament-list__overflow-item sacrament-list__overflow-item--danger"
+                      (click)="onRowMenuAction('remove', sacrament)"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </app-data-table>
+
+        <app-pagination
+          [currentPage]="currentPage"
+          [pageSize]="perPage"
+          [totalItems]="totalItems"
+          [pageSizeOptions]="pageSizeOptions"
+          [showPageSizeSelector]="true"
+          [showPageInfo]="true"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        ></app-pagination>
+      </div>
+
+      <app-cf-empty-state
+        *ngIf="!sacraments.length"
+        icon="◇"
+        [title]="hasActiveFilters ? 'No records match your filters' : 'No sacramental records yet'"
+        [description]="
+          hasActiveFilters
+            ? 'Try clearing search or filters, or adjust the date range.'
+            : 'Add the first baptism, marriage, or other sacrament to this parish register.'
+        "
+      >
+        <button
+          *ngIf="!hasActiveFilters"
+          type="button"
+          class="cf-btn cf-btn-primary"
+          cfDisableWhenReadOnly
+          (click)="onCreateSacrament()"
+        >
+          Add Sacrament
+        </button>
+        <button
+          *ngIf="hasActiveFilters"
+          type="button"
+          class="cf-btn"
+          (click)="clearAllFilters()"
+        >
+          Clear filters
+        </button>
+      </app-cf-empty-state>
+    </ng-container>
+  </ng-container>
+
+  <app-confirmation-modal
+    *ngIf="showDeleteModal"
+    [show]="showDeleteModal"
+    title="Remove from register view?"
+    [message]="
+      'Remove the sacrament for ' +
+      (sacramentToDelete?.recipient_name || 'this recipient') +
+      ' from the register view? This is a soft delete; the record can be restored. To mark a record invalid while keeping it visible, use Void instead.'
+    "
+    confirmText="Remove"
+    cancelText="Cancel"
+    confirmButtonClass="btn-danger"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  ></app-confirmation-modal>
+
+  <app-sacrament-form-modal
+    *ngIf="showFormModal"
+    [sacrament]="sacramentToEdit"
+    [correctionReason]="correctionReason"
+    (save)="onFormSave()"
+    (savedAndContinue)="onFormSavedContinue()"
+    (cancel)="onFormCancel()"
+  ></app-sacrament-form-modal>
+
+  <app-void-sacrament-dialog
+    [show]="showVoidDialog"
+    [sacrament]="sacramentToVoid"
+    [submitting]="voiding"
+    (confirmed)="confirmVoid($event)"
+    (cancelled)="cancelVoid()"
+  ></app-void-sacrament-dialog>
+
+  <app-correct-sacrament-dialog
+    [show]="showCorrectDialog"
+    [sacrament]="sacramentToCorrect"
+    (confirmed)="confirmCorrect($event)"
+    (cancelled)="cancelCorrect()"
+  ></app-correct-sacrament-dialog>
+
+  <app-advanced-search-panel
+    mode="sidepanel"
+    [fields]="searchFields"
+    [isExpanded]="showAdvancedSearch"
+    (search)="onAdvancedSearch($event)"
+    (clear)="onClearAdvancedSearch()"
+    (close)="showAdvancedSearch = false"
+  ></app-advanced-search-panel>
+
+  <app-modal-shell
+    #detailModal
+    *ngIf="showDetailModal"
+    [title]="detailSacrament?.recipient_name || 'Sacrament Details'"
+    [description]="
+      detailSacrament?.sacrament_type?.name ||
+      (detailSacrament && detailSacrament.sacrament_type_id != null
+        ? getSacramentTypeName(detailSacrament.sacrament_type_id)
+        : '')
+    "
+    size="lg"
+    headerVariant="compact"
+    bodyPadding="none"
+    closeAriaLabel="Close sacrament details"
+    [isSubmitting]="false"
+    (closeRequested)="closeDetailModal()"
+  >
+    <div class="cf-split-form-body sacrament-detail-modal" *ngIf="loadingDetail">
+      <app-cf-brand-loader size="section" label="Loading sacrament details…" />
+      <div class="cf-split-form-actions">
+        <button type="button" class="cf-btn" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+
+    <div class="cf-split-form-body sacrament-detail-modal" *ngIf="!loadingDetail && detailSacrament">
+      <div class="sacrament-detail-identity" *ngIf="detailSacrament.status">
+        <app-status-badge
+          [label]="statusLabel(detailSacrament.status)"
+          [tone]="statusTone(detailSacrament.status)"
+        ></app-status-badge>
+      </div>
+
+      <section
+        class="sacrament-detail-summary"
+        *ngIf="
+          detailSacrament.date_administered ||
+          detailSacrament.place_administered ||
+          detailSacrament.minister_name
+        "
+        aria-labelledby="sacrament-detail-summary"
+      >
+        <h3 id="sacrament-detail-summary" class="cf-split-section__title">Summary</h3>
+        <div class="cf-split-grid">
+          <div class="cf-split-field" *ngIf="detailSacrament.date_administered">
+            <span class="sacrament-detail-label">Date</span>
+            <span class="sacrament-detail-value">{{ detailSacrament.date_administered | cfDate }}</span>
+          </div>
+          <div class="cf-split-field" *ngIf="detailSacrament.place_administered">
+            <span class="sacrament-detail-label">Place</span>
+            <span class="sacrament-detail-value">{{ detailSacrament.place_administered }}</span>
+          </div>
+          <div class="cf-split-field" *ngIf="detailSacrament.minister_name">
+            <span class="sacrament-detail-label">Minister</span>
+            <span class="sacrament-detail-value">{{ detailSacrament.minister_name }}</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="sacrament-detail-complete">
+        <h3 class="sacrament-detail-complete__title">Complete record</h3>
+
+        <section class="cf-split-section sacrament-detail-complete__section" aria-labelledby="sacrament-detail-basic">
+          <h4 id="sacrament-detail-basic" class="cf-split-section__title">Basic information</h4>
+          <div class="cf-split-grid">
+            <div class="cf-split-field">
+              <span class="sacrament-detail-label">Recipient / Parties</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.recipient_name || '—' }}</span>
+            </div>
+            <div class="cf-split-field">
+              <span class="sacrament-detail-label">Sacrament</span>
+              <span class="sacrament-detail-value">{{
+                detailSacrament.sacrament_type?.name ||
+                  (detailSacrament.sacrament_type_id != null
+                    ? getSacramentTypeName(detailSacrament.sacrament_type_id)
+                    : '—')
+              }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.recipient_birth_date">
+              <span class="sacrament-detail-label">Birth date</span>
+              <span class="sacrament-detail-value" data-testid="sacrament-detail-dob">{{ detailSacrament.recipient_birth_date | cfDate }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.recipient_gender">
+              <span class="sacrament-detail-label">Gender</span>
+              <span class="sacrament-detail-value" data-testid="sacrament-detail-gender">{{ detailSacrament.recipient_gender | titlecase }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="showParticipantsInDetail()"
+          aria-labelledby="sacrament-detail-participants"
+          data-testid="sacrament-detail-participants"
+        >
+          <h4 id="sacrament-detail-participants" class="cf-split-section__title">People on this record</h4>
+          <p class="cf-split-field__hint">
+            Names below are historical snapshots from when the record was saved, not live profile data.
+          </p>
+          <div class="cf-split-grid sacrament-detail-grid--2">
+            <div class="cf-split-field" *ngFor="let person of detailSacrament?.participants">
+              <span class="sacrament-detail-label">{{ participantRoleLabel(person.role) | titlecase }}</span>
+              <span class="sacrament-detail-value">{{ participantDisplayName(person) }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.minister_name || detailSacrament.minister_title"
+          aria-labelledby="sacrament-detail-minister"
+        >
+          <h4 id="sacrament-detail-minister" class="cf-split-section__title">Who administered this</h4>
+          <div class="cf-split-grid sacrament-detail-grid--2">
+            <div class="cf-split-field" *ngIf="detailSacrament.minister_name">
+              <span class="sacrament-detail-label">Name</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.minister_name }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.minister_title">
+              <span class="sacrament-detail-label">Title</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.minister_title }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.father_name || detailSacrament.mother_name"
+          aria-labelledby="sacrament-detail-parents"
+        >
+          <h4 id="sacrament-detail-parents" class="cf-split-section__title">Parents</h4>
+          <div class="cf-split-grid sacrament-detail-grid--2">
+            <div class="cf-split-field" *ngIf="detailSacrament.father_name">
+              <span class="sacrament-detail-label">Father</span>
+              <span class="sacrament-detail-value" data-testid="sacrament-detail-father">{{ detailSacrament.father_name }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.mother_name">
+              <span class="sacrament-detail-label">Mother</span>
+              <span class="sacrament-detail-value" data-testid="sacrament-detail-mother">{{ detailSacrament.mother_name }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.godparent1_name || detailSacrament.godparent2_name"
+          aria-labelledby="sacrament-detail-godparents"
+        >
+          <h4 id="sacrament-detail-godparents" class="cf-split-section__title">Godparents / Sponsors</h4>
+          <div class="cf-split-grid sacrament-detail-grid--2">
+            <div class="cf-split-field" *ngIf="detailSacrament.godparent1_name">
+              <span class="sacrament-detail-label">Godparent / Sponsor 1</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.godparent1_name }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.godparent2_name">
+              <span class="sacrament-detail-label">Godparent / Sponsor 2</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.godparent2_name }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.marriage_groom_full_name || detailSacrament.marriage_bride_full_name"
+          aria-labelledby="sacrament-detail-marriage"
+        >
+          <h4 id="sacrament-detail-marriage" class="cf-split-section__title">Marriage parties</h4>
+          <div class="cf-split-grid sacrament-detail-grid--2">
+            <div class="cf-split-field" *ngIf="detailSacrament.marriage_groom_full_name">
+              <span class="sacrament-detail-label">Groom</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.marriage_groom_full_name }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.marriage_bride_full_name">
+              <span class="sacrament-detail-label">Bride</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.marriage_bride_full_name }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.witnesses"
+          aria-labelledby="sacrament-detail-witnesses"
+        >
+          <h4 id="sacrament-detail-witnesses" class="cf-split-section__title">Witnesses</h4>
+          <div class="cf-split-grid">
+            <div class="cf-split-field cf-split-field--full">
+              <span class="sacrament-detail-value">{{ detailSacrament.witnesses }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.certificate_number || detailSacrament.book_number || detailSacrament.page_number"
+          aria-labelledby="sacrament-detail-record"
+        >
+          <h4 id="sacrament-detail-record" class="cf-split-section__title">Registry information</h4>
+          <div class="cf-split-grid">
+            <div class="cf-split-field" *ngIf="detailSacrament.certificate_number">
+              <span class="sacrament-detail-label">Certificate number</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.certificate_number }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.book_number">
+              <span class="sacrament-detail-label">Book</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.book_number }}</span>
+            </div>
+            <div class="cf-split-field" *ngIf="detailSacrament.page_number">
+              <span class="sacrament-detail-label">Page</span>
+              <span class="sacrament-detail-value">{{ detailSacrament.page_number }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="cf-split-section sacrament-detail-complete__section"
+          *ngIf="detailSacrament.notes"
+          aria-labelledby="sacrament-detail-notes"
+        >
+          <h4 id="sacrament-detail-notes" class="cf-split-section__title">Notes</h4>
+          <div class="cf-split-grid">
+            <div class="cf-split-field cf-split-field--full">
+              <span class="sacrament-detail-value sacrament-detail-value--notes">{{ detailSacrament.notes }}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="cf-split-form-actions">
+        <button
+          type="button"
+          class="cf-btn cf-btn-primary"
+          (click)="editSacrament(detailSacrament!); closeDetailModal()"
+        >
+          Edit
+        </button>
+        <button
+          *ngIf="canCorrectSacrament(detailSacrament)"
+          type="button"
+          class="cf-btn"
+          (click)="openCorrectDialog(detailSacrament!)"
+        >
+          Correct
+        </button>
+        <button
+          *ngIf="canVoidSacrament(detailSacrament)"
+          type="button"
+          class="cf-btn cf-btn-danger"
+          (click)="openVoidDialog(detailSacrament!)"
+        >
+          Void
+        </button>
+        <button
+          *ngIf="detailSacrament && supportsSacramentCertificate(detailSacrament)"
+          type="button"
+          class="cf-btn"
+          (click)="viewCertificate(detailSacrament!); closeDetailModal()"
+        >
+          View certificate
+        </button>
+        <button type="button" class="cf-btn" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+  </app-modal-shell>
+</section>

@@ -1,0 +1,203 @@
+@use '../../../donations/styles/stewardship-split-layout.scss';
+
+.members-list__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.members-list__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.members-list__chip-remove {
+  margin-left: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.1rem;
+}
+
+.members-list__name-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+  min-width: 0;
+}
+
+.members-list__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--cf-radius-pill);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.members-list__avatar-trigger {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: transparent;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cf-brand, #175cd3);
+    outline-offset: 2px;
+  }
+}
+
+.members-list__avatar--initials {
+  display: grid;
+  place-items: center;
+  font-size: var(--cf-text-xs);
+  font-weight: 700;
+  color: #fff;
+  background: var(--cf-primary);
+}
+
+.members-list__avatar--initials.avatar-color-1 { background: #2563eb; }
+.members-list__avatar--initials.avatar-color-2 { background: #059669; }
+.members-list__avatar--initials.avatar-color-3 { background: #d97706; }
+.members-list__avatar--initials.avatar-color-4 { background: #7c3aed; }
+.members-list__avatar--initials.avatar-color-5 { background: #db2777; }
+.members-list__avatar--initials.avatar-color-6 { background: #0891b2; }
+.members-list__avatar--initials.avatar-color-7 { background: #ea580c; }
+.members-list__avatar--initials.avatar-color-8 { background: #4f46e5; }
+
+.members-list__name {
+  color: var(--cf-primary);
+}
+
+.members-list__contact {
+  display: grid;
+  gap: 0.15rem;
+  font-size: var(--cf-text-sm);
+}
+
+/* Panel container matching the Add organization page's `.cf-panel` content block. */
+.members-list__panel {
+  display: grid;
+  gap: var(--cf-space-3);
+}
+
+/* Member detail modal — large sectioned read-only dialog (style guide §14).
+   Pin grid rows to the top so a short record does not stretch into a collapsed stack. */
+
+.member-detail-modal {
+  align-content: start;
+  gap: 0;
+  padding-top: 0;
+}
+
+.member-detail-modal .cf-split-identity {
+  margin: 0 -1.15rem;
+  padding: 1rem 1.15rem;
+  background: var(--cf-slate-50);
+  border-bottom: 1px solid var(--cf-panel-border);
+}
+
+.member-detail-modal__role-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.member-detail-modal .cf-split-section {
+  padding-top: 1rem;
+}
+
+.member-detail-modal .cf-split-section + .cf-split-section {
+  margin-top: 0.85rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--cf-slate-100);
+}
+
+.member-detail-modal .cf-split-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1.25rem;
+}
+
+.member-detail-modal dl {
+  margin: 0;
+}
+
+.member-detail-modal .cf-split-field dt {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cf-muted);
+}
+
+.member-detail-modal .cf-split-field dd {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--cf-slate-900);
+}
+
+.member-detail-modal__address {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.member-detail-modal .cf-split-form-actions {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .member-detail-modal .cf-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.member-detail-modal__photo-trigger {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+  border-radius: inherit;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: transparent;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cf-brand, #175cd3);
+    outline-offset: 2px;
+  }
+}

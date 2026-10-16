@@ -1,0 +1,90 @@
+<section class="cf-page billing-workspace">
+  <app-page-header
+    title="Tenant price assignments"
+    subtitle="Negotiated list prices for specific churches"
+    backLink="/settings/billing"
+    backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    <section class="cf-panel billing-workspace__toolbar" aria-label="Assignment filters">
+      <label>
+        Tenant ID
+        <input type="number" [(ngModel)]="filterTenantId" (keyup.enter)="reload()" placeholder="All tenants" />
+      </label>
+      <div class="billing-workspace__toolbar-actions">
+        <button type="button" class="cf-btn" (click)="reload()" [disabled]="loading()">Apply filter</button>
+        <button type="button" class="cf-btn cf-btn-primary" (click)="openAssign()">Assign price</button>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading assignments…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="rows.length">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>Plan</th>
+                <th>Amount</th>
+                <th>Interval</th>
+                <th>Scope</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ row['tenant_name'] || row['tenant_id'] }}</td>
+                <td>{{ row['plan_id'] }}</td>
+                <td>{{ row['negotiated_amount'] }} {{ row['currency_code'] }}</td>
+                <td>{{ row['billing_interval'] }}</td>
+                <td>{{ row['scope'] || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!rows.length" class="cf-muted">No active assignments.</p>
+      </section>
+    }
+  </div>
+</section>
+
+<app-modal-shell
+  *ngIf="assignOpen"
+  title="Assign negotiated price"
+  description="Does not change published catalog prices. Applies on the tenant's next qualifying purchase."
+  size="lg"
+  [isSubmitting]="assigning()"
+  (closeRequested)="closeAssign()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-assign-price" (ngSubmit)="assign()">
+    <app-billing-tenant-picker (tenantChange)="onTenantPicked($event)" />
+    <label>
+      Plan
+      <select [(ngModel)]="planCode" name="planCode">
+        <option *ngFor="let p of planOptions" [value]="p.code">{{ p.name }} ({{ p.code }})</option>
+      </select>
+    </label>
+    <label>
+      Billing interval
+      <select [(ngModel)]="billingInterval" name="billingInterval">
+        <option value="MONTHLY">Monthly</option>
+        <option value="ANNUAL">Annual</option>
+      </select>
+    </label>
+    <label>
+      Negotiated amount <span class="cf-required">*</span>
+      <input type="text" [(ngModel)]="negotiatedAmount" name="negotiatedAmount" inputmode="decimal" required />
+    </label>
+    <label class="full-width">
+      Business reason <span class="cf-required">*</span>
+      <textarea rows="3" [(ngModel)]="reason" name="reason" maxlength="1000" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeAssign()" [disabled]="assigning()">Cancel</button>
+    <button type="submit" form="billing-assign-price" class="cf-btn cf-btn-primary" [disabled]="assigning()">
+      {{ assigning() ? 'Saving…' : 'Confirm assignment' }}
+    </button>
+  </ng-container>
+</app-modal-shell>

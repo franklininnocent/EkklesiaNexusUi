@@ -1,0 +1,1195 @@
+<div class="church-management-container cf-page" [class.church-management-container--list]="activeTab !== 'profile'">
+  <app-page-header
+    *ngIf="activeTab === 'profile'"
+    title="Church Management"
+    subtitle="Manage your church profile, leadership, statistics, and social media">
+  </app-page-header>
+
+  <!-- Page Header / tabs -->
+  <div class="page-header page-header--compact">
+    <div class="header-content header-content--tabs-only">
+      <!-- Tab Navigation -->
+      <div class="tab-navigation" *ngIf="!loading && churchProfile">
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'profile'"
+        (click)="setActiveTab('profile')">
+        <span class="tab-icon">🏛️</span>
+        <span class="tab-label">Church Profile</span>
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'leadership'"
+        (click)="setActiveTab('leadership')">
+        <span class="tab-icon">👥</span>
+        <span class="tab-label">Parish Clergy</span>
+        <span class="tab-badge" *ngIf="leadershipTabBadgeCount > 0">{{ leadershipTabBadgeCount }}</span>
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'statistics'"
+        (click)="setActiveTab('statistics')">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">Statistics</span>
+        <span class="tab-badge" *ngIf="statistics.length > 0">{{ statistics.length }}</span>
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'social'"
+        (click)="setActiveTab('social')">
+        <span class="tab-icon">📱</span>
+        <span class="tab-label">Social Media</span>
+        <span class="tab-badge" *ngIf="socialMedia.length > 0">{{ socialMedia.length }}</span>
+      </button>
+      <button
+        class="tab-btn"
+        *ngIf="canViewDiocesanBishop"
+        [class.active]="activeTab === 'diocesan-bishop'"
+        (click)="setActiveTab('diocesan-bishop')">
+        <span class="tab-icon">✝</span>
+        <span class="tab-label">Diocesan Bishop</span>
+      </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading && !churchProfile" class="state-card loading-state">
+    <app-cf-loading-container size="page" label="Loading church data…" />
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="state-card error-state">
+    <span class="state-icon">⚠️</span>
+    <h3>Error Loading Data</h3>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && churchProfile" class="content-wrapper">
+    
+    <!-- Tab Content -->
+    <div class="tab-content">
+      
+      <!-- ====================================================================== -->
+      <!-- PROFILE TAB -->
+      <!-- ====================================================================== -->
+      <div *ngIf="activeTab === 'profile'" class="tab-pane profile-pane cp-overview">
+
+        <!-- Section 1: Hero Banner -->
+        <section class="cp-hero">
+          <div class="cp-hero__banner">
+            <div class="cp-hero__col cp-hero__col--church">
+              <div class="cp-hero__logo-wrap">
+                <div class="cp-hero__logo">
+                  <img
+                    *ngIf="showLogoImage()"
+                    [src]="getTenantLogoUrl()!"
+                    [alt]="churchProfile.name"
+                    (error)="handleLogoImageError()"
+                  />
+                  <div *ngIf="!showLogoImage()" class="cp-hero__logo-fallback" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                  </div>
+                </div>
+                <button
+                  *ngIf="canEdit"
+                  type="button"
+                  class="cp-hero__media-action"
+                  [disabled]="uploadingLogo"
+                  (click)="churchLogoInput.click()"
+                >
+                  {{ showLogoImage() || logoImagePreview ? 'Change logo' : 'Add logo' }}
+                </button>
+                <input
+                  #churchLogoInput
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  (change)="onChurchLogoSelected($event, true)"
+                  hidden
+                />
+              </div>
+              <div class="cp-hero__copy">
+                <h2 class="cp-hero__name">{{ churchProfile.name }}</h2>
+                <p class="cp-hero__subtitle" *ngIf="getChurchSubtitle()">{{ getChurchSubtitle() }}</p>
+                <p class="cp-hero__diocese">{{ getDenominationName() }} · {{ getArchdioceseName() }}</p>
+                <div class="cp-hero__chips">
+                  <span class="cp-chip" [class.cp-chip--active]="churchProfile.active === 1" [class.cp-chip--inactive]="churchProfile.active !== 1">
+                    {{ churchProfile.active === 1 ? 'Active' : 'Inactive' }}
+                  </span>
+                  <span class="cp-chip cp-chip--neutral" *ngIf="getFoundedYear()">Founded {{ getFoundedYear() }}</span>
+                  <span class="cp-chip cp-chip--plan" *ngIf="planChipLabel">{{ planChipLabel }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cp-hero__col cp-hero__col--patron">
+              <div class="cp-hero__figure" *ngIf="showPatronImage() || getPatronName() || canEdit">
+                <div class="cp-hero__figure-media">
+                  <img
+                    *ngIf="showPatronImage()"
+                    [src]="getPatronImageUrlWithFallback()"
+                    [alt]="getPatronName() || 'Patron saint'"
+                    (error)="handlePatronImageError()"
+                  />
+                  <div *ngIf="!showPatronImage()" class="cp-hero__figure-fallback" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="cp-hero__figure-copy">
+                  <span class="cp-hero__figure-label">Our Patron</span>
+                  <span class="cp-hero__figure-name" *ngIf="getPatronName()">{{ getPatronName() }}</span>
+                  <button
+                    *ngIf="canEdit"
+                    type="button"
+                    class="cp-hero__media-action"
+                    [disabled]="uploadingPatronImage"
+                    (click)="patronImageInput.click()"
+                  >
+                    {{ showPatronImage() ? 'Change image' : 'Add image' }}
+                  </button>
+                  <input
+                    #patronImageInput
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    (change)="onHeroPatronSelected($event)"
+                    hidden
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="cp-hero__col cp-hero__col--pope">
+              <div class="cp-hero__figure" *ngIf="getPopeDisplayName()">
+                <div class="cp-hero__figure-media">
+                  <img
+                    *ngIf="showPopeImage()"
+                    [src]="getPopeImageUrlWithFallback()"
+                    [alt]="getPopeDisplayName()!"
+                    (error)="handlePopeImageError()"
+                  />
+                  <div *ngIf="!showPopeImage()" class="cp-hero__figure-fallback" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="cp-hero__figure-copy">
+                  <span class="cp-hero__figure-label">The Pope</span>
+                  <span class="cp-hero__figure-name">{{ getPopeDisplayName() }}</span>
+                  <span class="cp-hero__figure-meta" *ngIf="popeDetails?.pope_effective_from">
+                    Since {{ formatDate($safeNavigationMigration(popeDetails?.pope_effective_from)) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Actions Bar -->
+        <div class="cp-actions" *ngIf="churchProfile">
+          <button type="button" class="cp-action-btn cp-action-btn--primary" *ngIf="canEdit" (click)="openGeneralModal()">Edit Profile</button>
+          <button type="button" class="cp-action-btn" (click)="setActiveTab('leadership')">Manage Staff</button>
+          <button type="button" class="cp-action-btn" (click)="setActiveTab('leadership')">Manage Ministries</button>
+          <button type="button" class="cp-action-btn" (click)="navigateToSettings()">Church Settings</button>
+          <button type="button" class="cp-action-btn" (click)="onGenerateReport()">Generate Report</button>
+          <button type="button" class="cp-action-btn" (click)="onViewPublicProfile()">View Public Profile</button>
+        </div>
+
+        <!-- Section 2: Snapshot KPI Cards -->
+        <section class="cp-snapshot" aria-label="Church snapshot metrics">
+          <article class="cp-snapshot__card" *ngFor="let kpi of snapshotKpis">
+            <span class="cp-snapshot__label">{{ kpi.label }}</span>
+            <span class="cp-snapshot__value">{{ kpi.value }}</span>
+            <span class="cp-snapshot__hint" *ngIf="kpi.hint">{{ kpi.hint }}</span>
+          </article>
+        </section>
+
+        <!-- Sections 3–5: Identity, Leadership, Contact, Status -->
+        <div class="cp-grid">
+          <article class="cp-card">
+            <header class="cp-card__head">
+              <h3>Church Identity</h3>
+            </header>
+            <dl class="cp-identity-list">
+              <div class="cp-identity-item" *ngFor="let field of identityFields">
+                <dt>
+                  <span class="cp-identity-icon" [innerHTML]="field.icon"></span>
+                  {{ field.label }}
+                </dt>
+                <dd>{{ field.value }}</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="cp-card">
+            <header class="cp-card__head">
+              <h3>Church Leadership</h3>
+              <button type="button" class="cp-link" (click)="setActiveTab('leadership')">View all</button>
+            </header>
+            <div class="cp-leadership-grid">
+              <div class="cp-leader-card" *ngIf="getDiocesanBishop() as bishop">
+                <app-bishop-avatar
+                  [name]="bishop.full_name"
+                  [source]="bishop"
+                  size="md"
+                ></app-bishop-avatar>
+                <span class="cp-leader-card__role">Diocesan Bishop</span>
+                <span class="cp-leader-card__name">{{ bishop.full_name }}</span>
+                <span class="cp-leader-card__meta">{{ bishop.full_title || bishop.title }}</span>
+                <span class="cp-leader-card__meta" *ngIf="bishop.appointed_date">Since {{ formatDate(bishop.appointed_date) }}</span>
+                <button
+                  type="button"
+                  class="cp-link"
+                  *ngIf="canViewDiocesanBishop || canSubmitBishopUpdate"
+                  (click)="setActiveTab('diocesan-bishop')"
+                >
+                  {{ canSubmitBishopUpdate ? 'Suggest New Bishop' : 'View diocesan bishop' }}
+                </button>
+              </div>
+              <p class="cp-empty" *ngIf="!getDiocesanBishop()">
+                No diocesan bishop configured yet.
+              </p>
+            </div>
+          </article>
+
+          <article class="cp-card">
+            <header class="cp-card__head">
+              <h3>Contact Information</h3>
+            </header>
+            <ul class="cp-contact-list">
+              <li class="cp-contact-item" *ngIf="getProfileEmail()">
+                <span class="cp-contact-item__label">Email</span>
+                <div class="cp-contact-item__row">
+                  <a class="cp-contact-item__value" [href]="'mailto:' + getProfileEmail()">{{ getProfileEmail() }}</a>
+                  <button type="button" class="cp-copy-btn" (click)="copyToClipboard(getProfileEmail()!)">Copy</button>
+                </div>
+              </li>
+              <li class="cp-contact-item" *ngIf="getProfilePhone()">
+                <span class="cp-contact-item__label">Phone</span>
+                <div class="cp-contact-item__row">
+                  <a class="cp-contact-item__value" [href]="'tel:' + getProfilePhone()">{{ getProfilePhone() }}</a>
+                  <button type="button" class="cp-copy-btn" (click)="copyToClipboard(getProfilePhone()!)">Copy</button>
+                </div>
+              </li>
+              <li class="cp-contact-item" *ngIf="getWebsiteUrl() as website">
+                <span class="cp-contact-item__label">Website</span>
+                <div class="cp-contact-item__row">
+                  <a class="cp-contact-item__value" [href]="website" target="_blank" rel="noopener noreferrer">{{ formatWebsiteUrl(website) }}</a>
+                  <button type="button" class="cp-copy-btn" (click)="copyToClipboard(website)">Copy</button>
+                </div>
+              </li>
+              <li class="cp-contact-item" *ngIf="getOfficialAddress() as address">
+                <span class="cp-contact-item__label">Address</span>
+                <div class="cp-contact-item__row cp-contact-item__row--stack">
+                  <span class="cp-contact-item__value">{{ formatAddress(address) }}</span>
+                  <button type="button" class="cp-copy-btn" (click)="copyToClipboard(formatAddress(address))">Copy</button>
+                </div>
+              </li>
+            </ul>
+          </article>
+
+          <article class="cp-card">
+            <header class="cp-card__head">
+              <h3>Church Status</h3>
+            </header>
+            <app-cf-brand-loader *ngIf="statusMetricsLoading" size="inline" label="Loading parish health metrics…" />
+            <ul class="cp-health-list" *ngIf="!statusMetricsLoading && operationalMetrics.length">
+              <li class="cp-health-item" *ngFor="let metric of operationalMetrics">
+                <div class="cp-health-item__head">
+                  <span class="cp-health-item__label">
+                    {{ metric.label }}
+                    <button
+                      type="button"
+                      class="cp-health-help"
+                      [attr.aria-label]="metric.tooltip"
+                      [title]="metric.tooltip"
+                    >?</button>
+                  </span>
+                  <strong
+                    class="cp-health-item__value"
+                    [class.cp-health-item__value--na]="metric.status === 'unavailable'"
+                  >{{ metric.display }}</strong>
+                </div>
+                <p class="cp-health-item__summary" *ngIf="metric.summary">{{ metric.summary }}</p>
+                <div class="cp-health-bar" *ngIf="metric.status === 'available' && metric.percent !== null">
+                  <div class="cp-health-bar__fill" [style.width.%]="metric.percent"></div>
+                </div>
+                <div class="cp-health-bar cp-health-bar--empty" *ngIf="metric.status === 'unavailable'" aria-hidden="true"></div>
+              </li>
+            </ul>
+            <div class="cp-health-empty" *ngIf="!statusMetricsLoading && statusMetricsEmptyCta">
+              <p>Some metrics need parish data before they can be calculated.</p>
+              <button type="button" class="cp-action-btn cp-action-btn--primary" (click)="navigateStatusMetricsCta()">
+                {{ statusMetricsEmptyCta.label }}
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Section 6: About This Parish -->
+        <article class="cp-card cp-card--about">
+          <header class="cp-card__head">
+            <h3>About This Parish</h3>
+            <button type="button" class="cp-link" *ngIf="canEdit" (click)="startEditNarrative()">Edit narrative</button>
+          </header>
+          <div class="cp-about" [class.is-collapsed]="!aboutExpanded && isAboutLong()">
+            <p>{{ getAboutText() }}</p>
+          </div>
+          <button type="button" class="cp-expand-btn" *ngIf="isAboutLong()" (click)="aboutExpanded = !aboutExpanded">
+            {{ aboutExpanded ? 'Show less' : 'Read more' }}
+          </button>
+        </article>
+
+        <!-- Inline narrative editor (admins only) -->
+        <form [formGroup]="profileForm" class="cp-card cp-card--editor" *ngIf="editingSections.identity">
+          <header class="cp-card__head">
+            <h3>Edit Parish Narrative</h3>
+            <div class="cp-editor-actions" *ngIf="canEdit">
+              <button type="button" class="cp-action-btn cp-action-btn--primary" (click)="saveSection('identity')" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+              <button type="button" class="cp-action-btn" (click)="cancelEditSection('identity')">Cancel</button>
+            </div>
+          </header>
+          <div class="cp-editor-grid">
+            <div class="cp-editor-field cp-editor-field--full">
+              <label for="about">About</label>
+              <textarea id="about" formControlName="about" rows="4" placeholder="Brief description of your church..."></textarea>
+            </div>
+            <div class="cp-editor-field cp-editor-field--full">
+              <label for="vision">Vision Statement</label>
+              <textarea id="vision" formControlName="vision" rows="2"></textarea>
+            </div>
+            <div class="cp-editor-field cp-editor-field--full">
+              <label for="mission">Mission Statement</label>
+              <textarea id="mission" formControlName="mission" rows="2"></textarea>
+            </div>
+            <div class="cp-editor-field cp-editor-field--full">
+              <label for="core_values">Core Values</label>
+              <textarea id="core_values" formControlName="core_values" rows="2"></textarea>
+            </div>
+            <div class="cp-editor-field cp-editor-field--full">
+              <label for="service_times">Service Times</label>
+              <textarea id="service_times" formControlName="service_times" rows="2"></textarea>
+            </div>
+          </div>
+        </form>
+
+      </div>
+
+
+      <!-- ====================================================================== -->
+      <!-- LEADERSHIP TAB -->
+      <!-- ====================================================================== -->
+      @if (activeTab === 'leadership') {
+        @defer {
+          <div class="tab-pane leadership-pane">
+            <app-church-leadership-governance
+              [canEdit]="canEditLeadership"
+              (currentChanged)="onGovernanceCurrentChanged($event)"
+            ></app-church-leadership-governance>
+          </div>
+        } @placeholder {
+          <div class="tab-pane leadership-pane" aria-busy="true">
+            <app-cf-brand-loader size="section" label="Loading parish clergy" />
+          </div>
+        }
+      }
+
+      <!-- ====================================================================== -->
+      <!-- STATISTICS TAB -->
+      <!-- ====================================================================== -->
+      <div *ngIf="activeTab === 'statistics'" class="tab-pane statistics-pane">
+        <app-section-card title="Church Statistics">
+          <div sectionActions>
+            <button
+              *ngIf="canEdit"
+              type="button"
+              class="cf-btn cf-btn-primary"
+              (click)="openNewStatisticModal()"
+            >
+              Add Record
+            </button>
+          </div>
+
+          <app-data-table *ngIf="statistics.length > 0" [clickableRows]="false">
+            <thead>
+              <tr>
+                <th scope="col">Period</th>
+                <th scope="col" class="statistics-pane__num-col">Membership</th>
+                <th scope="col" class="statistics-pane__num-col">Attendance</th>
+                <th scope="col" class="statistics-pane__num-col">Baptisms</th>
+                <th scope="col" class="statistics-pane__num-col">Marriages</th>
+                <th scope="col" class="statistics-pane__num-col">Tithes</th>
+                <th *ngIf="canEdit" scope="col" class="cf-table__actions-col">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let stat of statistics; trackBy: trackByStatisticId">
+                <td class="statistics-pane__period-cell">
+                  <strong>{{ formatStatisticPeriod(stat) }}</strong>
+                </td>
+                <td class="statistics-pane__num-col">{{ formatOptionalCount(stat.membership_count) }}</td>
+                <td class="statistics-pane__num-col">{{ formatOptionalCount(stat.weekly_attendance) }}</td>
+                <td class="statistics-pane__num-col">{{ stat.baptisms ?? 0 }}</td>
+                <td class="statistics-pane__num-col">{{ stat.marriages ?? 0 }}</td>
+                <td class="statistics-pane__num-col">
+                  {{ stat.tithes_offerings != null ? (stat.tithes_offerings | cfCurrency) : '—' }}
+                </td>
+                <td *ngIf="canEdit" class="cf-table__actions-cell">
+                  <div class="cf-row-actions statistics-pane__row-actions">
+                    <app-edit-icon-button
+                      size="sm"
+                      [ariaLabel]="'Edit statistics for ' + formatStatisticPeriod(stat)"
+                      [title]="'Edit statistics for ' + formatStatisticPeriod(stat)"
+                      (clicked)="openEditStatisticModal(stat)"
+                    />
+                    <button
+                      type="button"
+                      class="cf-btn cf-btn-icon cf-btn--sm cf-btn-danger"
+                      (click)="deleteStatistic(stat)"
+                      [attr.aria-label]="'Delete statistics for ' + formatStatisticPeriod(stat)"
+                      [attr.title]="'Delete statistics for ' + formatStatisticPeriod(stat)"
+                    >
+                      <app-cf-action-icon name="trash" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </app-data-table>
+
+          <app-cf-empty-state
+            *ngIf="statistics.length === 0"
+            icon="📊"
+            title="No Statistics Recorded"
+            description="Track membership, attendance, and church metrics over time."
+            [hasActions]="canEdit"
+          >
+            <button
+              *ngIf="canEdit"
+              type="button"
+              class="cf-btn cf-btn-primary"
+              (click)="openNewStatisticModal()"
+            >
+              Add First Record
+            </button>
+          </app-cf-empty-state>
+        </app-section-card>
+      </div>
+
+      <!-- ====================================================================== -->
+      <!-- SOCIAL MEDIA TAB -->
+      <!-- ====================================================================== -->
+      <div *ngIf="activeTab === 'social'" class="tab-pane social-pane">
+        
+        <div class="section-card">
+          <div class="section-header">
+            <h2>📱 Social Media Accounts</h2>
+            <div class="header-right">
+              <button 
+                *ngIf="canEdit"
+                class="cf-btn cf-btn-primary" 
+                (click)="openNewSocialModal()"
+                type="button"
+                title="Add new social media account">
+                <span class="btn-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                  </svg>
+                </span>
+                <span>Add Account</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Social Media Cards -->
+          <div *ngIf="socialMedia.length > 0" class="social-grid">
+            <div *ngFor="let social of socialMedia" class="social-card">
+              <div class="social-header">
+                <span class="social-icon">{{ getPlatformIcon(social.platform) }}</span>
+                <h3>{{ social.platform | titlecase }}</h3>
+              </div>
+              <div class="social-body">
+                <div class="social-info">
+                  <p class="social-url">
+                    <a [href]="social.url" target="_blank" rel="noopener">{{ social.url }}</a>
+                  </p>
+                  <p *ngIf="social.username" class="social-username">@{{ social.username }}</p>
+                  <p *ngIf="social.follower_count" class="social-followers">
+                    👥 {{ social.follower_count | number }} followers
+                  </p>
+                </div>
+                <div class="social-badges">
+                  <span class="badge" [class.badge-success]="social.active === 1" [class.badge-secondary]="social.active === 0">
+                    {{ social.active === 1 ? 'Active' : 'Inactive' }}
+                  </span>
+                  <span class="badge badge-warning" *ngIf="social.is_primary === 1">⭐ Primary</span>
+                </div>
+              </div>
+              <div class="social-footer" *ngIf="canEdit">
+                <div class="cf-row-actions">
+                  <button
+                    type="button"
+                    class="cf-btn cf-btn--sm"
+                    (click)="openEditSocialModal(social)"
+                    [attr.aria-label]="'Edit ' + (social.platform | titlecase) + ' account'"
+                    [title]="'Edit ' + (social.platform | titlecase) + ' account'"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="cf-btn cf-btn--sm cf-btn-danger"
+                    (click)="deleteSocialMedia(social)"
+                    [attr.aria-label]="'Delete ' + (social.platform | titlecase) + ' account'"
+                    [title]="'Delete ' + (social.platform | titlecase) + ' account'"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="socialMedia.length === 0" class="empty-state">
+            <span class="empty-icon">📱</span>
+            <h3>No Social Media Accounts</h3>
+            <p>Connect your church's social media presence.</p>
+            <button 
+              *ngIf="canEdit"
+              class="cf-btn cf-btn-primary" 
+              (click)="openNewSocialModal()"
+              type="button"
+              title="Add first social media account">
+              <span class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+              </span>
+              <span>Add First Account</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ====================================================================== -->
+      <!-- DIOCESAN BISHOP TAB -->
+      <!-- ====================================================================== -->
+      @if (activeTab === 'diocesan-bishop') {
+        @defer {
+          <div class="tab-pane diocesan-bishop-pane">
+            <app-diocesan-bishop-panel></app-diocesan-bishop-panel>
+          </div>
+        } @placeholder {
+          <div class="tab-pane diocesan-bishop-pane" aria-busy="true">
+            <app-cf-brand-loader size="section" label="Loading diocesan bishop" />
+          </div>
+        }
+      }
+
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODALS -->
+<!-- ====================================================================== -->
+
+@if (showLeaderModal) {
+  @defer {
+    <app-church-leader-workspace
+      [open]="showLeaderModal"
+      [leader]="selectedLeader"
+      [canManage]="canEdit"
+      (closed)="closeLeaderModal()"
+      (saved)="onLeaderWorkspaceSaved($event)"
+    ></app-church-leader-workspace>
+  }
+}
+
+@if (showLeaderDetail) {
+  @defer {
+    <app-church-leader-detail
+      [open]="showLeaderDetail"
+      [leader]="viewingLeader"
+      [canManage]="canEdit"
+      (closed)="closeLeaderDetail()"
+      (editRequested)="onLeaderDetailEdit($event)"
+      (deleteRequested)="onLeaderDetailDelete($event)"
+    ></app-church-leader-detail>
+  }
+}
+
+<!-- Statistics Modal — exact Add Category (.cf-split-*) form language inside app-modal-shell -->
+<app-modal-shell
+  *ngIf="showStatisticModal"
+  [title]="selectedStatistic ? 'Edit Statistic' : 'Add New Statistic'"
+  size="sm"
+  headerVariant="compact"
+  bodyPadding="none"
+  closeAriaLabel="Close statistic"
+  [isSubmitting]="saving"
+  (closeRequested)="closeStatisticModal()"
+>
+  <form
+    class="cf-split-form-body cp-statistic-modal"
+    [formGroup]="statisticForm"
+    (ngSubmit)="saveStatistic()"
+    novalidate
+  >
+    <section class="cf-split-section" aria-labelledby="stat-section-period">
+      <h3 id="stat-section-period" class="cf-split-section__title">Period</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <label for="stat_year">
+            Year <span class="cf-split-req" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="number"
+            id="stat_year"
+            formControlName="year"
+            aria-required="true"
+          />
+        </div>
+
+        <div class="cf-split-field">
+          <label for="stat_month">
+            Month <span class="cf-split-optional">optional</span>
+          </label>
+          <ng-select
+            id="stat_month"
+            formControlName="month"
+            [items]="monthOptions"
+            bindLabel="label"
+            bindValue="value"
+            placeholder="Select month"
+            [clearable]="true"
+            [searchable]="true"
+            class="cf-split-select"
+          ></ng-select>
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="stat-section-membership">
+      <h3 id="stat-section-membership" class="cf-split-section__title">Membership &amp; attendance</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <label for="stat_membership">
+            Membership count <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_membership" formControlName="membership_count" />
+        </div>
+
+        <div class="cf-split-field">
+          <label for="stat_attendance">
+            Weekly attendance <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_attendance" formControlName="weekly_attendance" />
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="stat-section-sacramental">
+      <h3 id="stat-section-sacramental" class="cf-split-section__title">Sacramental counts</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <label for="stat_baptisms">
+            Baptisms <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_baptisms" formControlName="baptisms" />
+        </div>
+
+        <div class="cf-split-field">
+          <label for="stat_confirmations">
+            Confirmations <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_confirmations" formControlName="confirmations" />
+        </div>
+
+        <div class="cf-split-field">
+          <label for="stat_marriages">
+            Marriages <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_marriages" formControlName="marriages" />
+        </div>
+
+        <div class="cf-split-field">
+          <label for="stat_funerals">
+            Funerals <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_funerals" formControlName="funerals" />
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="stat-section-offerings">
+      <h3 id="stat-section-offerings" class="cf-split-section__title">Offerings &amp; notes</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="stat_tithes">
+            Tithes &amp; offerings <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="stat_tithes" formControlName="tithes_offerings" />
+        </div>
+
+        <div class="cf-split-field cf-split-field--full">
+          <label for="stat_notes">
+            Notes <span class="cf-split-optional">optional</span>
+          </label>
+          <textarea id="stat_notes" formControlName="notes" rows="3" maxlength="500"></textarea>
+          <p class="cf-split-field__hint">Up to 500 characters.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="cf-split-form-actions">
+      <button
+        type="submit"
+        class="cf-btn cf-btn-primary"
+        [disabled]="saving || statisticForm.invalid"
+      >
+        {{
+          saving
+            ? 'Saving…'
+            : selectedStatistic
+              ? 'Update'
+              : 'Create'
+        }}
+      </button>
+      <button
+        type="button"
+        class="cf-btn"
+        (click)="closeStatisticModal()"
+        [disabled]="saving"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</app-modal-shell>
+
+<!-- Social Media Modal — exact Add Category (.cf-split-*) form language inside app-modal-shell -->
+<app-modal-shell
+  *ngIf="showSocialModal"
+  [title]="selectedSocialMedia ? 'Edit Social Media' : 'Add Social Media Account'"
+  size="sm"
+  headerVariant="compact"
+  bodyPadding="none"
+  closeAriaLabel="Close social media"
+  [isSubmitting]="saving"
+  (closeRequested)="closeSocialModal()"
+>
+  <form
+    id="social-modal-form"
+    class="cf-split-form-body cp-social-modal"
+    [formGroup]="socialForm"
+    (ngSubmit)="saveSocialMedia()"
+    novalidate
+  >
+    <section class="cf-split-section" aria-labelledby="social-section-details">
+      <h3 id="social-section-details" class="cf-split-section__title">Account details</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <label for="social_platform">
+            Social platform <span class="cf-split-req" aria-hidden="true">*</span>
+          </label>
+          <ng-select
+            id="social_platform"
+            formControlName="platform"
+            [items]="socialPlatforms"
+            bindLabel="label"
+            bindValue="value"
+            placeholder="Select platform"
+            [clearable]="false"
+            [searchable]="true"
+            class="cf-split-select"
+            aria-required="true"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.icon }} {{ item.label }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.icon }} {{ item.label }}
+            </ng-template>
+          </ng-select>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="social_username">
+            Username <span class="cf-split-optional">optional</span>
+          </label>
+          <input
+            type="text"
+            id="social_username"
+            formControlName="username"
+            placeholder="@username"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="cf-split-field cf-split-field--full">
+          <label for="social_url">
+            Account / profile URL <span class="cf-split-req" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="url"
+            id="social_url"
+            formControlName="url"
+            placeholder="https://..."
+            autocomplete="url"
+            aria-required="true"
+          />
+          <p class="cf-split-field__hint">Full link to the profile — used on the public church page.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="social-section-visibility">
+      <h3 id="social-section-visibility" class="cf-split-section__title">Reach &amp; visibility</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <label for="social_followers">
+            Follower count <span class="cf-split-optional">optional</span>
+          </label>
+          <input type="number" id="social_followers" formControlName="follower_count" />
+        </div>
+      </div>
+
+      <label class="cf-split-toggle cf-split-toggle--block">
+        <input type="checkbox" formControlName="is_primary" [value]="1" />
+        <span>
+          Primary account
+          <small>Shown as the main profile for this platform on the church page.</small>
+        </span>
+      </label>
+
+      <label class="cf-split-toggle cf-split-toggle--block">
+        <input type="checkbox" formControlName="active" [value]="1" />
+        <span>
+          Active
+          <small>Inactive accounts are hidden from the public church profile.</small>
+        </span>
+      </label>
+    </section>
+
+    <div class="cf-split-form-actions">
+      <button
+        type="submit"
+        class="cf-btn cf-btn-primary"
+        [disabled]="saving || socialForm.invalid"
+      >
+        {{
+          saving
+            ? 'Saving…'
+            : selectedSocialMedia
+              ? 'Save changes'
+              : 'Add Social Media Account'
+        }}
+      </button>
+      <button
+        type="button"
+        class="cf-btn"
+        (click)="closeSocialModal()"
+        [disabled]="saving"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</app-modal-shell>
+
+<!-- General Information Modal — large sectioned Category-style modal (see enterprise-modal-style-guide.md §11/§14) -->
+<app-modal-shell
+  *ngIf="showGeneralModal"
+  title="Edit General Information"
+  size="lg"
+  headerVariant="compact"
+  bodyPadding="none"
+  closeAriaLabel="Close general information"
+  [isSubmitting]="saving"
+  (closeRequested)="closeGeneralModal()"
+>
+  <form
+    class="cf-split-form-body cp-general-modal"
+    [formGroup]="profileForm"
+    (ngSubmit)="saveGeneralAndContact()"
+    novalidate
+  >
+    <p class="cf-meta">Update church denomination, diocese, and contact details.</p>
+
+    <section class="cf-split-section" aria-labelledby="general-section-church">
+      <h3 id="general-section-church" class="cf-split-section__title">Church information</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="church_logo_input">
+            Church logo <span class="cf-split-optional">optional</span>
+          </label>
+          <div class="cf-split-image-upload">
+            <div class="cf-split-image-upload__preview" *ngIf="logoImagePreview || showLogoImage()">
+              <img
+                [src]="logoImagePreview || getTenantLogoUrl()"
+                [alt]="churchProfile?.name || 'Church logo'"
+                (error)="handleLogoImageError()"
+              />
+              <button
+                type="button"
+                class="cf-split-image-upload__remove"
+                (click)="removeChurchLogo()"
+                *ngIf="showLogoImage() || logoImagePreview"
+                aria-label="Remove church logo"
+              >
+                Remove
+              </button>
+            </div>
+            <label class="cf-btn" for="church_logo_input">
+              {{ logoImagePreview || showLogoImage() ? 'Change logo' : 'Upload logo' }}
+            </label>
+            <input
+              type="file"
+              id="church_logo_input"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              (change)="onChurchLogoSelected($event)"
+              hidden
+            />
+          </div>
+          <p class="cf-split-field__hint">JPG, PNG, or WEBP. Max 5MB. Saved with the rest of this form.</p>
+        </div>
+        <div class="cf-split-field">
+          <label for="modal_denomination_id">
+            Denomination <span class="cf-split-optional">optional</span>
+          </label>
+          <ng-select
+            id="modal_denomination_id"
+            name="modalDenomination"
+            [(ngModel)]="modalDenomination"
+            [ngModelOptions]="{ standalone: true }"
+            [items]="denominations"
+            bindLabel="name"
+            [compareWith]="compareSelectItems"
+            placeholder="Select denomination"
+            [clearable]="true"
+            [searchable]="true"
+            [loading]="loadingDenominations"
+            dropdownPanelClass="church-profile-select-panel"
+            class="cf-split-select"
+            (ngModelChange)="onModalDenominationChange($event)"
+          ></ng-select>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="modal_country_id">
+            Country <span class="cf-split-optional">optional</span>
+          </label>
+          <ng-select
+            id="modal_country_id"
+            formControlName="country_id"
+            [items]="countries"
+            bindLabel="name"
+            bindValue="id"
+            placeholder="Select country"
+            [clearable]="true"
+            [searchable]="true"
+            [loading]="loadingCountries"
+            [appendTo]="appendToBody"
+            class="cf-split-select"
+            (change)="onCountryChange($event)"
+          >
+            <ng-template ng-option-tmp let-item="item">
+              <span class="cp-general-modal__country">
+                <span aria-hidden="true">{{ item.emoji }}</span>
+                <span>{{ item.name }}</span>
+              </span>
+            </ng-template>
+            <ng-template ng-label-tmp let-item="item">
+              <span class="cp-general-modal__country">
+                <span aria-hidden="true">{{ item.emoji }}</span>
+                <span>{{ item.name }}</span>
+              </span>
+            </ng-template>
+          </ng-select>
+          <p class="cf-split-field__hint">Updates phone code and filters available dioceses.</p>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="modal_archdiocese_id">
+            Archdiocese / Diocese <span class="cf-split-optional">optional</span>
+          </label>
+          <ng-select
+            id="modal_archdiocese_id"
+            name="modalArchdiocese"
+            [(ngModel)]="modalArchdiocese"
+            [ngModelOptions]="{ standalone: true }"
+            [items]="filteredArchdioceses"
+            bindLabel="name"
+            [compareWith]="compareSelectItems"
+            placeholder="Select archdiocese"
+            [clearable]="true"
+            [searchable]="true"
+            [disabled]="!modalDenomination"
+            dropdownPanelClass="church-profile-select-panel"
+            class="cf-split-select"
+            (ngModelChange)="onModalArchdioceseChange($event)"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.name }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              <div class="cp-general-modal__diocese-option">
+                <strong>{{ item.name }}</strong>
+                <span class="cf-meta">{{ item.country }}</span>
+              </div>
+            </ng-template>
+          </ng-select>
+          <p class="cf-split-field__hint" *ngIf="!modalDenomination">
+            Select a denomination first to filter dioceses.
+          </p>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="modal_founded_year">
+            Founded year <span class="cf-split-optional">optional</span>
+          </label>
+          <input
+            type="number"
+            id="modal_founded_year"
+            formControlName="founded_year"
+            placeholder="e.g., 1985"
+            min="1000"
+            [max]="getMaxYear()"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="general-section-patron">
+      <h3 id="general-section-patron" class="cf-split-section__title">Patron saint</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field cf-split-field--full">
+          <label for="patron_image_input">
+            Patron image <span class="cf-split-optional">optional</span>
+          </label>
+          <div class="cf-split-image-upload">
+            <div
+              class="cf-split-image-upload__preview"
+              *ngIf="patronImagePreview || getPatronImageUrl()"
+            >
+              <img
+                [src]="patronImagePreview || getPatronImageUrl()"
+                [alt]="extendedProfile?.patron_name || 'Patron saint'"
+                (error)="$any($event.target).style.display = 'none'"
+              />
+              <button
+                type="button"
+                class="cf-split-image-upload__remove"
+                (click)="removePatronImage()"
+                *ngIf="getPatronImageUrl()"
+                aria-label="Remove patron image"
+              >
+                Remove
+              </button>
+            </div>
+            <label class="cf-btn" for="patron_image_input">
+              {{ patronImagePreview || getPatronImageUrl() ? 'Change image' : 'Upload image' }}
+            </label>
+            <input
+              type="file"
+              id="patron_image_input"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              (change)="onPatronImageSelected($event)"
+              hidden
+            />
+          </div>
+          <p class="cf-split-field__hint">JPG, PNG, or WEBP. Max 3MB.</p>
+        </div>
+
+        <div class="cf-split-field cf-split-field--full">
+          <label for="modal_patron_name">
+            Patron Name <span class="cf-split-optional">optional</span>
+          </label>
+          <input
+            type="text"
+            id="modal_patron_name"
+            formControlName="patron_name"
+            placeholder="e.g., Sacred Heart of Jesus"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="general-section-contact">
+      <h3 id="general-section-contact" class="cf-split-section__title">Contact information</h3>
+      <div class="cf-split-grid">
+        <div class="cf-split-field">
+          <app-phone-input
+            [label]="'Phone number'"
+            [id]="'modal_phone'"
+            [name]="'phone'"
+            [required]="false"
+            [disabled]="saving"
+            [maxLength]="15"
+            [minLength]="6"
+            formControlName="phone"
+          ></app-phone-input>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="modal_email">
+            Email <span class="cf-split-optional">optional</span>
+          </label>
+          <input
+            type="email"
+            id="modal_email"
+            formControlName="email"
+            placeholder="info@church.org"
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="cf-split-field cf-split-field--full">
+          <label for="modal_website">
+            Website <span class="cf-split-optional">optional</span>
+          </label>
+          <input
+            type="url"
+            id="modal_website"
+            formControlName="website"
+            placeholder="https://www.church.org"
+            autocomplete="url"
+          />
+        </div>
+      </div>
+    </section>
+
+    <div class="cf-split-form-actions">
+      <button
+        type="submit"
+        class="cf-btn cf-btn-primary"
+        [disabled]="saving"
+      >
+        {{ saving ? 'Saving…' : 'Save changes' }}
+      </button>
+      <button
+        type="button"
+        class="cf-btn"
+        (click)="closeGeneralModal()"
+        [disabled]="saving"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</app-modal-shell>

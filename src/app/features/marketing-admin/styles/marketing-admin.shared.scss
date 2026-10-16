@@ -1,0 +1,79 @@
+// Shared form patterns for Web Management (marketing CMS) editors.
+.marketing-website__section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.marketing-admin-field {
+  display: grid;
+  gap: var(--cf-space-1, 0.25rem);
+  margin-bottom: var(--cf-space-3, 0.75rem);
+
+  > span {
+    font-size: var(--cf-text-sm, 0.875rem);
+    font-weight: 600;
+    color: var(--cf-slate-800, #1e293b);
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    max-width: 42rem;
+    min-height: var(--cf-control-height, 2.5rem);
+    border: 1px solid var(--cf-panel-border);
+    border-radius: var(--cf-radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: var(--cf-text-sm, 0.875rem);
+    font-family: inherit;
+    color: var(--cf-slate-900);
+    background: var(--cf-panel-bg);
+
+    &:focus-visible {
+      outline: 2px solid var(--cf-primary);
+      outline-offset: 1px;
+    }
+  }
+
+  textarea {
+    min-height: 5rem;
+    resize: vertical;
+    line-height: 1.45;
+  }
+}
+
+.marketing-admin-field__hint {
+  margin: 0;
+  font-size: var(--cf-text-helper, 0.8125rem);
+  color: var(--cf-color-text-muted, var(--cf-muted));
+}
+
+.marketing-admin-readonly {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--cf-radius-sm);
+  background: var(--cf-slate-50);
+  border: 1px solid var(--cf-slate-100);
+  font-size: var(--cf-text-sm, 0.875rem);
+  color: var(--cf-slate-800);
+}
+
+.marketing-admin-callout {
+  margin: 0 0 var(--cf-space-3, 0.75rem);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--cf-radius-sm);
+  font-size: var(--cf-text-sm, 0.875rem);
+  line-height: 1.45;
+  color: var(--cf-slate-800);
+  background: var(--cf-slate-50);
+  border: 1px solid var(--cf-slate-100);
+
+  &--warn {
+    color: var(--cf-amber, #b45309);
+    background: var(--cf-amber-soft, #fffbeb);
+    border-color: color-mix(in srgb, var(--cf-amber) 35%, var(--cf-panel-border));
+  }
+}

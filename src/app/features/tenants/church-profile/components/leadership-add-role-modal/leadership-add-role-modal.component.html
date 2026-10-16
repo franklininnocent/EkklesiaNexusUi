@@ -1,0 +1,54 @@
+<app-modal-shell
+  title="Add New Role"
+  size="sm"
+  [nested]="nested"
+  headerVariant="compact"
+  closeAriaLabel="Close add new role"
+  [isSubmitting]="creating"
+  (closeRequested)="cancel()"
+>
+  <div class="lar">
+    <label class="lar__label" [attr.for]="nameInputId">
+      Role Name <span class="lar__req" aria-hidden="true">*</span>
+    </label>
+    <input
+      #roleNameInput
+      type="text"
+      class="lar__input"
+      [id]="nameInputId"
+      [(ngModel)]="roleName"
+      [ngModelOptions]="{ standalone: true }"
+      [disabled]="creating"
+      maxlength="100"
+      autocomplete="off"
+      aria-required="true"
+      (keydown)="onNameKeydown($event)"
+    />
+
+    <ng-container *ngIf="showCategory && categoryOptions.length">
+      <label class="lar__label" [attr.for]="nameInputId + '_category'">
+        Governance category <span class="lar__req" aria-hidden="true">*</span>
+      </label>
+      <select
+        class="lar__input"
+        [id]="nameInputId + '_category'"
+        [(ngModel)]="category"
+        [ngModelOptions]="{ standalone: true }"
+        [disabled]="creating"
+      >
+        <option *ngFor="let option of categoryOptions" [ngValue]="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </ng-container>
+
+    <p class="lar__error" *ngIf="error" role="alert">{{ error }}</p>
+  </div>
+
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="cancel()" [disabled]="creating">Cancel</button>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="save($event)" [disabled]="creating">
+      {{ creating ? 'Saving…' : 'Save Role' }}
+    </button>
+  </ng-container>
+</app-modal-shell>

@@ -1,0 +1,24 @@
+.users__name-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+
+  strong {
+    font-size: var(--cf-text-sm);
+    color: var(--cf-slate-900);
+  }
+}
+
+.users__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  align-items: center;
+}
+
+/* Panel container matching list pages `.cf-panel` content block. */
+.users__panel {
+  display: grid;
+  gap: var(--cf-space-3);
+}

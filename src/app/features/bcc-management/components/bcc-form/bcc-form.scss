@@ -1,0 +1,41 @@
+@use '../../../../shared/styles/form-validation' as *;
+@use '../../../donations/styles/stewardship-split-layout.scss';
+
+// Field-level invalid state for `.cf-split-*` forms — reused verbatim from
+// the pattern established in family-member-form-modal.component.scss (not
+// yet part of the shared stewardship layout because Add Category has no
+// client-side field errors to show).
+.cf-split-field input.cf-split-field__control--invalid,
+.cf-split-field select.cf-split-field__control--invalid {
+  border-color: var(--cf-critical);
+  background: var(--cf-critical-soft);
+}
+
+.cf-split-field input.cf-split-field__control--invalid:focus,
+.cf-split-field select.cf-split-field__control--invalid:focus {
+  border-color: var(--cf-critical);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+.cf-split-field__error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cf-critical);
+  line-height: 1.35;
+}
+
+// Read-only control (BCC Code, edit mode only) — not covered by the shared
+// stewardship layout since Add Category has no read-only fields; styled
+// with existing CF tokens only.
+.cf-split-field input[readonly] {
+  background: var(--cf-slate-50);
+  color: var(--cf-muted);
+  cursor: not-allowed;
+}
+
+// Right-align the footer buttons for this modal only. `.cf-split-form-actions`
+// (stewardship-split-layout.scss) is left-aligned by default; scoped here via
+// Angular's emulated view encapsulation so no other `.cf-split-*` modal is affected.
+.cf-split-form-actions {
+  justify-content: flex-end;
+}

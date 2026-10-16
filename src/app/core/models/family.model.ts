@@ -1,0 +1,395 @@
+export interface Family {
+  id: string;
+  tenant_id: string;
+  family_code: string;
+  family_name: string;
+  head_of_family?: string;
+  head_avatar_url?: string;
+  head_profile_image_url?: string;  // Family head profile image (database path)
+  head_profile_image_full_url?: string;  // Family head profile image (full URL)
+  profile_image_url?: string;  // Family profile image (database path)
+  profile_image_full_url?: string;  // Family profile image (full URL)
+  
+  // Address Information
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state_id?: string;
+  country_id?: string;
+  postal_code?: string;
+  
+  // Relations
+  bcc_id?: string;
+  
+  // Status
+  status: 'active' | 'inactive' | 'migrated';
+  notes?: string;
+  
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
+  
+  // Relationships (loaded when needed)
+  bcc?: BCC;
+  country?: Country;
+  state?: State;
+  members?: FamilyMember[];
+  creator?: User;
+  updater?: User;
+  
+  // Computed
+  member_count?: number;
+}
+
+export interface FamilyMember {
+  id: string;
+  family_id: string;
+  person_id?: string;
+  
+  // Personal Information
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  full_name?: string;
+  
+  // Demographics
+  date_of_birth?: string;
+  gender?: 'male' | 'female' | 'other';
+  /** Resolved from family relationships when returned by member APIs. */
+  father_name?: string | null;
+  mother_name?: string | null;
+  display_father_name?: string | null;
+  display_mother_name?: string | null;
+  father_person_id?: string | null;
+  mother_person_id?: string | null;
+  person?: {
+    id?: string;
+    date_of_birth?: string | null;
+    gender?: 'male' | 'female' | 'other' | null;
+    father_name?: string | null;
+    mother_name?: string | null;
+    father_person_id?: string | null;
+    mother_person_id?: string | null;
+  };
+  relationship_to_head: 'self' | 'spouse' | 'son' | 'daughter' | 'father' | 'mother' | 
+                         'brother' | 'sister' | 'grandfather' | 'grandmother' | 
+                         'grandson' | 'granddaughter' | 'uncle' | 'aunt' | 
+                         'nephew' | 'niece' | 'cousin' | 'other';
+  marital_status?: 'single' | 'married' | 'widowed' | 'separated' | 'divorced';
+  
+  // Contact Information
+  phone?: string;
+  email?: string;
+  is_primary_contact?: boolean;
+  
+  // Sacrament Information
+  baptism_date?: string;
+  baptism_place?: string;
+  baptism_godparent_primary?: string;
+  baptism_godparent_secondary?: string;
+  baptism_location_type?: 'home_parish' | 'other';
+  baptism_church_name?: string;
+  baptism_church_address?: string;
+  baptism_priest_name?: string;
+  baptism_priest_is_home?: boolean;
+  first_communion_date?: string;
+  first_communion_place?: string;
+  first_communion_location_type?: 'home_parish' | 'other';
+  first_communion_church_name?: string;
+  first_communion_church_address?: string;
+  first_communion_priest_name?: string;
+  first_communion_priest_is_home?: boolean;
+  first_communion_description?: string;
+  confirmation_date?: string;
+  confirmation_place?: string;
+  marriage_date?: string;
+  suggested_marriage_date?: string | null;
+  linked_spouse_member_id?: string | null;
+  linked_spouse_family_id?: string | null;
+  linked_spouse_marriage_date?: string | null;
+  linked_spouse_name?: string | null;
+  matrimony_register_date?: string | null;
+  marriage_date_conflict?: boolean;
+  marriage_resolution_needed?: boolean;
+  marriage_resolved_from_spouse?: boolean;
+  acknowledge_marriage_date_conflict?: boolean;
+  marriage_place?: string;
+  marriage_spouse_name?: string;
+  marriage_bride_full_name?: string;
+  marriage_bride_address?: string;
+  marriage_bride_church_type?: 'home_parish' | 'other';
+  marriage_bride_church_name?: string;
+  marriage_bride_church_address?: string;
+  marriage_bride_father_name?: string;
+  marriage_bride_mother_name?: string;
+  marriage_groom_full_name?: string;
+  marriage_groom_address?: string;
+  marriage_groom_church_type?: 'home_parish' | 'other';
+  marriage_groom_church_name?: string;
+  marriage_groom_church_address?: string;
+  marriage_groom_father_name?: string;
+  marriage_groom_mother_name?: string;
+  marriage_minister_name?: string;
+  marriage_minister_title?: string;
+  
+  // Additional Information
+  occupation?: string;
+  education?: string;
+  skills_talents?: string;
+  notes?: string;
+  
+  // Status
+  status: 'active' | 'inactive' | 'deceased' | 'migrated';
+  deceased_date?: string;
+  
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
+  
+  // Relationships
+  family?: Family;
+  creator?: User;
+  updater?: User;
+}
+
+export interface ParishZone {
+  // Removed: Parish Zone entity no longer used in UI
+}
+
+export interface BCC {
+  id: string;
+  tenant_id: string;
+  bcc_code: string;
+  name: string;
+  description?: string;
+  
+  // Location
+  location?: string; // Location/Street address
+  meeting_place?: string;
+  
+  // Meeting Schedule
+  meeting_day?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  meeting_time?: string;
+  meeting_frequency?: string;
+  
+  // Status and Dates
+  status: 'active' | 'inactive' | 'suspended';
+  established_date?: string;
+  notes?: string;
+  
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
+  
+  // Relationships
+  families?: Family[];
+  leaders?: BCCLeader[];
+  creator?: User;
+  updater?: User;
+  
+  // Computed
+  current_family_count?: number;
+  families_count?: number;
+  is_at_capacity?: boolean;
+  capacity_percentage?: number;
+}
+
+export interface BCCLeader {
+  id: string;
+  bcc_id: string;
+  user_id?: string;
+  family_member_id?: string;
+  leader_name: string;
+  role: string;
+  assigned_date?: string;
+  end_date?: string;
+  is_current: boolean;
+  responsibilities?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
+  
+  // Relationships
+  bcc?: BCC;
+  user?: User;
+  family_member?: FamilyMember;
+  creator?: User;
+  updater?: User;
+}
+
+export interface Country {
+  id: string;
+  name: string;
+  code: string;
+  phone_code?: string;
+}
+
+export interface State {
+  id: string;
+  country_id: string;
+  name: string;
+  code?: string;
+  country?: Country;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  tenant_id?: string;
+  user_type?: number;
+}
+
+// API Response interfaces
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  total: number;
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  from: number;
+  to: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+export interface FamilyStatistics {
+  total_families: number;
+  active_families: number;
+  inactive_families: number;
+  total_members: number;
+  active_members: number;
+  members_created_this_month?: number;
+  families_with_bcc: number;
+  families_without_bcc: number;
+  families_by_zone: {
+    parish_zone_id: string;
+    count: number;
+    parish_zone: ParishZone;
+  }[];
+}
+
+export interface BCCStatistics {
+  total_bccs: number;
+  active_bccs: number;
+  inactive_bccs: number;
+  bccs_with_space: number;
+  total_families_in_bcc: number;
+  total_families_in_bccs: number;
+  total_leaders: number;
+  total_capacity: number;
+  current_utilization: number;
+  utilization_percentage: number;
+  bccs_by_zone: {
+    parish_zone_id: string;
+    count: number;
+    parish_zone: ParishZone;
+  }[];
+}
+
+// Filter interfaces
+export interface FamilyFilters {
+  search?: string;
+  status?: string;
+  bcc_id?: string;
+  missing_sacrament?: string;
+  progression?: string;
+  parish_zone_id?: string;
+  city?: string;
+  city_exact?: string;
+  missing?: string;
+  size_band?: string;
+  household?: string;
+  created_from?: string;
+  created_to?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+  per_page?: number;
+  page?: number;
+}
+
+export interface BCCFilters {
+  search?: string;
+  status?: string;
+  meeting_day?: string;
+  parish_zone_id?: string;
+  has_space?: boolean;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+  per_page?: number;
+  page?: number;
+}
+
+export interface BccRelocationPreview {
+  family_id: string;
+  family_name: string;
+  member_count: number;
+  current_bcc_id?: string | null;
+  current_bcc_name?: string | null;
+  target_bcc_id: string;
+  target_bcc_name: string;
+  transfer_mode: string;
+  leadership_impacts: {
+    leader_id: string;
+    member_name: string;
+    role: string;
+    role_label: string;
+  }[];
+  warnings: string[];
+}
+
+export interface RelocateBccPayload {
+  target_bcc_id: string;
+  effective_date: string;
+  transition_id: string;
+  historical_note?: string | null;
+}
+
+export interface MarriageTransitionPayload {
+  transition_id: string;
+  outcome: 'new_household' | 'join_existing';
+  effective_date: string;
+  bride_member_id?: string;
+  groom_member_id?: string;
+  new_household?: {
+    family_name: string;
+    bcc_id: string;
+    address_line_1?: string;
+    city?: string;
+  };
+  new_household_head_member_id?: string;
+  target_family_id?: string;
+  joining_member_id?: string;
+  partner_member_id?: string;
+  origin_successions?: {
+    origin_family_id: string;
+    replacement_head_member_id?: string | null;
+  }[];
+}
+
+export interface FamilyTransitionHistoryRecord {
+  id: string;
+  transition_id: string;
+  member_id: string;
+  from_family_id?: string | null;
+  to_family_id?: string | null;
+  previous_family_role?: string | null;
+  new_family_role?: string | null;
+  transition_type: string;
+  effective_date: string;
+  metadata?: Record<string, unknown> | null;
+  member?: { id: string; first_name: string; last_name: string };
+  performer?: { id: string; name: string };
+  created_at?: string;
+}
+

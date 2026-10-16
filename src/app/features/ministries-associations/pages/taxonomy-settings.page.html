@@ -1,0 +1,53 @@
+<section class="taxonomy-settings-page cf-page">
+  <app-page-header
+    title="Ministry settings"
+    subtitle="Set up categories, types, and leadership positions used across organizations."
+  ></app-page-header>
+
+  <div class="ministries-settings-chrome">
+    <div
+      class="ministries-settings-chrome__nav-row"
+      role="navigation"
+      aria-label="Ministries navigation"
+    >
+      <div class="ministries-settings-chrome__primary-group" aria-label="Ministries sections">
+        <app-ministries-sub-nav></app-ministries-sub-nav>
+      </div>
+
+      <span class="ministries-settings-chrome__nav-separator" aria-hidden="true"></span>
+
+      <div
+        class="ministries-settings-chrome__secondary-group"
+        role="tablist"
+        aria-label="Taxonomy settings"
+      >
+        <button
+          type="button"
+          *ngFor="let tab of tabs"
+          class="ministries-settings-chrome__secondary-link"
+          [class.ministries-settings-chrome__secondary-link--active]="activeTab === tab"
+          role="tab"
+          [id]="tabId(tab)"
+          [attr.aria-selected]="activeTab === tab"
+          [attr.aria-controls]="panelId(tab)"
+          [attr.tabindex]="activeTab === tab ? 0 : -1"
+          (click)="onTabChange(tab)"
+        >
+          {{ tabLabels[tab] }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="taxonomy-settings-page__panel"
+    role="tabpanel"
+    [id]="panelId(activeTab)"
+    [attr.aria-labelledby]="tabId(activeTab)"
+  >
+    <app-taxonomy-crud-panel
+      [kind]="activeTab"
+      [canConfigure]="canConfigure"
+    ></app-taxonomy-crud-panel>
+  </div>
+</section>

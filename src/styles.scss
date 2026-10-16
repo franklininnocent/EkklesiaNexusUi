@@ -1,0 +1,786 @@
+/* Professional Theme System - Load in Order (Modern Sass @use syntax) */
+@use "./typography";
+@use "./professional-theme";
+
+@use "./styles/legacy-touch-targets";
+@use "./styles/church-financial-os-tokens";
+@use "./styles/certificate-tokens";
+
+/* Global Animation System - Enterprise-Level Transitions & Animations */
+@use "./styles/animations";
+
+/* Legacy token compat shim — preserves pre-consolidation effective values (Phase 1) */
+@use "./styles/cf-legacy-compat";
+
+/* ng-select styles - CSS import remains as @import */
+@import "@ng-select/ng-select/themes/default.theme.css";
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  transition: font-size 0.3s ease;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100%;
+  width: 100%;
+}
+
+/* Authenticated shell pages scroll inside main.page-content — never on the document. */
+body:has(.layout) {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Responsive body adjustments */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1920px) {
+  body {
+    font-size: 17px;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+/* Enterprise typography — CF tokens (see docs/frontend/enterprise-typography-style-guide.md) */
+h1 {
+  font-size: var(--cf-text-page-title, 1.5rem);
+  font-weight: var(--cf-font-weight-page-title, 700);
+  line-height: var(--cf-leading-page-title, 1.25);
+}
+
+h2 {
+  font-size: var(--cf-text-section-title, 1.05rem);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: var(--cf-text-subsection, 0.9rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+h4 {
+  font-size: var(--cf-text-minor-heading, 0.85rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+h5 {
+  font-size: var(--cf-text-sm, 0.8rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+h6 {
+  font-size: var(--cf-text-xs, 0.72rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: var(--primary-dark);
+  }
+}
+
+/* Utility Classes */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: 1536px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .container {
+    max-width: 1800px;
+  }
+}
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mt-1 { margin-top: var(--spacing-sm); }
+.mt-2 { margin-top: var(--spacing-md); }
+.mt-3 { margin-top: var(--spacing-lg); }
+.mt-4 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-sm); }
+.mb-2 { margin-bottom: var(--spacing-md); }
+.mb-3 { margin-bottom: var(--spacing-lg); }
+.mb-4 { margin-bottom: var(--spacing-xl); }
+
+.p-1 { padding: var(--spacing-sm); }
+.p-2 { padding: var(--spacing-md); }
+.p-3 { padding: var(--spacing-lg); }
+.p-4 { padding: var(--spacing-xl); }
+
+
+/* Custom ng-select styling to match form inputs */
+.ng-select {
+  &.ng-select-opened > .ng-select-container {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+
+  .ng-select-container {
+    min-height: 42px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-primary);
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: var(--gray-400);
+    }
+
+    .ng-value-container {
+      padding: 0.625rem 0.875rem;
+
+      .ng-placeholder {
+        color: var(--text-tertiary);
+        font-size: 0.938rem;
+      }
+
+      .ng-value {
+        font-size: 0.938rem;
+        color: var(--text-primary);
+      }
+
+      .ng-input {
+        padding: 0;
+
+        input {
+          font-size: 0.938rem;
+          color: var(--text-primary);
+        }
+      }
+    }
+
+    .ng-arrow-wrapper {
+      width: 35px;
+      padding-right: 0.5rem;
+
+      .ng-arrow {
+        border-color: var(--gray-500) transparent transparent;
+        border-width: 5px 5px 2.5px;
+      }
+    }
+
+    .ng-clear-wrapper {
+      color: var(--text-tertiary);
+      &:hover {
+        color: var(--error-color);
+      }
+    }
+  }
+
+  &.ng-select-disabled > .ng-select-container {
+    background-color: var(--gray-100);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &.ng-select-error > .ng-select-container {
+    border-color: var(--error-color);
+    &:focus-within {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+.ng-dropdown-panel {
+  z-index: 1400;
+
+  &.tenant-create-country-panel {
+    z-index: 1500;
+  }
+  background-color: var(--bg-primary);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  margin-top: 4px;
+
+  .ng-dropdown-panel-items {
+    max-height: 240px;
+
+    .ng-option {
+      padding: 0.625rem 0.875rem;
+      font-size: 0.938rem;
+      color: var(--text-primary);
+      transition: background-color 0.15s ease;
+
+      &.ng-option-marked {
+        background-color: var(--gray-100);
+      }
+
+      &.ng-option-selected {
+        background-color: var(--primary-color);
+        color: white;
+
+        &.ng-option-marked {
+          background-color: var(--primary-dark);
+        }
+      }
+
+      &.ng-option-disabled {
+        color: var(--text-tertiary);
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .ng-dropdown-header {
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .ng-dropdown-footer {
+    padding: 0.5rem 0.875rem;
+    border-top: 1px solid var(--gray-200);
+  }
+}
+
+.ng-select.ng-select-loading .ng-spinner-loader {
+  border-color: var(--primary-color) var(--primary-light) var(--primary-light);
+}
+
+/* Responsive ng-select adjustments for small screens */
+@media (max-width: 640px) {
+  .ng-select .ng-select-container {
+    min-height: 40px;
+
+    .ng-value-container {
+      padding: 0.5rem 0.75rem;
+
+      .ng-placeholder,
+      .ng-value,
+      .ng-input input {
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  .ng-dropdown-panel .ng-dropdown-panel-items .ng-option {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+
+
+/* ========================================================================
+   COMPREHENSIVE RESPONSIVE DESIGN SYSTEM
+   ======================================================================== */
+
+/* Mobile Portrait (320px - 479px) */
+@media (max-width: 479px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* Page containers */
+  .container,
+  .page-container {
+    padding: 0.75rem !important;
+  }
+
+  /* Headers — page titles use CF token; leave bare h2/h3 mobile tweaks */
+  h1:not(.cf-page-title):not(.page-title) {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .cf-hero h1,
+  .cf-page-title,
+  .page-title,
+  .cf-page-header.cf-hero .cf-page-header__title,
+  .cf-page-header__title-row > h1 {
+    font-size: var(--cf-text-page-title) !important;
+    line-height: var(--cf-leading-page-title) !important;
+  }
+
+  .cf-hero h3:not(.cf-page-header__title) {
+    font-size: var(--cf-text-section-title) !important;
+    line-height: 1.3 !important;
+  }
+
+  h2 {
+    font-size: 1.125rem !important;
+  }
+
+  h3:not(.cf-page-header__title) {
+    font-size: 1rem !important;
+  }
+
+  /* Tables */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    font-size: 0.75rem !important;
+    
+    th, td {
+      padding: 0.5rem 0.625rem !important;
+      white-space: nowrap;
+    }
+  }
+
+  /* Cards */
+  .card, .tenant-card, .stat-card {
+    padding: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Buttons */
+  .btn, button {
+    font-size: 0.8125rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .btn-create {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
+
+  /* Forms */
+  .form-group {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .form-input,
+  .form-select,
+  input,
+  select,
+  textarea {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 0.625rem !important;
+  }
+
+  /* Modals */
+  .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  .modal-content {
+    border-radius: 0.5rem !important;
+  }
+
+  .modal-header {
+    padding: 0.875rem 1rem !important;
+  }
+
+  .modal-body {
+    padding: 1rem !important;
+    max-height: calc(100vh - 200px) !important;
+  }
+
+  .modal-footer {
+    padding: 0.875rem 1rem !important;
+    flex-direction: column !important;
+    
+    button {
+      width: 100% !important;
+      margin: 0.25rem 0 !important;
+    }
+  }
+
+  /* Grids */
+  .grid, .tenants-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Filters */
+  .filters-section {
+    flex-direction: column !important;
+    gap: 0.625rem !important;
+  }
+
+  .search-box {
+    max-width: 100% !important;
+  }
+
+  /* Badges */
+  .badge, .level-badge, .type-badge, .status-badge {
+    font-size: 0.6875rem !important;
+    padding: 0.1875rem 0.5rem !important;
+  }
+
+  /* Actions */
+  .action-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.875rem !important;
+    margin-right: 0.25rem !important;
+  }
+
+  /* Hide on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Mobile Landscape & Small Tablets (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+  body {
+    font-size: 15px;
+  }
+
+  .container, .page-container {
+    padding: 1rem !important;
+  }
+
+  h1:not(.cf-page-title):not(.page-title) {
+    font-size: 1.375rem !important;
+  }
+
+  .cf-hero h1,
+  .cf-page-title,
+  .page-title,
+  .cf-page-header.cf-hero .cf-page-header__title,
+  .cf-page-header__title-row > h1 {
+    font-size: var(--cf-text-page-title) !important;
+  }
+
+  .data-table {
+    font-size: 0.8125rem !important;
+  }
+
+  .modal-dialog {
+    margin: 1rem !important;
+    max-width: calc(100% - 2rem) !important;
+  }
+
+  .grid, .tenants-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  }
+
+  .btn-create {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+  }
+}
+
+/* Tablets (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .container, .page-container {
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+  }
+
+  .modal-dialog {
+    max-width: 700px !important;
+  }
+
+  .grid, .tenants-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  }
+
+  .data-table {
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Desktop (1024px - 1279px) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .container, .page-container {
+    max-width: 1024px;
+  }
+
+  .modal-dialog {
+    max-width: 800px !important;
+  }
+}
+
+/* Large Desktop (1280px+) */
+@media (min-width: 1280px) {
+  .container, .page-container {
+    max-width: 1400px;
+  }
+
+  .modal-dialog {
+    max-width: 900px !important;
+  }
+}
+
+/* Landscape Orientation Fixes */
+@media (orientation: landscape) and (max-height: 600px) {
+  .modal-body {
+    max-height: calc(100vh - 150px) !important;
+    overflow-y: auto;
+  }
+
+  .page-header {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .filters-section {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  button, .btn, a {
+    min-height: 44px !important; /* Apple's recommended touch target size */
+    min-width: 44px !important;
+  }
+
+  .action-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* Larger touch targets for mobile */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 20px !important;
+    min-height: 20px !important;
+  }
+}
+
+/* High DPI / Retina Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .btn, button, .action-btn {
+    display: none !important;
+  }
+
+  .sidebar, nav, .header {
+    display: none !important;
+  }
+
+  .modal {
+    position: static !important;
+  }
+
+  .card, .data-table {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+}
+
+/* Accessibility - Reduce Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark Mode Support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+  /* Placeholder for dark mode styles */
+}
+
+/* ========================================================================
+   UTILITY CLASSES FOR RESPONSIVE DESIGN
+   ======================================================================== */
+
+/* Show/Hide utilities */
+.show-mobile { display: none !important; }
+.hide-mobile { display: block !important; }
+
+@media (max-width: 767px) {
+  .show-mobile { display: block !important; }
+  .hide-mobile { display: none !important; }
+  .show-mobile-flex { display: flex !important; }
+  .show-mobile-inline { display: inline !important; }
+}
+
+.show-tablet { display: none !important; }
+@media (min-width: 768px) and (max-width: 1023px) {
+  .show-tablet { display: block !important; }
+}
+
+.show-desktop { display: none !important; }
+@media (min-width: 1024px) {
+  .show-desktop { display: block !important; }
+  .hide-desktop { display: none !important; }
+}
+
+/* Responsive text alignment */
+.text-center-mobile {
+  @media (max-width: 767px) {
+    text-align: center !important;
+  }
+}
+
+/* Responsive flex direction */
+.flex-col-mobile {
+  @media (max-width: 767px) {
+    flex-direction: column !important;
+  }
+}
+
+/* Full width on mobile */
+.full-width-mobile {
+  @media (max-width: 767px) {
+    width: 100% !important;
+  }
+}
+
+
+/* ========================================================================
+   ANGULAR COMPONENT HEIGHT OPTIMIZATIONS
+   ======================================================================== */
+
+/* Topbar and breadcrumb geometry live in main-layout and breadcrumb component styles. */
+app-breadcrumb,
+app-main-layout {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ========================================================================
+   SORTABLE TABLE HEADERS
+   ======================================================================== */
+
+/* Sortable column styles */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 2rem !important;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(102, 126, 234, 0.08);
+  }
+
+  .sort-icon {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+    
+    &::before {
+      content: '⇅';
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+  }
+
+  &.asc .sort-icon::before {
+    content: '▲';
+    opacity: 1;
+    color: var(--primary-color);
+  }
+
+  &.desc .sort-icon::before {
+    content: '▼';
+    opacity: 1;
+    color: var(--primary-color);
+  }
+
+  &:hover .sort-icon {
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  th.sortable {
+    padding-right: 1.5rem !important;
+    
+    .sort-icon {
+      right: 0.375rem;
+      width: 14px;
+      height: 14px;
+      
+      &::before {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+/* Compact page headers — wins over .cf-hero h1/h3 / token scaling */
+app-page-header .cf-page-header.cf-hero .cf-page-header__title,
+.cf-page-header.cf-hero .cf-page-header__title,
+.cf-page-header__title-row > h1,
+.cf-hero h1,
+.cf-page-title {
+  font-size: var(--cf-text-page-title) !important;
+  line-height: var(--cf-leading-page-title, 1.25);
+}
+

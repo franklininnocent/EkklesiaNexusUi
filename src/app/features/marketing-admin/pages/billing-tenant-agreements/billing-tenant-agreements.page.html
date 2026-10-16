@@ -1,0 +1,106 @@
+<section class="cf-page billing-workspace">
+  <app-page-header
+    title="Tenant billing agreements"
+    subtitle="Installment and negotiated commercial terms"
+    backLink="/settings/billing"
+    backLabel="Billing &amp; payment controls" />
+  <app-billing-admin-nav />
+
+  <div class="billing-workspace__body">
+    <section class="cf-panel billing-workspace__toolbar">
+      <label>
+        Tenant ID
+        <input type="number" [(ngModel)]="filterTenantId" (keyup.enter)="reload()" />
+      </label>
+      <div class="billing-workspace__toolbar-actions">
+        <button type="button" class="cf-btn" (click)="reload()" [disabled]="loading()">Refresh</button>
+        <button type="button" class="cf-btn cf-btn-primary" (click)="openCreate()">New agreement</button>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <p class="cf-panel" role="status">Loading…</p>
+    } @else {
+      <section class="cf-panel">
+        <div class="billing-workspace__table-wrap">
+          <table class="cf-table" *ngIf="rows.length">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>Amount</th>
+                <th>Interval</th>
+                <th>Partial entitlement</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of rows">
+                <td>{{ row['tenant_name'] || row['tenant_id'] }}</td>
+                <td>{{ row['amount'] }} {{ row['currency_code'] }}</td>
+                <td>{{ row['billing_interval'] }}</td>
+                <td>{{ row['entitlement_on_partial'] }}</td>
+                <td>
+                  <button type="button" class="cf-btn cf-btn-sm" (click)="openRevoke(row)">Revoke</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="!rows.length" class="cf-muted">No active agreements.</p>
+      </section>
+    }
+  </div>
+</section>
+
+<app-modal-shell *ngIf="createOpen" title="New billing agreement" size="lg" [isSubmitting]="saving()" (closeRequested)="closeCreate()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-agreement-create" (ngSubmit)="submitCreate()">
+    <app-billing-tenant-picker (tenantChange)="onTenantPicked($event)" />
+    <label>
+      Plan code
+      <input type="text" [(ngModel)]="planCode" name="planCode" />
+    </label>
+    <label>
+      Interval
+      <select [(ngModel)]="billingInterval" name="billingInterval">
+        <option value="MONTHLY">Monthly</option>
+        <option value="ANNUAL">Annual</option>
+      </select>
+    </label>
+    <label>
+      Amount <span class="cf-required">*</span>
+      <input type="text" [(ngModel)]="amount" name="amount" required />
+    </label>
+    <label>
+      Currency
+      <input type="text" [(ngModel)]="currencyCode" name="currencyCode" maxlength="3" />
+    </label>
+    <label class="full-width">
+      Entitlement on partial payment
+      <select [(ngModel)]="entitlementOnPartial" name="entitlementOnPartial">
+        <option value="when_fully_paid">When fully paid</option>
+        <option value="on_first_confirmed_receipt">On first confirmed receipt</option>
+      </select>
+    </label>
+    <label class="full-width">
+      Reason <span class="cf-required">*</span>
+      <textarea rows="3" [(ngModel)]="reason" name="reason" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeCreate()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-agreement-create" class="cf-btn cf-btn-primary" [disabled]="saving()">Create</button>
+  </ng-container>
+</app-modal-shell>
+
+<app-modal-shell *ngIf="revokeRow" title="Revoke agreement" size="sm" [isSubmitting]="saving()" (closeRequested)="closeRevoke()">
+  <form class="cf-form-grid billing-workspace__modal-form" id="billing-agreement-revoke" (ngSubmit)="confirmRevoke()">
+    <label class="full-width">
+      Reason <span class="cf-required">*</span>
+      <textarea rows="3" [(ngModel)]="revokeReason" name="revokeReason" required></textarea>
+    </label>
+  </form>
+  <ng-container modalFooter>
+    <button type="button" class="cf-btn" (click)="closeRevoke()" [disabled]="saving()">Cancel</button>
+    <button type="submit" form="billing-agreement-revoke" class="cf-btn cf-btn-primary" [disabled]="saving()">Revoke</button>
+  </ng-container>
+</app-modal-shell>

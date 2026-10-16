@@ -1,0 +1,121 @@
+.family-list__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.family-list__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cf-space-1);
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.family-list__chip-remove {
+  margin-left: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.1rem;
+}
+
+.family-list__code-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cf-space-2);
+}
+
+.family-list__code {
+  color: var(--cf-primary);
+}
+
+/* Panel container matching Add organization / Members / BCC list `.cf-panel` content block. */
+.family-list__panel {
+  display: grid;
+  gap: var(--cf-space-3);
+}
+
+.family-list__head {
+  display: flex;
+  align-items: center;
+  gap: var(--cf-space-2);
+  min-width: 0;
+}
+
+.family-list__head-info {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+
+  strong {
+    font-size: var(--cf-text-sm);
+    color: var(--cf-slate-900);
+  }
+}
+
+.family-list__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--cf-radius-pill);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.family-list__avatar-trigger {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: transparent;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cf-brand, #175cd3);
+    outline-offset: 2px;
+  }
+}
+
+.family-list__avatar--initials {
+  display: grid;
+  place-items: center;
+  font-size: var(--cf-text-xs);
+  font-weight: 700;
+  color: #fff;
+  background: var(--cf-primary);
+}
+
+.family-list__avatar--initials.avatar-color-1 { background: #2563eb; }
+.family-list__avatar--initials.avatar-color-2 { background: #059669; }
+.family-list__avatar--initials.avatar-color-3 { background: #d97706; }
+.family-list__avatar--initials.avatar-color-4 { background: #7c3aed; }
+.family-list__avatar--initials.avatar-color-5 { background: #db2777; }
+.family-list__avatar--initials.avatar-color-6 { background: #0891b2; }
+.family-list__avatar--initials.avatar-color-7 { background: #ea580c; }
+.family-list__avatar--initials.avatar-color-8 { background: #4f46e5; }
+
+.family-list__contact {
+  display: grid;
+  gap: 0.15rem;
+  font-size: var(--cf-text-sm);
+}
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}

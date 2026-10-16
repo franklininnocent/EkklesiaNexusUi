@@ -1,0 +1,203 @@
+<section class="sacrament-detail-container cf-page">
+  <app-page-header
+    class="no-print"
+    [title]="certificateTypeBadge()"
+    [subtitle]="detailSubtitle()"
+    [backLink]="['/sacraments/register']"
+    backLabel="Back to register"
+  >
+    <ng-container *ngIf="supportsOfficialCertificate()">
+      <button
+        type="button"
+        class="cf-btn cf-btn-primary"
+        [disabled]="certificateBusy"
+        (click)="onPreviewCertificate()"
+      >
+        Preview
+      </button>
+      <button
+        type="button"
+        class="cf-btn cf-btn-primary"
+        [disabled]="certificateBusy"
+        (click)="onDownloadCertificate()"
+      >
+        Download
+      </button>
+    </ng-container>
+  </app-page-header>
+
+  <app-cf-loading-container *ngIf="loading" label="Loading sacrament details…" />
+
+  <div *ngIf="!loading && sacrament" class="detail-content">
+    <div
+      *ngIf="certificateDataIncomplete() as incompleteMessage"
+      class="certificate-warning no-print"
+      role="status"
+    >
+      {{ incompleteMessage }}
+    </div>
+
+    <div
+      id="certificate-preview"
+      class="certificate-engine"
+      *ngIf="certView as cert"
+      [class.cert-paper-letter]="paper === 'LETTER'"
+    >
+      <p class="certificate-engine__version no-print" *ngIf="previewVersionLabel">{{ previewVersionLabel }}</p>
+      <app-sacramental-certificate [data]="cert" [paper]="paper" />
+    </div>
+
+    <div
+      class="certificate-bottom-grid no-print"
+      *ngIf="supportsOfficialCertificate() || isReconciliationRecord()"
+    >
+      <section class="detail-section register-notes" aria-labelledby="register-notes-title">
+        <h3 id="register-notes-title" class="section-title">Parish Register Notes &amp; Sacramental Remarks</h3>
+        <p class="register-notes__hint">
+          Register metadata stays in the parish register. It is not printed on the public certificate.
+        </p>
+
+        <div class="register-metadata-card">
+          <dl class="register-metadata-grid">
+            <div>
+              <dt>Book No.</dt>
+              <dd>{{ displayValue(sacrament.book_number) }}</dd>
+            </div>
+            <div>
+              <dt>Page No.</dt>
+              <dd>{{ displayValue(sacrament.page_number) }}</dd>
+            </div>
+            <div>
+              <dt>Entry No.</dt>
+              <dd>{{ displayValue(sacrament.registry_entry) }}</dd>
+            </div>
+            <div>
+              <dt>Date administered</dt>
+              <dd>{{ formatDate(sacrament.date_administered) || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Officiant</dt>
+              <dd>{{ displayValue(sacrament.minister_name) }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="register-notes-card">
+          <h4 class="register-notes-card__title">Authorized parish notes</h4>
+          <p class="register-notes-card__body" *ngIf="sacrament.notes; else noParishNotes">{{ sacrament.notes }}</p>
+          <ng-template #noParishNotes>
+            <p class="register-notes__empty">No parish notes recorded.</p>
+          </ng-template>
+        </div>
+
+        <div class="register-notes__type-specific" *ngIf="isMarriage()">
+          <p class="register-notes__classification" *ngIf="marriageClassificationLabel()">
+            Classification: {{ marriageClassificationLabel() }}
+          </p>
+          <ul class="register-notes__list" *ngIf="registerNotes().length; else noRegisterNotes">
+            <li *ngFor="let note of registerNotes()">
+              <div class="register-notes__item">
+                <strong>{{ note.annotation_type_label || note.annotation_type }}</strong>
+                <span *ngIf="note.effective_date"> · {{ formatDate(note.effective_date) }}</span>
+                <span *ngIf="note.granting_authority"> · {{ note.granting_authority }}</span>
+                <span *ngIf="note.protocol_number"> · {{ note.protocol_number }}</span>
+                <p *ngIf="note.notes">{{ note.notes }}</p>
+              </div>
+              <button
+                type="button"
+                class="cf-btn"
+                [disabled]="annotationBusy"
+                (click)="removeRegisterNote(note.id)"
+              >
+                Remove
+              </button>
+            </li>
+          </ul>
+          <ng-template #noRegisterNotes>
+            <p class="register-notes__empty">No later notes on this marriage yet.</p>
+          </ng-template>
+          <form class="register-notes__form" (ngSubmit)="addRegisterNote()">
+            <label>
+              Note type
+              <select name="annotation_type" [(ngModel)]="annotationDraft.annotation_type" required>
+                <option value="">Select…</option>
+                <option *ngFor="let option of annotationTypeOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+            <label>
+              Date
+              <input type="date" name="annotation_effective_date" [(ngModel)]="annotationDraft.effective_date" />
+            </label>
+            <label>
+              Authority
+              <input type="text" name="annotation_authority" [(ngModel)]="annotationDraft.granting_authority" />
+            </label>
+            <label>
+              Protocol number
+              <input type="text" name="annotation_protocol" [(ngModel)]="annotationDraft.protocol_number" />
+            </label>
+            <label class="register-notes__notes">
+              Details
+              <textarea name="annotation_notes" rows="2" [(ngModel)]="annotationDraft.notes"></textarea>
+            </label>
+            <button
+              type="submit"
+              class="cf-btn cf-btn-primary"
+              [disabled]="annotationBusy || !annotationDraft.annotation_type"
+            >
+              Add note
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section
+        *ngIf="canViewDownloadHistory && supportsOfficialCertificate()"
+        class="detail-section download-history"
+        aria-labelledby="download-history-title"
+      >
+        <h3 id="download-history-title" class="section-title">Download History Audit Log</h3>
+        <div class="download-history__table-wrap" *ngIf="downloadHistory.length; else noDownloadHistory">
+          <table class="download-history__table">
+            <thead>
+              <tr>
+                <th scope="col">Date &amp; time</th>
+                <th scope="col">Downloaded by</th>
+                <th scope="col">Version</th>
+                <th scope="col">Device</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of downloadHistory">
+                <td class="download-history__time">{{ formatDateTime(item.downloaded_at) }}</td>
+                <td>
+                  <span class="download-history__user">{{ item.user_name || '—' }}</span>
+                  <span class="download-history__role" *ngIf="item.role">{{ item.role }}</span>
+                </td>
+                <td>
+                  <span class="download-history__version">{{ formatHistoryVersion(item) }}</span>
+                </td>
+                <td>
+                  <span class="download-history__badge" *ngIf="item.ip_address">{{ item.ip_address }}</span>
+                  <span class="download-history__badge download-history__badge--muted" *ngIf="item.device_snapshot">
+                    {{ item.device_snapshot }}
+                  </span>
+                  <span *ngIf="!item.ip_address && !item.device_snapshot">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noDownloadHistory>
+          <app-cf-empty-state
+            title="No download history recorded"
+            description="Downloads of this certificate will appear here."
+            [hasActions]="false"
+          />
+        </ng-template>
+      </section>
+    </div>
+  </div>
+</section>

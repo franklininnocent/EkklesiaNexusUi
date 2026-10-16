@@ -1,0 +1,303 @@
+<section class="subscription-management">
+  <div class="sub-mgmt-toolbar">
+    <div class="cf-nav-cluster">
+      <app-tab-strip
+        ariaLabel="Access and renewal settings"
+        [tabs]="tabStripItems"
+        [activeId]="activeTab"
+        (tabChange)="onTabChange($event)">
+      </app-tab-strip>
+    </div>
+    <button
+      *ngIf="activeTab === 'duration'"
+      class="cf-btn cf-btn-primary"
+      (click)="openAddModal()"
+      type="button"
+      [disabled]="durationsLoading">
+      Add duration
+    </button>
+  </div>
+
+  <!-- Access Settings -->
+  <div
+    *ngIf="activeTab === 'settings'"
+    class="sub-mgmt-panel"
+    role="tabpanel"
+    id="sub-mgmt-panel-settings"
+    aria-labelledby="sub-mgmt-tab-settings">
+
+    <div *ngIf="settingsLoading && !settingsLoaded" class="cf-loading-block cf-panel" role="status" aria-live="polite" aria-busy="true">
+      <app-loading-skeleton label="Loading access settings…" type="card" [rows]="4"></app-loading-skeleton>
+    </div>
+
+    <div *ngIf="settingsError && !settingsLoading" class="cf-inline-alert cf-panel" role="alert">
+      <div>
+        <strong>Could not load access settings</strong>
+        <p>{{ settingsError }}</p>
+      </div>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="loadSettings()">Try again</button>
+    </div>
+
+    <article class="cf-panel sub-mgmt-settings" *ngIf="settingsLoaded">
+      <header class="sub-mgmt-settings__header">
+        <h2>Subscription access windows</h2>
+        <p>
+          These platform settings apply to every church. Grace days continue access after a subscription ends.
+          After grace, included features that require a current subscription are blocked.
+        </p>
+      </header>
+
+      <div class="sub-mgmt-settings__grid">
+        <div class="sub-mgmt-field">
+          <label for="grace-period-days">Grace period (days) <span class="required" aria-hidden="true">*</span></label>
+          <input
+            id="grace-period-days"
+            type="number"
+            min="0"
+            max="365"
+            [(ngModel)]="settingsForm.grace_period_days"
+            name="grace_period_days"
+            [disabled]="settingsSaving"
+            aria-required="true"
+          />
+          <small>Days after the end date when churches keep access with a warning. Use 0 for no grace.</small>
+        </div>
+        <div class="sub-mgmt-field">
+          <label for="view-only-allowance-days">Default view-only allowance (days) <span class="required" aria-hidden="true">*</span></label>
+          <input
+            id="view-only-allowance-days"
+            type="number"
+            min="0"
+            max="365"
+            [(ngModel)]="settingsForm.view_only_allowance_days"
+            name="view_only_allowance_days"
+            [disabled]="settingsSaving"
+            aria-required="true"
+          />
+          <small>Days after grace when churches may still view records (0 = lock immediately after grace).</small>
+        </div>
+        <div class="sub-mgmt-field">
+          <label for="expiring-warning-days">Expiring warning (days) <span class="required" aria-hidden="true">*</span></label>
+          <input
+            id="expiring-warning-days"
+            type="number"
+            min="0"
+            max="365"
+            [(ngModel)]="settingsForm.expiring_warning_days"
+            name="expiring_warning_days"
+            [disabled]="settingsSaving"
+            aria-required="true"
+          />
+          <small>Days before the end date when status becomes “Expiring soon” and a warning is shown.</small>
+        </div>
+      </div>
+
+      <div class="sub-mgmt-settings__actions">
+        <button
+          type="button"
+          class="cf-btn cf-btn-primary"
+          [disabled]="settingsSaving || settingsLoading"
+          (click)="saveSettings()">
+          {{ settingsSaving ? 'Saving…' : 'Save access settings' }}
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- Church access overrides -->
+  <div
+    *ngIf="activeTab === 'churches'"
+    class="sub-mgmt-panel"
+    role="tabpanel"
+    id="sub-mgmt-panel-churches"
+    aria-labelledby="sub-mgmt-tab-churches">
+
+    <article class="cf-panel sub-mgmt-settings">
+      <header class="sub-mgmt-settings__header">
+        <h2>Per-church grace &amp; view-only overrides</h2>
+        <p>Enter a church tenant ID to preview effective dates and set overrides. Leave blank fields empty on reset to inherit global settings.</p>
+      </header>
+      <div class="sub-mgmt-settings__grid">
+        <div class="sub-mgmt-field">
+          <label for="church-search">Search church</label>
+          <ng-select
+            id="church-search"
+            [items]="churchSearchOptions"
+            bindLabel="name"
+            [loading]="churchSearchLoading"
+            [typeahead]="churchSearch$"
+            placeholder="Type church name…"
+            [(ngModel)]="selectedChurch"
+            (ngModelChange)="onChurchSelected($event)"
+            name="church_search">
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.name }} <span class="cf-muted">(#{{ item.id }})</span>
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="sub-mgmt-field">
+          <label for="church-tenant-id">Or tenant ID</label>
+          <input id="church-tenant-id" type="number" min="1" [(ngModel)]="churchTenantIdInput" name="church_tenant_id" />
+        </div>
+        <div class="sub-mgmt-settings__actions" style="align-self: end">
+          <button type="button" class="cf-btn cf-btn-primary" (click)="loadChurchPolicy()">Load policy</button>
+        </div>
+      </div>
+      <app-tenant-subscription-access-policy-editor *ngIf="churchTenantId" [tenantId]="churchTenantId"></app-tenant-subscription-access-policy-editor>
+    </article>
+  </div>
+
+  <!-- Duration Options -->
+  <div
+    *ngIf="activeTab === 'duration'"
+    class="sub-mgmt-panel"
+    role="tabpanel"
+    id="sub-mgmt-panel-duration"
+    aria-labelledby="sub-mgmt-tab-duration">
+
+    <div *ngIf="durationsLoading && durationOptions.length === 0" class="cf-loading-block cf-panel" role="status" aria-live="polite" aria-busy="true">
+      <app-loading-skeleton label="Loading duration options…" type="table" [rows]="4" [columns]="5"></app-loading-skeleton>
+    </div>
+
+    <div *ngIf="durationsError && !durationsLoading" class="cf-inline-alert cf-panel" role="alert">
+      <div>
+        <strong>Could not load duration options</strong>
+        <p>{{ durationsError }}</p>
+      </div>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="loadDurationOptions()">Try again</button>
+    </div>
+
+    <ng-container *ngIf="!durationsError && !(durationsLoading && durationOptions.length === 0)">
+      <app-cf-empty-state
+        *ngIf="durationOptions.length === 0"
+        title="No duration options yet"
+        description="Duration options appear when renewing or upgrading a church subscription."
+        icon="◷"
+        [hasActions]="true">
+        <button type="button" class="cf-btn cf-btn-primary" (click)="openAddModal()">Add duration</button>
+      </app-cf-empty-state>
+
+      <app-data-table *ngIf="durationOptions.length > 0" [ariaBusy]="durationsLoading || saving">
+        <caption class="sr-only">Subscription duration options</caption>
+        <thead>
+          <tr>
+            <th scope="col">Months</th>
+            <th scope="col">Label</th>
+            <th scope="col">Display order</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="cf-table__actions-col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let option of durationOptions"
+            [class.sub-mgmt-row--inactive]="!option.active">
+            <td>{{ option.months }}</td>
+            <td><strong>{{ option.label }}</strong></td>
+            <td>{{ option.display_order }}</td>
+            <td>
+              <app-status-badge
+                [label]="option.active ? 'Active' : 'Inactive'"
+                [tone]="option.active ? 'success' : 'neutral'">
+              </app-status-badge>
+            </td>
+            <td class="cf-table__actions-cell">
+              <app-action-bar
+                [actions]="durationRowActions()"
+                size="sm"
+                (actionClicked)="onDurationRowAction($event, option)">
+              </app-action-bar>
+            </td>
+          </tr>
+        </tbody>
+      </app-data-table>
+    </ng-container>
+  </div>
+</section>
+
+<!-- Add Duration Modal -->
+<app-modal-shell
+  *ngIf="showAddModal"
+  title="Add duration option"
+  size="sm"
+  [isSubmitting]="saving"
+  (closeRequested)="closeAddModal()">
+  <div class="sub-mgmt-modal-form">
+    <div class="sub-mgmt-field">
+      <label for="add-months">Months <span class="required" aria-hidden="true">*</span></label>
+      <input id="add-months" type="number" [(ngModel)]="formData.months" min="1" max="120" [disabled]="saving" required aria-required="true">
+    </div>
+    <div class="sub-mgmt-field">
+      <label for="add-label">Label <span class="required" aria-hidden="true">*</span></label>
+      <input id="add-label" type="text" [(ngModel)]="formData.label" placeholder="e.g., 1 Month, 1 Year" [disabled]="saving" required aria-required="true">
+    </div>
+    <div class="sub-mgmt-field">
+      <label for="add-display-order">Display order</label>
+      <input id="add-display-order" type="number" [(ngModel)]="formData.display_order" min="0" [disabled]="saving">
+    </div>
+    <label class="cf-switch-field">
+      <input type="checkbox" [(ngModel)]="formData.active" [disabled]="saving">
+      <span class="cf-switch-field__copy">
+        <span class="cf-switch-field__label">Active</span>
+      </span>
+    </label>
+  </div>
+  <ng-container modalFooter>
+    <button class="cf-btn" (click)="closeAddModal()" type="button" [disabled]="saving">Cancel</button>
+    <button class="cf-btn cf-btn-primary" (click)="createDurationOption()" [disabled]="saving" type="button">
+      {{ saving ? 'Creating…' : 'Create' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
+
+<!-- Edit Duration Modal -->
+<app-modal-shell
+  *ngIf="showEditModal"
+  title="Edit duration option"
+  size="sm"
+  [isSubmitting]="saving"
+  (closeRequested)="closeEditModal()">
+  <div class="sub-mgmt-modal-form">
+    <div class="sub-mgmt-field">
+      <label for="edit-months">Months <span class="required" aria-hidden="true">*</span></label>
+      <input id="edit-months" type="number" [(ngModel)]="formData.months" min="1" max="120" [disabled]="saving" required aria-required="true">
+    </div>
+    <div class="sub-mgmt-field">
+      <label for="edit-label">Label <span class="required" aria-hidden="true">*</span></label>
+      <input id="edit-label" type="text" [(ngModel)]="formData.label" [disabled]="saving" required aria-required="true">
+    </div>
+    <div class="sub-mgmt-field">
+      <label for="edit-display-order">Display order</label>
+      <input id="edit-display-order" type="number" [(ngModel)]="formData.display_order" min="0" [disabled]="saving">
+    </div>
+    <label class="cf-switch-field">
+      <input type="checkbox" [(ngModel)]="formData.active" [disabled]="saving">
+      <span class="cf-switch-field__copy">
+        <span class="cf-switch-field__label">Active</span>
+      </span>
+    </label>
+  </div>
+  <ng-container modalFooter>
+    <button class="cf-btn" (click)="closeEditModal()" type="button" [disabled]="saving">Cancel</button>
+    <button class="cf-btn cf-btn-primary" (click)="updateDurationOption()" [disabled]="saving" type="button">
+      {{ saving ? 'Updating…' : 'Update' }}
+    </button>
+  </ng-container>
+</app-modal-shell>
+
+<!-- Delete Duration Modal -->
+<app-modal-shell
+  *ngIf="showDeleteModal"
+  title="Delete duration option"
+  size="sm"
+  [isSubmitting]="saving"
+  (closeRequested)="closeDeleteModal()">
+  <p>Are you sure you want to delete <strong>{{ deletingOption?.label }}</strong>?</p>
+  <p class="sub-mgmt-warning">This cannot be undone.</p>
+  <ng-container modalFooter>
+    <button class="cf-btn" (click)="closeDeleteModal()" type="button" [disabled]="saving">Cancel</button>
+    <button class="cf-btn cf-btn-danger" (click)="deleteDurationOption()" [disabled]="saving" type="button">
+      {{ saving ? 'Deleting…' : 'Delete' }}
+    </button>
+  </ng-container>
+</app-modal-shell>

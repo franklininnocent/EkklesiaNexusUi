@@ -1,0 +1,204 @@
+<section class="bcc-list cf-page">
+  <app-page-header
+    title="BCC list"
+    subtitle="Search and manage Basic Christian Communities"
+  >
+    <app-list-toolbar
+      searchPlaceholder="Search name or code…"
+      [searchValue]="searchTerm"
+      [filterCount]="getActiveFilterCount()"
+      (searchChange)="onListSearchChange($event)"
+      (filtersOpened)="showAdvancedSearch = true"
+    >
+      <button
+        type="button"
+        class="cf-btn cf-btn-primary"
+        cfDisableWhenReadOnly
+        (click)="createBCC()"
+        aria-label="Create new BCC"
+      >
+        Add BCC
+      </button>
+    </app-list-toolbar>
+  </app-page-header>
+
+  <app-bcc-sub-nav></app-bcc-sub-nav>
+
+  <div
+    class="bcc-list__chips"
+    *ngIf="getActiveFilters().length > 0"
+    role="region"
+    aria-label="Active filters"
+  >
+    <span class="cf-meta">Active filters</span>
+    <div class="bcc-list__chip-list">
+      <span class="cf-badge cf-badge--info" *ngFor="let filter of getActiveFilters()">
+        {{ filter.label }}: {{ filter.displayValue }}
+        <button
+          type="button"
+          class="bcc-list__chip-remove"
+          (click)="removeFilter(filter)"
+          [attr.aria-label]="'Remove filter: ' + filter.label"
+        >
+          ×
+        </button>
+      </span>
+    </div>
+    <button type="button" class="cf-btn cf-btn--sm" (click)="clearAllFilters()">
+      Clear all
+    </button>
+  </div>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading && !loaded"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+  >
+    <app-loading-skeleton label="Loading BCCs…" type="table" [rows]="5" [columns]="8"></app-loading-skeleton>
+  </div>
+
+  <div *ngIf="error && !loading" class="cf-inline-alert cf-panel" role="alert">
+    <p>{{ error }}</p>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="loadBCCs()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="loaded && !error">
+    <div class="cf-panel bcc-list__panel" *ngIf="bccs.length">
+      <app-data-table [clickableRows]="true">
+        <thead>
+          <tr>
+            <th scope="col" class="sortable" (click)="sortBy('bcc_code')">
+              BCC Code {{ getSortIcon('bcc_code') }}
+            </th>
+            <th scope="col" class="sortable" (click)="sortBy('name')">
+              BCC Name {{ getSortIcon('name') }}
+            </th>
+            <th scope="col">Families</th>
+            <th scope="col">Leaders</th>
+            <th scope="col">Meeting Day</th>
+            <th scope="col">Status</th>
+            <th
+              *ngIf="isTenantAdmin"
+              scope="col"
+              class="cf-table__actions-col"
+            >
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let bcc of bccs"
+            tabindex="0"
+            (click)="viewBCC(bcc)"
+            (keydown.enter)="viewBCC(bcc)"
+          >
+            <td>
+              <div class="bcc-list__code-cell">
+                <strong class="bcc-list__code">{{ bcc.bcc_code }}</strong>
+                <app-status-badge
+                  *ngIf="bcc.status === 'inactive'"
+                  label="Inactive"
+                  tone="neutral"
+                ></app-status-badge>
+              </div>
+            </td>
+            <td><strong>{{ bcc.name }}</strong></td>
+            <td>{{ bcc.current_family_count || 0 }}</td>
+            <td>{{ bcc.leaders?.length || 0 }}</td>
+            <td>
+              <span *ngIf="bcc.meeting_day">{{ bcc.meeting_day | titlecase }}</span>
+              <span *ngIf="!bcc.meeting_day" class="cf-meta">Not set</span>
+            </td>
+            <td>
+              <app-status-badge [label]="bcc.status | titlecase" [tone]="statusTone(bcc.status)"></app-status-badge>
+            </td>
+            <td
+              *ngIf="isTenantAdmin"
+              class="cf-table__actions-cell"
+              (click)="$event.stopPropagation()"
+              (keydown)="$event.stopPropagation()"
+            >
+              <div class="cf-row-actions">
+                <button
+                  type="button"
+                  class="cf-btn cf-btn-icon cf-btn--sm cf-btn-danger"
+                  (click)="deleteBCC(bcc)"
+                  [attr.aria-label]="'Delete ' + bcc.name"
+                  [attr.title]="'Delete ' + bcc.name"
+                >
+                  <app-cf-action-icon name="trash" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </app-data-table>
+
+      <app-pagination
+        [currentPage]="currentPage"
+        [pageSize]="perPage"
+        [totalItems]="totalRecords"
+        [pageSizeOptions]="perPageOptions"
+        [showPageSizeSelector]="true"
+        [showPageInfo]="true"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+
+    <app-cf-empty-state
+      *ngIf="!loading && !bccs.length"
+      icon="◇"
+      [title]="hasActiveFiltersOrSearch ? 'No BCCs match your filters' : 'No BCCs yet'"
+      [description]="
+        hasActiveFiltersOrSearch
+          ? 'Try clearing search or filters.'
+          : 'No BCCs found. Create your first BCC to start managing members.'
+      "
+    >
+      <button
+        *ngIf="!hasActiveFiltersOrSearch"
+        type="button"
+        class="cf-btn cf-btn-primary"
+        (click)="createBCC()"
+      >
+        Add BCC
+      </button>
+      <button
+        *ngIf="hasActiveFiltersOrSearch"
+        type="button"
+        class="cf-btn"
+        (click)="clearAllFilters()"
+      >
+        Clear filters
+      </button>
+    </app-cf-empty-state>
+  </ng-container>
+
+  <app-bcc-form
+    *ngIf="showForm"
+    [bcc]="selectedBCC"
+    (save)="onFormSave($event)"
+    (cancel)="onFormCancel()"
+  ></app-bcc-form>
+
+  <app-advanced-search-panel
+    mode="sidepanel"
+    [fields]="searchFields"
+    [isExpanded]="showAdvancedSearch"
+    (search)="onAdvancedSearch($event)"
+    (clear)="onClearAdvancedSearch()"
+    (close)="showAdvancedSearch = false"
+  ></app-advanced-search-panel>
+
+  <app-bcc-detail-modal
+    *ngIf="showDetailModal"
+    [bcc]="detailBCC"
+    [loading]="loadingDetail"
+    (close)="closeDetailModal()"
+    (edit)="onDetailEdit($event)"
+  ></app-bcc-detail-modal>
+</section>

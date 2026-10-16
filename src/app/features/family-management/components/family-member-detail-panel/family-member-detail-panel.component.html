@@ -1,0 +1,44 @@
+<div class="member-workspace">
+  <div class="workspace-empty" *ngIf="selectedMemberIndex === null && !showHeadWithoutMember">
+    <div class="workspace-empty__glyph" aria-hidden="true"></div>
+    <h2 class="workspace-empty__title">Member profile workspace</h2>
+    <p class="workspace-empty__text">Choose a member in the family navigator to review their details, sacraments, and assignments.</p>
+  </div>
+
+  <section class="head-empty-card" aria-label="Family head" *ngIf="showHeadWithoutMember && !selectedMember">
+    <header class="head-empty-card__banner">
+      <h2 class="head-empty-card__title">Family Head</h2>
+      <button type="button" class="cf-btn cf-btn-primary" (click)="addHead.emit()">Add family head</button>
+    </header>
+    <div class="head-empty-card__body">
+      <p class="head-empty-card__message">No family head member is linked to this family yet.</p>
+      <p class="head-empty-card__hint">Add a member and mark them as the family head.</p>
+    </div>
+  </section>
+
+  <ng-container *ngIf="selectedMember as m">
+    <app-family-head-profile-block
+      [member]="m"
+      [relationshipEyebrow]="getProfileEyebrow(m)"
+      [isFamilyHead]="isHeadSelected"
+      [avatarImageUrl]="avatarUrl"
+      [sacramentTypesDisplay]="sacramentTypesDisplay"
+      [sacramentsExpanded]="sacramentsExpandedForSelected"
+      [editingHeadImage]="editingHeadImage"
+      [memberRegisterSacraments]="memberRegisterSacraments"
+      [canViewRegisterSacraments]="canViewRegisterSacraments"
+      (editProfile)="onEditClick()"
+      (toggleSacraments)="toggleSacramentsSection()"
+      (toggleHeadImageEdit)="toggleHeadImageEdit.emit()"
+      (headProfileImageSelected)="headProfileImageSelected.emit($event)"
+      (deleteHeadProfileImage)="deleteHeadProfileImage.emit()"
+      (editSacrament)="onSacramentEdit($event)"
+      (linkedParentSelected)="linkedParentSelected.emit($event)"
+    />
+
+    <app-family-affiliations-panel
+      *ngIf="m.id"
+      [familyMemberId]="m.id"
+    ></app-family-affiliations-panel>
+  </ng-container>
+</div>

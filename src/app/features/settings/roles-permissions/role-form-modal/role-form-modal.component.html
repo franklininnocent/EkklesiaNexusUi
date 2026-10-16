@@ -1,0 +1,193 @@
+<app-modal-shell
+  *ngIf="show"
+  [title]="isEditMode ? 'Edit Role' : 'Create New Role'"
+  [description]="isEditMode ? 'Update role details and permissions' : 'Define a new custom role for your tenant'"
+  size="full"
+  headerVariant="compact"
+  bodyPadding="none"
+  [closeAriaLabel]="isEditMode ? 'Close edit role' : 'Close create role'"
+  [isSubmitting]="isSubmitting"
+  (closeRequested)="close()"
+>
+  <form
+    id="role-form"
+    class="cf-split-form-body role-form"
+    [formGroup]="roleForm"
+    (ngSubmit)="onSubmit()"
+    novalidate
+  >
+    <p class="cf-split-form-alert cf-split-form-alert--error" *ngIf="errorMessage" role="alert" aria-live="polite">
+      {{ errorMessage }}
+    </p>
+
+    <p class="cf-split-form-alert role-form-alert--warning" *ngIf="isRoleIdentityLocked()" role="note" aria-live="polite">
+      <strong>Protected role.</strong>
+      Role name and level are locked for the Administrator role in tenant mode.
+      You can update description and permissions only.
+    </p>
+
+    <section class="cf-split-section" aria-labelledby="role-section-details">
+      <h3 id="role-section-details" class="cf-split-section__title">Role details</h3>
+
+      <div class="role-form-identity">
+        <div class="cf-split-field">
+          <label for="roleName">
+            Role name <span class="cf-split-req" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="roleName"
+            type="text"
+            formControlName="name"
+            placeholder="e.g., Content Manager, Team Lead"
+            aria-required="true"
+            [class.cf-split-field__control--invalid]="hasError('name')"
+          />
+          <p class="cf-split-field__error" *ngIf="hasError('name')">{{ getErrorMessage('name') }}</p>
+          <p class="cf-split-field__hint">Letters, numbers, spaces, hyphens, and underscores</p>
+        </div>
+
+        <div class="cf-split-field">
+          <label for="roleLevel">
+            Role level <span class="cf-split-req" aria-hidden="true">*</span>
+            <span class="role-form-level-value">{{ level?.value }}</span>
+          </label>
+          <div class="role-form-level">
+            <input
+              id="roleLevel"
+              type="range"
+              class="role-form-level__range"
+              formControlName="level"
+              [min]="effectiveMinLevel"
+              [max]="maxLevel"
+              step="1"
+              aria-required="true"
+              [attr.aria-valuemin]="effectiveMinLevel"
+              [attr.aria-valuemax]="maxLevel"
+              [attr.aria-valuenow]="level?.value"
+            />
+            <div class="role-form-level__markers" aria-hidden="true">
+              <span
+                *ngFor="let i of levelMarkers"
+                class="role-form-level__marker"
+                [class.is-active]="level?.value === i"
+              >
+                {{ i }}
+              </span>
+            </div>
+          </div>
+          <p class="cf-split-field__hint">{{ getLevelDescription($safeNavigationMigration(level?.value)) }}</p>
+          <p class="cf-split-field__error" *ngIf="hasError('level')">{{ getErrorMessage('level') }}</p>
+        </div>
+      </div>
+
+      <div class="cf-split-field cf-split-field--full role-form-description">
+        <label for="roleDescription" class="role-form-description__label">
+          <span>
+            Description <span class="cf-split-optional">optional</span>
+          </span>
+          <span
+            class="cf-split-field__hint role-form-char-count"
+            [class.is-warning]="descriptionRemainingChars < 50"
+            [class.is-danger]="descriptionRemainingChars < 10"
+          >
+            {{ descriptionCharCount }} / {{ maxDescriptionLength }}
+          </span>
+        </label>
+        <textarea
+          id="roleDescription"
+          formControlName="description"
+          placeholder="Describe the role's purpose and responsibilities…"
+          rows="3"
+          [class.cf-split-field__control--invalid]="hasError('description')"
+        ></textarea>
+        <p class="cf-split-field__error" *ngIf="hasError('description')">
+          {{ getErrorMessage('description') }}
+        </p>
+      </div>
+    </section>
+
+    <section class="cf-split-section" aria-labelledby="role-section-permissions">
+      <button
+        type="button"
+        class="permissions-header"
+        (click)="togglePermissionsPanel()"
+        [attr.aria-expanded]="showPermissions"
+        aria-controls="role-permissions-panel"
+      >
+        <span id="role-section-permissions" class="cf-split-section__title">Assign permissions</span>
+        <span class="permissions-count" *ngIf="selectedPermissionsCount > 0">
+          {{ selectedPermissionsCount }} selected
+        </span>
+        <span class="permissions-header__chevron" [class.is-open]="showPermissions" aria-hidden="true"></span>
+      </button>
+
+      <div class="permissions-body" id="role-permissions-panel" *ngIf="showPermissions">
+        <div *ngIf="permissionCatalogAccessDenied" class="cf-split-form-alert role-form-alert--warning" role="status">
+          <strong>Permission catalog not available.</strong>
+          You can create or update this role, but your account cannot view assignable permissions.
+          Ask an administrator to grant access to view assignable permissions.
+        </div>
+
+        <div *ngIf="loadingPermissions && !permissionCatalogAccessDenied" class="permissions-status">
+          <app-cf-brand-loader size="inline" label="Loading permissions…" />
+        </div>
+
+        <div *ngIf="permissionsError && !loadingPermissions && !permissionCatalogAccessDenied" class="permissions-status permissions-status--error">
+          <p>{{ permissionsError }}</p>
+          <button type="button" class="cf-btn" (click)="loadPermissions()">Retry</button>
+        </div>
+
+        <div *ngIf="!loadingPermissions && !permissionsError && !permissionCatalogAccessDenied" class="permissions-list">
+          <app-role-permission-workspace
+            [modules]="modules"
+            [permissionsByModule]="permissionsByModule"
+            [selectedPermissionIds]="selectedPermissionIds"
+            [disabled]="isSubmitting"
+            [showSummary]="false"
+            (selectedPermissionIdsChange)="onWorkspaceSelectionChange($event)"
+          ></app-role-permission-workspace>
+        </div>
+      </div>
+    </section>
+
+    <p class="cf-split-form-alert role-form-tenant-note" *ngIf="!tenantMode">
+      <strong>Tenant-Specific Role.</strong>
+      This role will be created for your tenant only and can be customized to your organization's needs.
+      Select permissions above to define what this role can do.
+    </p>
+  </form>
+
+  <div modalFooter class="role-form-footer">
+    <div class="role-form-footer__summary" *ngIf="showPermissions && !permissionCatalogAccessDenied">
+      <span class="role-form-footer__pill">
+        Selected <strong>{{ selectedPermissionsCount }}</strong>
+      </span>
+      <span class="role-form-footer__pill">
+        Modules <strong>{{ selectedModulesCount }}</strong>
+      </span>
+      <span class="role-form-footer__pill role-form-footer__pill--risk" *ngIf="highRiskSelectedCount > 0">
+        High risk <strong>{{ highRiskSelectedCount }}</strong>
+      </span>
+    </div>
+    <div class="role-form-footer__actions">
+      <button
+        type="button"
+        class="cf-btn"
+        (click)="close()"
+        [disabled]="isSubmitting">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        form="role-form"
+        class="cf-btn cf-btn-primary"
+        [disabled]="roleForm.invalid || isSubmitting"
+        [attr.aria-busy]="isSubmitting"
+      >
+        <app-cf-busy-label [busy]="isSubmitting" busyLabel="Submitting">
+          {{ isEditMode ? 'Update Role' : 'Create Role' }}
+        </app-cf-busy-label>
+      </button>
+    </div>
+  </div>
+</app-modal-shell>

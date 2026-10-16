@@ -1,0 +1,51 @@
+.contact-enquiries__sort {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.contact-enquiries__pager,
+.contact-enquiries__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.contact-enquiries__detail {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.contact-enquiries__detail dt {
+  font-size: 0.8125rem;
+  color: var(--cf-muted, #64748b);
+}
+
+.contact-enquiries__detail dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.contact-enquiries__events {
+  margin: 1rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--cf-muted, #64748b);
+  font-size: 0.875rem;
+}
+
+.cf-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}

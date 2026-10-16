@@ -1,0 +1,367 @@
+<!-- Dashboard version 3.0 — Executive overview + Operations. Restore: ./v2.0/ -->
+<div class="church-dashboard" data-dashboard-version="3.0">
+  <!-- Page header (uses app shell for tenant + profile; no duplicate topbar) -->
+  <header class="cd-page-header">
+    <div class="cd-page-header__intro">
+      <h1 class="cd-page-title cf-page-title">Dashboard</h1>
+      <p class="cd-page-subtitle" *ngIf="currentUser$ | async as user">
+        {{ getGreeting() }}, <strong>{{ getUserFirstName(user.name) }}</strong>
+        <span class="cd-page-subtitle__sep">·</span>
+        <time [attr.datetime]="today | date:'yyyy-MM-dd'">{{ today | cfDate:'weekdayDate' }}</time>
+        <span *ngIf="operationsSummary?.persona as persona" class="cd-page-subtitle__persona">
+          · {{ persona.label }}
+        </span>
+      </p>
+      <p *ngIf="operationsSummary?.persona?.emphasis" class="cd-page-persona">{{ operationsSummary?.persona?.emphasis }}</p>
+    </div>
+  </header>
+
+  <!-- Platform registry only — parish snapshot lives on Overview (v3) -->
+  <section *ngIf="!tenantExecutiveMode" class="cd-registry" aria-label="Church registry summary">
+    <app-cf-brand-loader *ngIf="platformStatsState === 'loading'" size="inline" label="Loading church totals…" />
+    <div *ngIf="platformStatsState === 'error'" class="cd-registry__error" role="alert">
+      <p>Couldn’t load church totals.</p>
+      <button type="button" class="cd-link-btn" (click)="retryPlatformStatistics()">Try again</button>
+    </div>
+    <ng-container *ngIf="platformStatsState === 'ready' && platformStats as stats">
+      <button type="button" class="cd-registry__card" (click)="navigateTo('/tenants')">
+        <span class="cd-registry__label">Churches</span>
+        <span class="cd-registry__value">{{ stats.total_tenants | number }}</span>
+        <span class="cd-registry__hint">All churches · tenants</span>
+      </button>
+      <button type="button" class="cd-registry__card" (click)="navigateTo('/tenants')">
+        <span class="cd-registry__label">Active churches</span>
+        <span class="cd-registry__value">{{ stats.active_tenants | number }}</span>
+        <span class="cd-registry__hint">{{ stats.inactive_tenants | number }} inactive</span>
+      </button>
+      <button type="button" class="cd-registry__card" (click)="navigateTo('/tenants')">
+        <span class="cd-registry__label">In trial</span>
+        <span class="cd-registry__value">{{ stats.in_trial | number }}</span>
+        <span class="cd-registry__hint">{{ stats.subscribed | number }} subscribed</span>
+      </button>
+    </ng-container>
+    <app-cf-brand-loader *ngIf="registryState === 'loading'" size="inline" label="Loading parish counts…" />
+    <p *ngIf="registryState === 'idle' && platformStatsState === 'idle'" class="cd-registry__empty">
+      Parish counts appear when you open a church.
+      <button type="button" class="cd-link-btn" (click)="navigateTo('/tenants')">Go to Tenants</button>
+    </p>
+    <div *ngIf="registryState === 'error'" class="cd-registry__error" role="alert">
+      <p>Couldn’t load parish counts.</p>
+      <button type="button" class="cd-link-btn" (click)="retryRegistry()">Try again</button>
+    </div>
+    <ng-container *ngIf="registryState === 'ready'">
+      <button type="button" class="cd-registry__card" (click)="navigateTo('/families')">
+        <span class="cd-registry__label">Families</span>
+        <span class="cd-registry__value">{{ totalFamilies | number }}</span>
+        <span class="cd-registry__hint">All families · directory</span>
+      </button>
+      <button type="button" class="cd-registry__card" (click)="navigateTo('/members/list')">
+        <span class="cd-registry__label">Members</span>
+        <span class="cd-registry__value">{{ totalMembers | number }}</span>
+        <span class="cd-registry__hint">All members · directory</span>
+      </button>
+      <button type="button" class="cd-registry__card" (click)="navigateTo('/bccs/list')">
+        <span class="cd-registry__label">Life Groups</span>
+        <span class="cd-registry__value">{{ totalBCCs | number }}</span>
+        <span class="cd-registry__hint">All groups · manage BCCs</span>
+      </button>
+    </ng-container>
+  </section>
+
+  <!-- Overview | Operations -->
+  <div
+    class="cd-tabs"
+    role="tablist"
+    aria-label="Dashboard sections"
+    (keydown)="onDashboardTabKeydown($event)"
+  >
+    <button
+      *ngFor="let tab of dashboardTabs"
+      type="button"
+      class="cd-tab"
+      role="tab"
+      [id]="dashboardTabId(tab)"
+      [class.cd-tab--active]="activeTab === tab"
+      [attr.aria-selected]="activeTab === tab"
+      [attr.aria-controls]="dashboardPanelId(tab)"
+      [attr.tabindex]="activeTab === tab ? 0 : -1"
+      (click)="selectTab(tab)"
+    >
+      <span class="cd-tab__name">{{ dashboardTabLabels[tab] }}</span>
+      <span class="cd-tab__hint">{{ dashboardTabHints[tab] }}</span>
+    </button>
+  </div>
+
+  <!-- ═══════════ OVERVIEW (v3.0) ═══════════ -->
+  <div
+    *ngIf="activeTab === 'overview'"
+    class="cd-tab-panel cd-overview"
+    role="tabpanel"
+    [id]="dashboardPanelId('overview')"
+    [attr.aria-labelledby]="dashboardTabId('overview')"
+  >
+    <ng-container *ngIf="!tenantExecutiveMode">
+      <header class="cd-overview__band">
+        <h2 class="cd-overview__label">Platform summary</h2>
+      </header>
+      <section class="cd-hero" aria-label="Platform indicators">
+        <article
+          *ngFor="let kpi of heroKpis"
+          class="cd-kpi"
+          [ngClass]="'cd-kpi--' + kpi.accent"
+        >
+          <div class="cd-kpi__head">
+            <span class="cd-kpi__label">{{ kpi.label }}</span>
+            <span
+              class="cd-kpi__delta"
+              [class.is-up]="kpi.trend === 'up'"
+              [class.is-down]="kpi.trend === 'down'"
+            >{{ kpi.change }}</span>
+          </div>
+          <div class="cd-kpi__value">{{ kpi.value }}</div>
+          <p class="cd-kpi__sub">{{ kpi.sublabel }}</p>
+        </article>
+      </section>
+      <p class="cd-panel__desc cd-overview__platform-hint" *ngIf="registryState === 'idle'">
+        Open a church to see the parish executive dashboard.
+      </p>
+    </ng-container>
+
+    <ng-container *ngIf="tenantExecutiveMode">
+      <div
+        *ngIf="executiveLoadState === 'error' && !executivePrimaryLoaded"
+        class="cd-registry__error"
+        role="alert"
+      >
+        <p>Unable to load this section. Retry.</p>
+        <button type="button" class="cd-link-btn" (click)="retryExecutiveDashboard()">Try again</button>
+      </div>
+      <div class="cd-overview__columns">
+        <div class="cd-overview__column" *ngFor="let column of executiveColumns()">
+          <ng-container *ngFor="let block of column">
+            <ng-container *ngTemplateOutlet="executiveBlock; context: { $implicit: block }"></ng-container>
+          </ng-container>
+        </div>
+      </div>
+
+      <ng-template #executiveBlock let-block>
+      <section class="cd-overview__block">
+        <header class="cd-overview__band">
+          <h2 class="cd-overview__label">{{ block.title }}</h2>
+          <button
+            *ngIf="block.state === 'ready'"
+            type="button"
+            class="cd-panel__link"
+            (click)="openExecutiveDrilldown(block.openDrilldown)"
+          >{{ block.openLabel }}</button>
+        </header>
+        <div class="cd-exec-block" [attr.aria-label]="block.title" [attr.data-exec-block]="block.key">
+          <div *ngIf="block.state === 'error'" class="cd-registry__error" role="alert">
+            <p>Unable to load this section. Retry.</p>
+            <button type="button" class="cd-link-btn" (click)="retryExecutiveBlock(block.key)">Try again</button>
+          </div>
+          <p *ngIf="block.state === 'loading'" class="cd-panel__desc" role="status">Loading…</p>
+          <p *ngIf="block.state === 'unavailable'" class="cd-panel__desc" role="status">{{ block.unavailableMessage }}</p>
+          <ng-container *ngIf="block.state === 'ready'">
+            <p class="cd-financial-snapshot__context" *ngIf="block.context">{{ block.context }}</p>
+            <div class="cd-financial-snapshot__grid">
+              <button
+                *ngFor="let metric of block.metrics"
+                type="button"
+                class="cd-financial-metric"
+                [ngClass]="metricToneClass(metric)"
+                (click)="openExecMetric(metric)"
+              >
+                <span class="cd-financial-metric__label">{{ metric.label }}</span>
+                <span class="cd-financial-metric__value">{{ metric.value }}</span>
+                <span class="cd-financial-metric__hint" *ngIf="metric.hint">{{ metric.hint }}</span>
+                <span
+                  class="cd-financial-metric__compare"
+                  *ngIf="metric.compare"
+                  [class.is-up]="metric.trend === 'up'"
+                  [class.is-down]="metric.trend === 'down'"
+                >{{ metric.compare }}</span>
+              </button>
+            </div>
+            <div
+              class="cd-overview__people-chart cf-panel"
+              *ngIf="block.key === 'people' && block.memberAgeChart?.length"
+              aria-labelledby="exec-people-age-heading"
+            >
+              <h3 id="exec-people-age-heading" class="cd-overview__chart-title">Age distribution</h3>
+              <app-member-age-distribution-chart
+                [slices]="block.memberAgeChart!"
+                [compact]="true"
+              />
+            </div>
+            <div
+              class="cd-overview__people-chart cf-panel"
+              *ngIf="block.key === 'finance' && block.dueScheduleChart?.length"
+              aria-labelledby="exec-finance-due-heading"
+            >
+              <h3 id="exec-finance-due-heading" class="cd-overview__chart-title">Due schedule</h3>
+              <p class="cd-overview__chart-caption">Overdue, next 14 days, and later collectable</p>
+              <app-executive-due-schedule-chart
+                [slices]="block.dueScheduleChart!"
+                [currencyCode]="executive?.stewardship?.data?.currency_code || ''"
+              />
+            </div>
+            <div
+              class="cd-overview__people-chart cf-panel"
+              *ngIf="block.key === 'sacraments'"
+              aria-labelledby="exec-sacrament-mix-heading"
+            >
+              <h3 id="exec-sacrament-mix-heading" class="cd-overview__chart-title">This year's celebrations</h3>
+              <p class="cd-overview__chart-caption">
+                Share of Baptism, Confirmation, First Communion, Marriage, and Holy Orders.
+                Reconciliation and Anointing of the Sick are omitted so they do not dominate the mix.
+              </p>
+              <app-executive-sacrament-activity-chart
+                [slices]="block.sacramentActivityChart ?? []"
+                [dateFrom]="block.sacramentActivityDateFrom || ''"
+                [dateTo]="block.sacramentActivityDateTo || ''"
+                [emptyReason]="block.sacramentActivityEmptyReason || 'none'"
+              />
+            </div>
+          </ng-container>
+        </div>
+      </section>
+      </ng-template>
+
+      <ng-container *ngIf="executiveSectionState('quick_actions') === 'ready' && executive?.quick_actions?.data?.actions?.length">
+        <header class="cd-overview__band">
+          <h2 class="cd-overview__label">Quick actions</h2>
+        </header>
+        <div class="cd-quick-actions" role="group" aria-label="Quick actions">
+          <button
+            *ngFor="let action of executive?.quick_actions?.data?.actions ?? []"
+            type="button"
+            class="cd-quick-actions__btn"
+            (click)="openExecutiveDrilldown(action.drilldown)"
+          >{{ executiveQuickActionLabel(action.key) }}</button>
+        </div>
+      </ng-container>
+    </ng-container>
+  </div>
+
+  <!-- ═══════════ OPERATIONS (v2.0 Phase 3) ═══════════ -->
+  <div
+    *ngIf="operationsVisited"
+    class="cd-tab-panel cd-ops"
+    role="tabpanel"
+    [id]="dashboardPanelId('operations')"
+    [attr.aria-labelledby]="dashboardTabId('operations')"
+    [class.cd-tab-panel--inactive]="activeTab !== 'operations'"
+    [attr.aria-hidden]="activeTab !== 'operations' ? true : null"
+  >
+    <!-- 1. Care & stewardship actions -->
+    <header class="cd-ops__band">
+      <h2 class="cd-ops__label">Care &amp; stewardship actions</h2>
+    </header>
+    <section class="cd-ops__care" aria-label="Pastoral care and stewardship follow-ups">
+      <article class="cd-panel cd-panel--pastoral" *ngIf="canViewPastoral">
+        <header class="cd-panel__head">
+          <div class="cd-panel__head-copy">
+            <h3>Pastoral Care Alerts</h3>
+            <p class="cd-panel__desc">Open visit requests by type</p>
+          </div>
+        </header>
+        <app-cf-brand-loader *ngIf="loadingPastoral" size="inline" label="Loading visits…" />
+        <div class="cd-error" role="alert" *ngIf="!loadingPastoral && pastoralError">
+          <p>Could not load pastoral care alerts right now.</p>
+          <button type="button" class="cd-link-btn" (click)="retryPastoralWorkflow()">Retry</button>
+        </div>
+        <p class="cd-panel__desc" role="status" *ngIf="!loadingPastoral && !pastoralError && !careAlerts.length">No open visit requests.</p>
+        <ul class="cd-care-list" *ngIf="!pastoralError && careAlerts.length">
+          <li *ngFor="let alert of careAlerts" class="cd-care-item" [class.is-urgent]="alert.priority === 'urgent'">
+            <div class="cd-care-item__count">{{ alert.count }}</div>
+            <div class="cd-care-item__content">
+              <span class="cd-care-item__title">{{ alert.title }}</span>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="cd-panel cd-panel--workflow" *ngIf="canViewPastoral">
+        <header class="cd-panel__head">
+          <div class="cd-panel__head-copy">
+            <h3>Pastoral Workflow</h3>
+            <p class="cd-panel__desc">Assign follow-ups to pastoral staff</p>
+          </div>
+        </header>
+        <app-cf-brand-loader *ngIf="loadingPastoral" size="inline" label="Loading visits…" />
+        <div class="cd-error" role="alert" *ngIf="!loadingPastoral && pastoralError">
+          <p>Could not load pastoral workflow right now.</p>
+          <button type="button" class="cd-link-btn" (click)="retryPastoralWorkflow()">Retry</button>
+        </div>
+        <p class="cd-panel__desc" role="status" *ngIf="!loadingPastoral && !pastoralError && !pastoralTasks.length">No open or assigned visits.</p>
+        <ul class="cd-task-list" *ngIf="!pastoralError && pastoralTasks.length">
+          <li *ngFor="let task of pastoralTasks" class="cd-task-item" [class.is-open]="task.status === 'open'">
+            <div class="cd-task-item__main">
+              <span class="cd-task-item__title">{{ task.title }}</span>
+              <span class="cd-task-item__meta">{{ task.family_name }} · {{ task.assignee }} · Due {{ task.due }}</span>
+            </div>
+            <div class="cd-task-item__actions" *ngIf="task.status === 'open' && canAssignPastoral">
+              <ng-container *ngIf="assigningTaskId !== task.id">
+                <button type="button" class="cd-task-item__assign" (click)="beginAssign(task)">Assign</button>
+              </ng-container>
+              <ng-container *ngIf="assigningTaskId === task.id">
+                <label class="cd-task-item__picker">
+                  <span class="visually-hidden">Choose staff</span>
+                  <select [(ngModel)]="selectedAssigneeId">
+                    <option [ngValue]="null" disabled>Choose staff</option>
+                    <option *ngFor="let person of pastoralStaff" [ngValue]="person.id">{{ person.name }}</option>
+                  </select>
+                </label>
+                <button type="button" class="cd-task-item__assign" (click)="confirmAssign(task)" [disabled]="!selectedAssigneeId || assigningBusy">
+                  Save
+                </button>
+                <button type="button" class="cd-link-btn" (click)="cancelAssign()">Cancel</button>
+              </ng-container>
+            </div>
+            <button
+              *ngIf="canCompleteTask(task)"
+              type="button"
+              class="cd-task-item__assign"
+              (click)="completeTask(task)"
+            >
+              Mark done
+            </button>
+          </li>
+        </ul>
+      </article>
+
+      <article class="cd-panel cd-ops__stewardship" *ngIf="canViewFinancial" data-ops-followup="overdue-families">
+        <header class="cd-panel__head">
+          <div class="cd-panel__head-copy">
+            <h3>Families needing follow-up</h3>
+            <p class="cd-panel__desc">Overdue balances that need a conversation</p>
+          </div>
+        </header>
+        <app-cf-brand-loader *ngIf="financialHubState === 'loading'" size="inline" label="Loading stewardship follow-ups…" />
+        <p class="cd-panel__desc" role="status" *ngIf="financialHubState === 'unauthorized'">Giving totals are available to people who can view Donations.</p>
+        <div class="cd-error" role="alert" *ngIf="financialHubState === 'error' || overdueFollowUpUnavailable()">
+          <p>Could not load stewardship follow-ups right now.</p>
+          <button type="button" class="cd-link-btn" (click)="retryFinancialHub()">Retry</button>
+        </div>
+        <ng-container *ngIf="overdueFollowUp() as followUp">
+          <p class="cd-empty" role="status" *ngIf="followUp.count === 0">No families with overdue balances right now.</p>
+          <button
+            *ngIf="followUp.count > 0"
+            type="button"
+            class="cd-ops-followup"
+            (click)="openOverdueFamiliesFollowUp()"
+          >
+            <span class="cd-ops-followup__count">{{ followUp.count }}</span>
+            <span class="cd-ops-followup__copy">
+              <span class="cd-ops-followup__label">{{ followUp.count === 1 ? 'family overdue' : 'families overdue' }}</span>
+              <span class="cd-ops-followup__amount" *ngIf="followUp.amountLabel">{{ followUp.amountLabel }}</span>
+            </span>
+            <span class="cd-ops-followup__action">Review overdue families</span>
+          </button>
+        </ng-container>
+      </article>
+    </section>
+
+  </div>
+</div>

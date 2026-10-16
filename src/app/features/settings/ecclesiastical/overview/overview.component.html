@@ -1,0 +1,327 @@
+<div class="overview-container cf-page">
+  <app-page-header
+    title="Ecclesiastical Data Management"
+    subtitle="Comprehensive overview of dioceses, archdioceses, and bishops worldwide">
+    <button
+      type="button"
+      class="cf-btn cf-btn--sm"
+      (click)="refreshStatistics()"
+      [disabled]="loading"
+      aria-label="Refresh statistics">
+      Refresh
+    </button>
+  </app-page-header>
+
+  <div *ngIf="loading" class="overview-loading">
+    <app-loading-skeleton type="card" [rows]="8"></app-loading-skeleton>
+  </div>
+
+  <div *ngIf="!loading" class="overview-content">
+    <div
+      *ngIf="error && (dioceseStats || bishopStats)"
+      class="overview-partial-alert cf-inline-alert cf-panel"
+      role="alert">
+      <p><strong>Warning:</strong> {{ error }} Some data may be incomplete.</p>
+    </div>
+
+    <div class="overview-kpis" role="group" aria-label="Summary statistics">
+      <article class="overview-kpi">
+        <span class="overview-kpi__label"><span aria-hidden="true">⛪</span> Total Dioceses</span>
+        <strong class="overview-kpi__value">{{ dioceseStats?.total_dioceses || 0 }}</strong>
+        <span class="overview-kpi__hint">
+          <span class="overview-kpi__dot overview-kpi__dot--active"></span>
+          {{ dioceseStats?.active_dioceses || 0 }} active
+          <span class="overview-kpi__sep">·</span>
+          <span class="overview-kpi__dot overview-kpi__dot--inactive"></span>
+          {{ dioceseStats?.inactive_dioceses || 0 }} inactive
+        </span>
+      </article>
+      <article class="overview-kpi">
+        <span class="overview-kpi__label"><span aria-hidden="true">🏛️</span> Archdioceses</span>
+        <strong class="overview-kpi__value">{{ dioceseStats?.total_archdioceses || 0 }}</strong>
+        <span class="overview-kpi__hint">
+          {{ dioceseStats?.total_regular_dioceses || 0 }} regular dioceses
+        </span>
+      </article>
+      <article class="overview-kpi">
+        <span class="overview-kpi__label"><span aria-hidden="true">👤</span> Total Bishops</span>
+        <strong class="overview-kpi__value">{{ bishopStats?.total_bishops || 0 }}</strong>
+        <span class="overview-kpi__hint">
+          <span class="overview-kpi__dot overview-kpi__dot--active"></span>
+          {{ bishopStats?.active_bishops || 0 }} active
+          <span class="overview-kpi__sep">·</span>
+          <span class="overview-kpi__dot overview-kpi__dot--inactive"></span>
+          {{ bishopStats?.inactive_bishops || 0 }} inactive
+        </span>
+      </article>
+      <article class="overview-kpi">
+        <span class="overview-kpi__label"><span aria-hidden="true">🎓</span> Retired Bishops</span>
+        <strong class="overview-kpi__value">{{ bishopStats?.retired_bishops || 0 }}</strong>
+        <span class="overview-kpi__hint">Emeritus status</span>
+      </article>
+    </div>
+
+    <div class="overview-distribution-grid">
+      <section class="overview-panel">
+        <header class="overview-panel__head">
+          <h2 class="overview-panel__title">
+            <span aria-hidden="true">🌍</span>
+            Dioceses by Country
+          </h2>
+          <button type="button" class="overview-panel__link" (click)="navigateToDioceses()">View all</button>
+        </header>
+        <div class="overview-panel__body">
+          <div
+            *ngIf="dioceseStats?.by_country && (dioceseStats?.by_country?.length || 0) > 0"
+            class="overview-dist-list">
+            <div
+              *ngFor="let item of dioceseStats?.by_country?.slice(0, 8)"
+              class="overview-dist-row">
+              <span class="overview-dist-row__label" [title]="item.country">{{ item.country }}</span>
+              <div class="overview-dist-row__bar-wrap">
+                <div class="overview-dist-row__bar">
+                  <div
+                    class="overview-dist-row__fill overview-dist-row__fill--diocese"
+                    [style.width.%]="getPercentage(item.total, dioceseStats?.total_dioceses || 0)"></div>
+                </div>
+                <span class="overview-dist-row__count">{{ item.total }}</span>
+              </div>
+            </div>
+          </div>
+          <div
+            *ngIf="!dioceseStats?.by_country || (dioceseStats?.by_country?.length || 0) === 0"
+            class="overview-panel__empty">
+            <app-cf-empty-state
+              [hasActions]="false"
+              icon="📊"
+              title="No Data"
+              description="No diocese distribution data available">
+            </app-cf-empty-state>
+          </div>
+        </div>
+      </section>
+
+      <section class="overview-panel">
+        <header class="overview-panel__head">
+          <h2 class="overview-panel__title">
+            <span aria-hidden="true">✝️</span>
+            Dioceses by Denomination
+          </h2>
+        </header>
+        <div class="overview-panel__body">
+          <div
+            *ngIf="dioceseStats?.by_denomination && (dioceseStats?.by_denomination?.length || 0) > 0"
+            class="overview-dist-list">
+            <div *ngFor="let item of dioceseStats?.by_denomination" class="overview-dist-row">
+              <span class="overview-dist-row__label" [title]="item.denomination">{{ item.denomination }}</span>
+              <div class="overview-dist-row__bar-wrap">
+                <div class="overview-dist-row__bar">
+                  <div
+                    class="overview-dist-row__fill overview-dist-row__fill--denom"
+                    [style.width.%]="getPercentage(item.total, dioceseStats?.total_dioceses || 0)"></div>
+                </div>
+                <span class="overview-dist-row__count">{{ item.total }}</span>
+              </div>
+            </div>
+          </div>
+          <div
+            *ngIf="!dioceseStats?.by_denomination || (dioceseStats?.by_denomination?.length || 0) === 0"
+            class="overview-panel__empty">
+            <app-cf-empty-state
+              [hasActions]="false"
+              icon="📊"
+              title="No Data"
+              description="No denomination distribution data available">
+            </app-cf-empty-state>
+          </div>
+        </div>
+      </section>
+
+      <section class="overview-panel">
+        <header class="overview-panel__head">
+          <h2 class="overview-panel__title">
+            <span aria-hidden="true">👑</span>
+            Bishops by Title
+          </h2>
+          <button type="button" class="overview-panel__link" (click)="navigateToBishops()">View all</button>
+        </header>
+        <div class="overview-panel__body">
+          <div
+            *ngIf="bishopStats?.by_title && (bishopStats?.by_title?.length || 0) > 0"
+            class="overview-dist-list">
+            <div *ngFor="let item of bishopStats?.by_title?.slice(0, 8)" class="overview-dist-row">
+              <span class="overview-dist-row__label" [title]="item.title">{{ item.title }}</span>
+              <div class="overview-dist-row__bar-wrap">
+                <div class="overview-dist-row__bar">
+                  <div
+                    class="overview-dist-row__fill overview-dist-row__fill--bishop"
+                    [style.width.%]="getPercentage(item.total, bishopStats?.total_bishops || 0)"></div>
+                </div>
+                <span class="overview-dist-row__count">{{ item.total }}</span>
+              </div>
+            </div>
+          </div>
+          <div
+            *ngIf="!bishopStats?.by_title || (bishopStats?.by_title?.length || 0) === 0"
+            class="overview-panel__empty">
+            <app-cf-empty-state
+              [hasActions]="false"
+              icon="📊"
+              title="No Data"
+              description="No bishop title distribution data available">
+            </app-cf-empty-state>
+          </div>
+        </div>
+      </section>
+
+      <section class="overview-panel">
+        <header class="overview-panel__head">
+          <h2 class="overview-panel__title">
+            <span aria-hidden="true">📍</span>
+            Top Dioceses (by Bishops)
+          </h2>
+        </header>
+        <div class="overview-panel__body">
+          <div
+            *ngIf="bishopStats?.by_diocese && (bishopStats?.by_diocese?.length || 0) > 0"
+            class="overview-dist-list">
+            <div *ngFor="let item of bishopStats?.by_diocese" class="overview-dist-row">
+              <span class="overview-dist-row__label" [title]="item.diocese">{{ item.diocese }}</span>
+              <div class="overview-dist-row__bar-wrap">
+                <div class="overview-dist-row__bar">
+                  <div
+                    class="overview-dist-row__fill overview-dist-row__fill--top-diocese"
+                    [style.width.%]="getPercentage(item.total, getMaxBishopsInDiocese())"></div>
+                </div>
+                <span class="overview-dist-row__count">{{ item.total }}</span>
+              </div>
+            </div>
+          </div>
+          <div
+            *ngIf="!bishopStats?.by_diocese || (bishopStats?.by_diocese?.length || 0) === 0"
+            class="overview-panel__empty">
+            <app-cf-empty-state
+              [hasActions]="false"
+              icon="📊"
+              title="No Data"
+              description="No bishop-diocese distribution data available">
+            </app-cf-empty-state>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="overview-recent-grid">
+      <section class="overview-panel">
+        <header class="overview-panel__head">
+          <h2 class="overview-panel__title">
+            <span aria-hidden="true">🆕</span>
+            Recently Added Dioceses
+          </h2>
+          <button type="button" class="overview-panel__link" (click)="navigateToDioceses()">View all</button>
+        </header>
+        <div class="overview-panel__body">
+          <ul
+            *ngIf="dioceseStats?.recent_additions && (dioceseStats?.recent_additions?.length || 0) > 0"
+            class="overview-recent-list">
+            <li *ngFor="let diocese of dioceseStats?.recent_additions" class="overview-recent-item">
+              <span class="overview-recent-item__icon" aria-hidden="true">⛪</span>
+              <div class="overview-recent-item__main">
+                <span class="overview-recent-item__name">{{ diocese.name }}</span>
+                <span class="overview-recent-item__meta cf-meta">
+                  {{ diocese.country?.name }}
+                  <span class="overview-recent-item__sep">·</span>
+                  {{ diocese.denomination?.name }}
+                  <span class="overview-recent-item__sep">·</span>
+                  {{ diocese.is_archdiocese ? 'Archdiocese' : 'Diocese' }}
+                </span>
+                <span class="overview-recent-item__date cf-meta">
+                  Added {{ diocese.created_at | cfDate }}
+                </span>
+              </div>
+            </li>
+          </ul>
+          <div
+            *ngIf="!dioceseStats?.recent_additions || (dioceseStats?.recent_additions?.length || 0) === 0"
+            class="overview-panel__empty">
+            <app-cf-empty-state
+              [hasActions]="false"
+              icon="📝"
+              title="No Recent Additions"
+              description="No dioceses have been added recently">
+            </app-cf-empty-state>
+          </div>
+        </div>
+      </section>
+
+      <section class="overview-panel">
+        <header class="overview-panel__head">
+          <h2 class="overview-panel__title">
+            <span aria-hidden="true">🆕</span>
+            Recently Added Bishops
+          </h2>
+          <button type="button" class="overview-panel__link" (click)="navigateToBishops()">View all</button>
+        </header>
+        <div class="overview-panel__body">
+          <ul
+            *ngIf="bishopStats?.recent_additions && (bishopStats?.recent_additions?.length || 0) > 0"
+            class="overview-recent-list">
+            <li *ngFor="let bishop of bishopStats?.recent_additions" class="overview-recent-item">
+              <span class="overview-recent-item__icon" aria-hidden="true">👤</span>
+              <div class="overview-recent-item__main">
+                <span class="overview-recent-item__name">{{ bishop.full_name }}</span>
+                <span class="overview-recent-item__meta cf-meta">
+                  {{ bishop.ecclesiastical_title?.name }}
+                  <span class="overview-recent-item__sep">·</span>
+                  {{ bishop.archdiocese?.name || 'No Diocese' }}
+                </span>
+                <span class="overview-recent-item__date cf-meta">
+                  Added {{ bishop.created_at | cfDate }}
+                  <span class="overview-status-badge" [class]="'overview-status-badge--' + bishop.status">
+                    {{ bishop.status }}
+                  </span>
+                </span>
+              </div>
+            </li>
+          </ul>
+          <div
+            *ngIf="!bishopStats?.recent_additions || (bishopStats?.recent_additions?.length || 0) === 0"
+            class="overview-panel__empty">
+            <app-cf-empty-state
+              [hasActions]="false"
+              icon="📝"
+              title="No Recent Additions"
+              description="No bishops have been added recently">
+            </app-cf-empty-state>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="overview-actions" role="group" aria-label="Quick actions">
+      <button type="button" class="overview-action-btn" (click)="navigateToDioceses()">
+        <span class="overview-action-btn__label">Add New Diocese</span>
+        <span class="overview-action-btn__desc cf-meta">Create a new diocese or archdiocese entry</span>
+      </button>
+      <button type="button" class="overview-action-btn" (click)="navigateToBishops()">
+        <span class="overview-action-btn__label">Add New Bishop</span>
+        <span class="overview-action-btn__desc cf-meta">Register a new bishop or archbishop</span>
+      </button>
+      <button type="button" class="overview-action-btn" (click)="navigateToDioceses()">
+        <span class="overview-action-btn__label">View All Dioceses</span>
+        <span class="overview-action-btn__desc cf-meta">Browse and manage all diocese records</span>
+      </button>
+      <button type="button" class="overview-action-btn" (click)="navigateToBishops()">
+        <span class="overview-action-btn__label">View All Bishops</span>
+        <span class="overview-action-btn__desc cf-meta">Browse and manage all bishop records</span>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && error && !dioceseStats && !bishopStats" class="overview-error" role="alert">
+    <span class="overview-error__icon" aria-hidden="true">⚠️</span>
+    <h3 class="overview-error__title">Failed to Load Statistics</h3>
+    <p class="overview-error__message">{{ error }}</p>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="refreshStatistics()">Try Again</button>
+  </div>
+</div>

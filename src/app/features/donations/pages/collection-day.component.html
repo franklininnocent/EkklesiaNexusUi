@@ -1,0 +1,486 @@
+<section class="coc" role="main" aria-label="Collection day workspace">
+  <!-- Command Bar -->
+  <header class="coc-command">
+    <div class="coc-command__context">
+      <p class="coc-command__eyebrow">Stewardship Operations</p>
+
+      <div class="coc-command__facts" role="group" aria-label="Collection session">
+        <div class="coc-command__fact coc-command__fact--live" aria-live="polite">
+          <span class="coc-command__pulse" aria-hidden="true"></span>
+          <span>Session {{ sessionStatusLabel }}</span>
+        </div>
+        <div class="coc-command__fact">
+          <span class="coc-command__fact-label">Operator</span>
+          <strong class="coc-command__fact-value coc-command__fact-value--truncate" [attr.title]="operatorName">{{ operatorName }}</strong>
+        </div>
+        <div class="coc-command__fact">
+          <span class="coc-command__fact-label">Collection Date</span>
+          <strong class="coc-command__fact-value">{{ collectionDateLabel }}</strong>
+        </div>
+      </div>
+
+      <div class="coc-command__utils">
+        <button
+          type="button"
+          class="cf-btn-icon coc-command__icon-btn"
+          (click)="openShortcuts()"
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="cf-btn-icon coc-command__icon-btn"
+          (click)="refreshSession()"
+          [disabled]="sessionLoading"
+          aria-label="Refresh session"
+          [attr.title]="sessionLoading ? 'Refreshing…' : 'Refresh session'"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        </button>
+        <div class="coc-dropdown" [class.coc-dropdown--open]="quickActionsOpen">
+          <button
+            type="button"
+            class="cf-btn-icon coc-command__icon-btn"
+            (click)="toggleQuickActions($event)"
+            [attr.aria-expanded]="quickActionsOpen"
+            aria-haspopup="menu"
+            aria-label="Quick Actions"
+            title="Quick Actions"
+          >
+            <app-cf-action-icon name="layout-grid" />
+          </button>
+          <div class="coc-dropdown__menu" role="menu" *ngIf="quickActionsOpen" (click)="$event.stopPropagation()">
+            <button type="button" role="menuitem" class="coc-dropdown__item" (click)="navigateTo('/donations/payments')">Payment Register</button>
+            <button type="button" role="menuitem" class="coc-dropdown__item" (click)="navigateTo('/donations/receipts')">Receipts</button>
+            <button type="button" role="menuitem" class="coc-dropdown__item" (click)="navigateTo('/donations/register')">Donation Register</button>
+            <button type="button" role="menuitem" class="coc-dropdown__item" (click)="navigateTo('/donations')">Stewardship Dashboard</button>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cf-btn-icon coc-command__icon-btn"
+          (click)="exportTodayCollections()"
+          [disabled]="!todayPayments.length"
+          [attr.aria-label]="'Export'"
+          [attr.title]="'Export'"
+        >
+          <app-cf-action-icon name="download" />
+        </button>
+        <button
+          type="button"
+          class="cf-btn-icon coc-command__icon-btn"
+          routerLink="/donations/payments"
+          aria-label="Exit Workspace"
+          title="Exit Workspace"
+        >
+          <app-cf-action-icon name="log-out" />
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Executive KPIs -->
+  <div class="coc-kpis" role="region" aria-label="Collection metrics">
+    <ng-container *ngFor="let kpi of kpiCards; trackBy: trackKpiCard">
+      <button
+        *ngIf="kpi.href"
+        type="button"
+        class="coc-kpi coc-kpi--link"
+        (click)="navigateKpi(kpi)"
+        [attr.aria-label]="'View ' + kpi.label"
+      >
+        <div class="coc-kpi__icon" [attr.data-tone]="kpi.tone" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path [attr.d]="kpi.iconPath" fill="currentColor"/></svg>
+        </div>
+        <div class="coc-kpi__body">
+          <span class="coc-kpi__label">{{ kpi.label }}</span>
+          <div class="coc-kpi__value-row">
+            <strong class="coc-kpi__value">{{ kpi.value }}</strong>
+            <span class="coc-kpi__trend" [class.coc-kpi__trend--up]="kpi.trendUp" [class.coc-kpi__trend--down]="!kpi.trendUp" *ngIf="kpi.trend">
+              {{ kpi.trend }}
+            </span>
+          </div>
+          <svg class="coc-kpi__sparkline" viewBox="0 0 80 24" preserveAspectRatio="none" aria-hidden="true">
+            <polyline [attr.points]="kpi.sparkline" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+      <article *ngIf="!kpi.href" class="coc-kpi">
+        <div class="coc-kpi__icon" [attr.data-tone]="kpi.tone" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path [attr.d]="kpi.iconPath" fill="currentColor"/></svg>
+        </div>
+        <div class="coc-kpi__body">
+          <span class="coc-kpi__label">{{ kpi.label }}</span>
+          <div class="coc-kpi__value-row">
+            <strong class="coc-kpi__value">{{ kpi.value }}</strong>
+            <span class="coc-kpi__trend" [class.coc-kpi__trend--up]="kpi.trendUp" [class.coc-kpi__trend--down]="!kpi.trendUp" *ngIf="kpi.trend">
+              {{ kpi.trend }}
+            </span>
+          </div>
+          <svg class="coc-kpi__sparkline" viewBox="0 0 80 24" preserveAspectRatio="none" aria-hidden="true">
+            <polyline [attr.points]="kpi.sparkline" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </article>
+    </ng-container>
+  </div>
+
+  <!-- Main Workspace -->
+  <div class="coc-workspace">
+    <div class="coc-workspace__main">
+      <!-- Search -->
+      <section class="coc-panel coc-panel--search" aria-label="Family lookup">
+        <header class="coc-panel__header">
+          <div>
+            <h2>Family Lookup</h2>
+            <p>CRM-style search across family records</p>
+          </div>
+          <div class="coc-search-modes" role="tablist" aria-label="Search mode">
+            <button
+              *ngFor="let mode of searchModes"
+              type="button"
+              role="tab"
+              class="coc-search-modes__btn"
+              [class.active]="searchMode === mode.id"
+              [attr.aria-selected]="searchMode === mode.id"
+              (click)="setSearchMode(mode.id)"
+            >
+              {{ mode.label }}
+            </button>
+          </div>
+        </header>
+
+        <div class="coc-search-bar">
+          <span class="coc-search-bar__icon" aria-hidden="true">⌕</span>
+          <input
+            #searchInput
+            type="search"
+            class="coc-search-bar__input"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange($event)"
+            [placeholder]="searchPlaceholder"
+            autocomplete="off"
+            aria-label="Search families"
+            [attr.aria-controls]="searchResults.length ? 'coc-search-results' : null"
+            aria-autocomplete="list"
+            [attr.aria-expanded]="searchResults.length > 0"
+          />
+          <button type="button" class="coc-btn coc-btn--subtle" *ngIf="searchMode === 'qr'" (click)="focusSearch()">
+            <app-cf-action-icon name="scan-line" />
+          </button>
+          <kbd class="coc-kbd">⌘K</kbd>
+        </div>
+
+        <ul
+          id="coc-search-results"
+          class="coc-search-results"
+          role="listbox"
+          aria-label="Matching families"
+          *ngIf="searchResults.length"
+        >
+          <li role="presentation" *ngFor="let family of searchResults; let i = index">
+            <button
+              type="button"
+              role="option"
+              class="coc-search-results__item"
+              [class.selected]="selectedFamily?.id === family.id"
+              [class.highlighted]="highlightedIndex === i"
+              [attr.aria-selected]="selectedFamily?.id === family.id"
+              (click)="selectFamily(family)"
+            >
+              <div>
+                <strong>{{ family | cfFamilyPickerLabel }}</strong>
+              </div>
+              <span class="coc-search-results__meta">{{ familyAreaLabel(family) }}</span>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Empty State -->
+      <section class="coc-empty" *ngIf="!selectedFamily">
+        <div class="coc-empty__art" aria-hidden="true">
+          <svg viewBox="0 0 120 120" focusable="false">
+            <rect x="12" y="24" width="96" height="72" rx="12" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="42" cy="52" r="12" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M24 84h48M60 64v20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M72 48h24M72 60h18M72 72h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </div>
+        <h2>Search and select a family to begin collection processing</h2>
+        <p>Use family name, ID, mobile number, or QR code to locate the record. Payment entry unlocks after selection.</p>
+      </section>
+
+      <!-- Family Summary + Transaction -->
+      <ng-container *ngIf="selectedFamily">
+        <article class="coc-family-card" aria-label="Selected family summary">
+          <div class="coc-family-card__identity">
+            <div class="coc-family-card__avatar" aria-hidden="true">{{ familyInitials(selectedFamily) }}</div>
+            <div>
+              <h2>{{ selectedFamily | cfFamilyHeadName }}</h2>
+              <p>{{ selectedFamily.family_code }} · {{ familyAreaLabel(selectedFamily) }}</p>
+            </div>
+            <span class="coc-family-card__status" [class.inactive]="selectedFamily.status !== 'active'">
+              {{ selectedFamily.status | titlecase }}
+            </span>
+          </div>
+          <div class="coc-family-card__metrics">
+            <div>
+              <span>Outstanding Balance</span>
+              <strong>{{ formatCurrency(outstandingBalance) }}</strong>
+            </div>
+            <div>
+              <span>Current Plan</span>
+              <strong>{{ currentPlanLabel }}</strong>
+            </div>
+            <div>
+              <span>Last Payment</span>
+              <strong>{{ lastPaymentLabel }}</strong>
+            </div>
+          </div>
+        </article>
+
+        <section class="coc-panel coc-panel--transaction" aria-label="Payment entry">
+          <header class="coc-panel__header">
+            <div>
+              <h2>Financial Transaction</h2>
+              <p>Enter contribution with allocation preview</p>
+            </div>
+          </header>
+
+          <div class="coc-type-grid" role="group" aria-label="Contribution type">
+            <button
+              type="button"
+              *ngFor="let type of collectTypes"
+              class="coc-type-grid__btn"
+              [class.active]="collectType === type.id"
+              [attr.aria-pressed]="collectType === type.id"
+              (click)="setCollectType(type.id)"
+            >
+              <span>{{ type.label }}</span>
+              <small>{{ type.hint }}</small>
+            </button>
+          </div>
+
+          <div class="coc-transaction-grid">
+            <label class="coc-field coc-field--amount">
+              <span>Collection Amount <kbd class="coc-kbd">F2</kbd></span>
+              <div class="coc-amount-input">
+                <span class="coc-amount-input__currency">{{ currencySymbol }}</span>
+                <input
+                  #amountInput
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  [(ngModel)]="amount"
+                  (ngModelChange)="onAmountChange()"
+                  placeholder="0.00"
+                />
+              </div>
+              <div class="coc-amount-suggestions" *ngIf="amountSuggestions.length">
+                <button
+                  type="button"
+                  *ngFor="let suggestion of amountSuggestions"
+                  class="coc-amount-suggestions__btn"
+                  (click)="applySuggestedAmount(suggestion)"
+                >
+                  {{ suggestion.label }}
+                </button>
+              </div>
+            </label>
+
+            <label class="coc-field">
+              <span>Payer Name</span>
+              <input type="text" [(ngModel)]="payerName" placeholder="Contributor name" />
+            </label>
+
+            <label class="coc-field">
+              <span>Payment Method <kbd class="coc-kbd">F3</kbd></span>
+              <select [(ngModel)]="method">
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="cheque">Cheque</option>
+                <option value="upi">UPI / Digital</option>
+              </select>
+            </label>
+
+            <label class="coc-field" *ngIf="needsReference">
+              <span>{{ method === 'cheque' ? 'Cheque number' : 'Transfer reference' }}</span>
+              <input type="text" [(ngModel)]="gatewayReference" placeholder="Required for this method" />
+            </label>
+
+            <label class="coc-field coc-field--wide">
+              <span>Notes</span>
+              <textarea rows="2" [(ngModel)]="notes" placeholder="Optional collection notes"></textarea>
+            </label>
+          </div>
+
+          <div class="coc-allocation-preview" *ngIf="allocationPreview.length">
+            <h3>Allocation Preview</h3>
+            <ul>
+              <li *ngFor="let row of allocationPreview">
+                <span>{{ row.label }}</span>
+                <strong>{{ formatCurrency(row.amount) }}</strong>
+              </li>
+            </ul>
+            <p class="coc-advance-note">
+              Amount not applied to a due, project, or pledge is stored as family credit and can be used on the next collection.
+            </p>
+          </div>
+
+          <div class="coc-validation" [class.coc-validation--ready]="canSubmit" [class.coc-validation--error]="!!error">
+            <p *ngIf="error" role="alert">{{ error }}</p>
+            <p *ngIf="!error && canSubmit" role="status">Ready to post {{ formatCurrency(amount || 0) }} via {{ methodLabel }}.</p>
+            <p *ngIf="!error && !canSubmit">Complete payer and amount to enable submission.</p>
+          </div>
+
+          <div class="coc-transaction-actions">
+            <button
+              type="button"
+              class="coc-btn coc-btn--ghost"
+              (click)="resetForNext()"
+              [disabled]="saving"
+              aria-label="Cancel"
+              title="Cancel (Esc)"
+            >
+              <app-cf-action-icon name="x" />
+            </button>
+            <button
+              type="button"
+              class="coc-btn coc-btn--primary"
+              [disabled]="saving || !canSubmit"
+              (click)="submit()"
+              [attr.aria-label]="saving ? 'Processing…' : 'Post Collection'"
+              [attr.title]="saving ? 'Processing…' : 'Post Collection (F4)'"
+            >
+              <app-cf-action-icon name="collect-payment" />
+            </button>
+          </div>
+
+          <p class="coc-success" *ngIf="successMessage" role="status" aria-live="polite">{{ successMessage }}</p>
+
+          <article class="coc-receipt" *ngIf="receiptPreview">
+            <header>
+              <h3>Receipt {{ receiptPreview.receipt.receipt_number }}</h3>
+              <p>{{ receiptPreview.payer.name }} — {{ formatCurrency(receiptPreview.totals.amount) }}</p>
+            </header>
+            <div class="coc-receipt__actions">
+              <button
+                type="button"
+                class="coc-btn coc-btn--ghost"
+                (click)="printReceipt()"
+                aria-label="Print receipt"
+                title="Print receipt"
+              >
+                <app-cf-action-icon name="print" />
+              </button>
+              <button
+                type="button"
+                class="coc-btn coc-btn--primary"
+                (click)="resetForNext()"
+                aria-label="Next collection"
+                title="Next collection"
+              >
+                <app-cf-action-icon name="arrow-right" />
+              </button>
+            </div>
+          </article>
+        </section>
+      </ng-container>
+    </div>
+
+    <!-- Intelligence Panel -->
+    <aside class="coc-intel" aria-label="Collection intelligence">
+      <section class="coc-panel coc-panel--target">
+        <header class="coc-panel__header">
+          <div>
+            <h2>Today's Target</h2>
+            <p>Session progress</p>
+          </div>
+        </header>
+        <div class="coc-target-stats">
+          <div><span>Target</span><strong>{{ formatCurrency(collectionTargetValue) }}</strong></div>
+          <div><span>Collected</span><strong>{{ formatCurrency(sessionTotal) }}</strong></div>
+          <div><span>Remaining</span><strong>{{ formatCurrency(collectionRemaining) }}</strong></div>
+        </div>
+        <div class="coc-progress" role="progressbar" [attr.aria-valuenow]="completionPercent" aria-valuemin="0" aria-valuemax="100">
+          <div class="coc-progress__fill" [style.width.%]="completionPercent"></div>
+        </div>
+        <p class="coc-progress__label">{{ completionPercent | number:'1.0-0' }}% collection completion</p>
+
+        <div class="coc-gauge" aria-hidden="true">
+          <svg viewBox="0 0 120 64" class="coc-gauge__svg">
+            <path d="M12 56 A48 48 0 0 1 108 56" fill="none" stroke="var(--coc-border)" stroke-width="8" stroke-linecap="round"/>
+            <path
+              d="M12 56 A48 48 0 0 1 108 56"
+              fill="none"
+              stroke="var(--coc-accent)"
+              stroke-width="8"
+              stroke-linecap="round"
+              [attr.stroke-dasharray]="gaugeArc"
+            />
+          </svg>
+          <strong>{{ completionPercent | number:'1.0-0' }}%</strong>
+        </div>
+      </section>
+
+      <section class="coc-panel coc-panel--feed">
+        <header class="coc-panel__header">
+          <div>
+            <h2>Today's Activity</h2>
+            <p>{{ todayPayments.length }} transactions</p>
+          </div>
+        </header>
+
+        <ul class="coc-feed" *ngIf="activityFeed.length; else emptyFeed">
+          <li *ngFor="let item of activityFeed" class="coc-feed__item" [attr.data-type]="item.type">
+            <div class="coc-feed__dot" aria-hidden="true"></div>
+            <div class="coc-feed__content">
+              <strong>{{ item.title }}</strong>
+              <div class="coc-feed__meta">
+                <span>{{ item.subtitle }}</span>
+                <small>{{ item.time }}</small>
+              </div>
+            </div>
+            <strong class="coc-feed__amount" *ngIf="item.amount != null">{{ formatCurrency(item.amount) }}</strong>
+          </li>
+        </ul>
+        <ng-template #emptyFeed>
+          <p class="coc-feed__empty">No collections recorded yet today.</p>
+        </ng-template>
+      </section>
+    </aside>
+  </div>
+
+  <!-- Shortcuts Drawer -->
+  <div class="coc-shortcuts-backdrop" *ngIf="shortcutsOpen" [style.z-index]="shortcutsZIndex" (click)="closeShortcuts()" aria-hidden="true"></div>
+  <aside
+    class="coc-shortcuts"
+    *ngIf="shortcutsOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="coc-shortcuts-title"
+    [style.z-index]="shortcutsZIndex"
+  >
+    <header>
+      <h2 id="coc-shortcuts-title">Keyboard Shortcuts</h2>
+      <button type="button" class="coc-btn coc-btn--ghost" (click)="closeShortcuts()" aria-label="Close shortcuts" title="Close shortcuts">
+        <app-cf-action-icon name="x" />
+      </button>
+    </header>
+    <ul>
+      <li *ngFor="let shortcut of keyboardShortcuts">
+        <span>{{ shortcut.label }}</span>
+        <kbd>{{ shortcut.keys }}</kbd>
+      </li>
+    </ul>
+  </aside>
+</section>

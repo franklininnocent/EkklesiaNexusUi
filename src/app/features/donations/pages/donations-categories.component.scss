@@ -1,0 +1,75 @@
+@use '../styles/stewardship-split-layout.scss';
+
+/* .cf-split-form-body is `display: grid` with implicit auto rows. When this
+ * form is short (few fields) inside the taller split-panel column, the
+ * default `align-content: normal` (= stretch) distributes the leftover
+ * vertical space into the grid rows, inflating the last row (the button
+ * bar) and stretching the buttons inside it. Pin rows to the top so they
+ * keep their natural, standard size instead of stretching. */
+.cf-split-form-body {
+  align-content: start;
+}
+
+.cf-split-form-actions {
+  justify-content: flex-end;
+}
+
+.category-load-error__text {
+  margin: 0;
+  color: var(--cf-critical);
+  font-size: 0.9rem;
+}
+
+.row-actions {
+  white-space: nowrap;
+}
+
+.category-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.category-row-actions__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #991b1b;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.category-row-actions__delete:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.category-row-actions__delete:focus-visible {
+  outline: 2px solid rgba(239, 68, 68, 0.45);
+  outline-offset: 2px;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.category-row-actions__delete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.category-row-actions__delete .btn-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.row-inactive td {
+  color: var(--cf-muted);
+}

@@ -1,0 +1,266 @@
+<section class="marketing-website cf-page">
+  <app-page-header
+    title="Web Management"
+    subtitle="Publish public marketing content and SEO for EkklesiaNexusWeb. Super Admin only."
+    backLink="/settings"
+    backLabel="Settings"
+    [statusLabel]="liveStatusLabel"
+    [statusTone]="liveStatusTone">
+    <button type="button" class="cf-btn" [disabled]="loading" (click)="reload()">
+      Refresh
+    </button>
+  </app-page-header>
+
+  <div
+    class="cf-loading-block cf-panel"
+    *ngIf="loading"
+    role="status"
+    aria-live="polite"
+    aria-busy="true">
+    <app-loading-skeleton label="Loading marketing CMS…" type="card" [rows]="6"></app-loading-skeleton>
+  </div>
+
+  <div class="cf-inline-alert cf-panel" *ngIf="!loading && loadError" role="alert">
+    <p>{{ loadError }}</p>
+    <button type="button" class="cf-btn cf-btn-primary" (click)="reload()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !loadError">
+    <div class="cf-decision-strip marketing-website__workflow" role="status">
+      <div class="cf-decision-strip__copy">
+        <strong>How publishing works</strong>
+        <span>
+          Edit sections below or paste JSON, apply changes to the draft payload, then save a draft or publish to the
+          public API (<code>GET /api/public/marketing-content</code>). Export source files from EkklesiaNexusWeb with
+          <code>npm run export:content</code> when needed.
+        </span>
+      </div>
+    </div>
+
+    <div class="marketing-website__layout">
+      <aside class="marketing-website__aside" aria-label="Publication status">
+        <section class="cf-panel marketing-website__status-card">
+          <h2 class="marketing-website__panel-title">Live publication</h2>
+          <ng-container *ngIf="published; else noLive">
+            <dl class="marketing-website__meta">
+              <div>
+                <dt>Revision</dt>
+                <dd>#{{ published.revision_id }}</dd>
+              </div>
+              <div *ngIf="published.published_at">
+                <dt>Published</dt>
+                <dd>{{ published.published_at | cfDate: 'datetime' }}</dd>
+              </div>
+              <div *ngIf="seoPublishedAt">
+                <dt>SEO config</dt>
+                <dd>{{ seoPublishedAt | cfDate: 'datetime' }}</dd>
+              </div>
+            </dl>
+            <p class="cf-meta">
+              Visitors see this revision when the marketing site uses API content mode.
+            </p>
+            <button type="button" class="cf-btn cf-btn-primary marketing-website__load-live" (click)="loadLiveContentIntoEditor()">
+              Load live content into editor
+            </button>
+          </ng-container>
+          <ng-template #noLive>
+            <app-cf-empty-state
+              title="Nothing live yet"
+              description="The public API returns 404 until you publish. Load the starter template or import JSON from EkklesiaNexusWeb.">
+            </app-cf-empty-state>
+            <button type="button" class="cf-btn cf-btn-primary marketing-website__load-live" (click)="importStarterTemplate()">
+              Load starter template
+            </button>
+          </ng-template>
+        </section>
+
+        <section class="cf-panel marketing-website__status-card" *ngIf="revisions.length">
+          <div class="marketing-website__panel-head">
+            <h2 class="marketing-website__panel-title">Revision history</h2>
+            <app-status-badge
+              *ngIf="draftRevisionCount > 0"
+              [label]="draftRevisionCount + ' draft' + (draftRevisionCount === 1 ? '' : 's')"
+              tone="info"></app-status-badge>
+          </div>
+          <app-data-table>
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Status</th>
+                <th scope="col">When</th>
+                <th scope="col">Notes</th>
+                <th scope="col" class="cf-table__actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of revisions">
+                <td>#{{ row.id }}</td>
+                <td>
+                  <app-status-badge
+                    [label]="row.status === 'draft' ? 'Draft' : 'Published'"
+                    [tone]="row.status === 'draft' ? 'warning' : 'success'"></app-status-badge>
+                </td>
+                <td>
+                  <ng-container *ngIf="row.status === 'published' && row.published_at">
+                    {{ row.published_at | cfDate: 'datetime' }}
+                  </ng-container>
+                  <ng-container *ngIf="row.status === 'draft'">
+                    {{ row.created_at | cfDate: 'datetime' }}
+                  </ng-container>
+                </td>
+                <td class="marketing-website__notes-cell">{{ row.notes || '—' }}</td>
+                <td class="cf-table__actions-cell">
+                  <button
+                    *ngIf="row.status === 'draft'"
+                    type="button"
+                    class="cf-btn cf-btn-primary"
+                    [disabled]="publishing"
+                    (click)="publishDraft(row)">
+                    {{ publishing ? 'Publishing…' : 'Publish draft' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </app-data-table>
+        </section>
+      </aside>
+
+      <div class="marketing-website__workspace">
+        <section class="cf-panel marketing-website__editor" aria-labelledby="marketing-editor-heading">
+          <div class="marketing-website__editor-head">
+            <div>
+              <h2 id="marketing-editor-heading" class="marketing-website__panel-title">Content editor</h2>
+              <p class="cf-meta">{{ editorTabDescription }}</p>
+            </div>
+          </div>
+
+          <app-tab-strip
+            [tabs]="editorTabStrip"
+            [activeId]="editorTab"
+            density="compact"
+            ariaLabel="Marketing content sections"
+            (tabChange)="onEditorTabChange($event)">
+          </app-tab-strip>
+
+          <div
+            class="marketing-website__tabpanel"
+            role="tabpanel"
+            id="panel-editor"
+            [attr.aria-labelledby]="'tab-' + editorTab">
+            <ng-container *ngIf="editorTab === 'seo'">
+              <app-marketing-seo-editor
+                [model]="seoForm"
+                [seoPublishedAt]="seoPublishedAt"
+                (modelChange)="onSeoFormChange($event)" />
+            </ng-container>
+
+            <ng-container *ngIf="editorTab === 'hero'">
+              <app-marketing-hero-editor [model]="heroForm" (modelChange)="onHeroFormChange($event)" />
+            </ng-container>
+
+            <ng-container *ngIf="editorTab === 'navigation'">
+              <app-marketing-navigation-editor
+                [items]="navigationItems"
+                (itemsChange)="onNavigationChange($event)" />
+            </ng-container>
+
+            <ng-container *ngIf="editorTab === 'footer'">
+              <app-marketing-footer-editor [model]="footerForm" (modelChange)="onFooterChange($event)" />
+            </ng-container>
+
+            <ng-container *ngIf="editorTab === 'finalCta'">
+              <app-marketing-final-cta-editor
+                [model]="finalCtaForm"
+                (modelChange)="onFinalCtaChange($event)" />
+            </ng-container>
+
+            <ng-container *ngIf="editorTab === 'json'">
+              <p class="cf-meta marketing-website__json-intro">
+                Full <code>MarketingContent</code> payload. Import a file or edit directly; validators run on the server
+                when you save or publish.
+              </p>
+              <label class="marketing-admin-field" for="marketing-json-file">
+                <span>Import JSON file</span>
+                <input
+                  id="marketing-json-file"
+                  type="file"
+                  accept="application/json,.json"
+                  (change)="onFileSelected($event)" />
+              </label>
+              <label class="marketing-admin-field" for="marketing-json">
+                <span>Payload</span>
+                <textarea
+                  id="marketing-json"
+                  class="marketing-website__json"
+                  rows="16"
+                  [(ngModel)]="jsonText"
+                  placeholder="{ &quot;site&quot;: { ... }, &quot;hero&quot;: { ... }, ... }"
+                  spellcheck="false"
+                  aria-describedby="marketing-json-error"></textarea>
+              </label>
+              <p
+                *ngIf="jsonError"
+                id="marketing-json-error"
+                class="marketing-website__field-error"
+                role="alert">
+                {{ jsonError }}
+              </p>
+            </ng-container>
+
+            <div class="marketing-website__apply-row" *ngIf="editorTab !== 'json'">
+              <button type="button" class="cf-btn cf-btn-primary" (click)="applyCurrentTabToJson()">
+                {{ applyCurrentTabLabel }}
+              </button>
+              <p class="cf-helper">
+                Applies this section to the JSON payload below. Save draft or publish when ready.
+              </p>
+            </div>
+          </div>
+
+          <div class="marketing-website__notes-block">
+            <label class="marketing-admin-field" for="marketing-notes">
+              <span>Revision notes (optional)</span>
+              <input
+                id="marketing-notes"
+                type="text"
+                maxlength="1000"
+                [(ngModel)]="notes"
+                placeholder="e.g. Launch copy refresh" />
+              <p class="marketing-admin-field__hint">Shown in revision history for your team.</p>
+            </label>
+          </div>
+        </section>
+
+        <p
+          *ngIf="jsonError"
+          class="marketing-website__field-error marketing-website__global-json-error"
+          role="alert">
+          {{ jsonError }}
+        </p>
+
+        <footer class="cf-panel marketing-website__actions-bar" aria-label="Publish actions">
+          <p class="cf-meta marketing-website__actions-hint">
+            <strong>Save draft</strong> stores work without changing the live site.
+            <strong>Publish</strong> replaces the public marketing payload immediately.
+          </p>
+          <div class="marketing-website__actions">
+            <button
+              type="button"
+              class="cf-btn"
+              [disabled]="savingDraft || publishing"
+              (click)="saveDraft()">
+              {{ savingDraft ? 'Saving…' : 'Save draft' }}
+            </button>
+            <button
+              type="button"
+              class="cf-btn cf-btn-primary"
+              [disabled]="publishing || savingDraft"
+              (click)="publish()">
+              {{ publishing ? 'Publishing…' : 'Publish to public API' }}
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </ng-container>
+</section>
