@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 
@@ -27,6 +27,7 @@ interface BillingSettingsCard {
   standalone: true,
   imports: [CommonModule, PageHeaderComponent, RouterLink],
   templateUrl: './billing-settings-hub.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './billing-settings-hub.page.scss',
 })
 export class BillingSettingsHubPage {

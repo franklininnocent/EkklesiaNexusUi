@@ -9,19 +9,19 @@
   <div class="foc-executive-grid" *ngIf="rollup.money_comparable !== false && rollup.consolidated">
     <article class="foc-exec-card">
       <span class="foc-exec-card__label">Total Collected</span>
-      <strong>{{ formatCurrency(rollup.consolidated?.total_collected) }}</strong>
+      <strong>{{ formatCurrency($safeNavigationMigration(rollup.consolidated?.total_collected)) }}</strong>
     </article>
     <article class="foc-exec-card">
       <span class="foc-exec-card__label">This Month</span>
-      <strong>{{ formatCurrency(rollup.consolidated?.current_month_collected) }}</strong>
+      <strong>{{ formatCurrency($safeNavigationMigration(rollup.consolidated?.current_month_collected)) }}</strong>
     </article>
     <article class="foc-exec-card">
       <span class="foc-exec-card__label">Outstanding</span>
-      <strong>{{ formatCurrency(rollup.consolidated?.pending_dues) }}</strong>
+      <strong>{{ formatCurrency($safeNavigationMigration(rollup.consolidated?.pending_dues)) }}</strong>
     </article>
     <article class="foc-exec-card">
       <span class="foc-exec-card__label">Overdue</span>
-      <strong>{{ formatCurrency(rollup.consolidated?.overdue_amount) }}</strong>
+      <strong>{{ formatCurrency($safeNavigationMigration(rollup.consolidated?.overdue_amount)) }}</strong>
     </article>
   </div>
   <article class="foc-panel" *ngIf="rollup.parishes?.length">

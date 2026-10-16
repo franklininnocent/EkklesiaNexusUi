@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MassIntentionsWorkspaceShellBase } from './mass-intentions-workspace-shell.base';
 
@@ -49,6 +49,7 @@ import { MassIntentionsWorkspaceShellBase } from './mass-intentions-workspace-sh
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .mass-intentions-shell--v2 {

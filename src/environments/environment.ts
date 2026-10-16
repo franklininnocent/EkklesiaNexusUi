@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: '/api',
-  /** Public marketing site. Contact Support opens `{websiteUrl}/#contact`. */
+  /** Public marketing site origin. */
   websiteUrl: 'http://localhost:3010',
   appName: 'EkklesiaNexus',
   appVersion: '1.0.0',

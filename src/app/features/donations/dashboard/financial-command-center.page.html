@@ -23,7 +23,7 @@
     <app-foc-health-zone *ngIf="showLayer('health_overview')" [data]="data"></app-foc-health-zone>
     <app-foc-action-center *ngIf="showLayer('action_center')" [data]="data" [currencyCode]="currencyCode"></app-foc-action-center>
     <app-foc-analytics-center *ngIf="showLayer('analytics')" [data]="data"></app-foc-analytics-center>
-    <app-foc-satellites-grid [data]="data" [sections]="data.persona?.sections"></app-foc-satellites-grid>
+    <app-foc-satellites-grid [data]="data" [sections]="$safeNavigationMigration(data.persona?.sections)"></app-foc-satellites-grid>
   </ng-container>
 </section>
 

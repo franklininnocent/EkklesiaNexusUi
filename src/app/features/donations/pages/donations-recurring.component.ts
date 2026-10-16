@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
@@ -19,6 +19,7 @@ import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
   imports: [
     CfDatePipe,CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CfEmptyStateComponent, LoadingSkeletonComponent, PageHeaderComponent, CfCurrencyPipe, CfActionIconComponent],
   templateUrl: './donations-recurring.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-recurring.component.scss'
 })
 export class DonationsRecurringComponent implements OnInit {

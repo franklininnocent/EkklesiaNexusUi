@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
@@ -22,6 +22,7 @@ interface OrderDetail {
   standalone: true,
   imports: [CommonModule, FormsModule, PageHeaderComponent, BillingAdminNavComponent, ModalShellComponent],
   templateUrl: './billing-transactions.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['../../styles/billing-workspace.scss', './billing-transactions.page.scss'],
 })
 export class BillingTransactionsPage implements OnInit {

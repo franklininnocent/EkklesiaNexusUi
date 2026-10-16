@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { TenantBillingService } from './tenant-billing.service';
@@ -87,6 +87,7 @@ interface CreditNoteRow {
       </div>
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .billing-history__table-wrap {

@@ -39,7 +39,7 @@ describe('mass-week.util', () => {
     expect(oct.from).toBe('2026-10-01');
     expect(oct.to).toBe('2026-10-31');
     expect(oct.monthKey).toBe('2026-10');
-    expect(oct.label).toMatch(/October.*2026/);
+    expect(oct.label).toMatch(/Oct 2026/);
   });
 
   it('shifts calendar months', () => {

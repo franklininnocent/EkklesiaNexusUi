@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -74,6 +74,7 @@ interface AllocationRow {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, CfActionIconComponent, CfFamilyPickerLabelPipe, CfFamilyHeadNamePipe],
   templateUrl: './collection-day.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./collection-day.component.scss', '../styles/stewardship-action-icons.scss']
 })
 export class CollectionDayComponent implements OnInit, OnDestroy {

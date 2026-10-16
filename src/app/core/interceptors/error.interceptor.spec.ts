@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { errorInterceptor } from './error.interceptor';
@@ -23,7 +23,7 @@ describe('errorInterceptor support session handling', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([errorInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([errorInterceptor])),
         provideHttpClientTesting(),
         { provide: Router, useValue: { navigate: routerNavigate } },
         { provide: ToastService, useValue: { error: toastError } },
@@ -116,7 +116,7 @@ describe('errorInterceptor plan errors', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([errorInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([errorInterceptor])),
         provideHttpClientTesting(),
         { provide: Router, useValue: { navigate: routerNavigate } },
         { provide: ToastService, useValue: { error: jest.fn(), warning: toastWarning } },

@@ -154,7 +154,7 @@
           <dt>Parish</dt>
           <dd>{{ user.tenant?.name }}</dd>
         </div>
-        <div *ngIf="formatTenantTier(user.tenant?.tenant_tier) as tierLabel">
+        <div *ngIf="formatTenantTier($safeNavigationMigration(user.tenant?.tenant_tier)) as tierLabel">
           <dt>Tier</dt>
           <dd>{{ tierLabel }}</dd>
         </div>

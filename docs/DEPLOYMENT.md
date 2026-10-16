@@ -9,9 +9,9 @@ The API procedure is in `EkklesiaNexusApi/docs/DEPLOYMENT.md`. The marketing sit
 | Item | Value in this repository |
 | --- | --- |
 | Package name | `ekklesia-soft-ui` |
-| Angular | 21.2.25 (`@angular/core` and related packages) |
-| Angular CLI / build | 21.2.26 |
-| TypeScript | 5.9.3 |
+| Angular | 22.2.3 (`@angular/core` and related packages) |
+| Angular CLI / build | 22.2.3 |
+| TypeScript | 6.0.3 |
 | RxJS | 7.8.2 |
 | Lockfile | `package-lock.json` (npm). No pnpm or Yarn lockfile |
 | Production build | `npm run build:prod` which runs `ng build --configuration production` |
@@ -23,15 +23,15 @@ The API procedure is in `EkklesiaNexusApi/docs/DEPLOYMENT.md`. The marketing sit
 | Tests | `npm run test:ci` (Jest). Lint: `npm run lint` |
 | UAT build configuration | Not present. `angular.json` has `production` and `development` only |
 
-Angular 21 is in long-term support until June 2027 ([Angular releases](https://angular.dev/reference/releases)). Moving to Angular 22 is a separate application upgrade, not a deployment step.
+Angular 22 is the application line in this repository ([Angular releases](https://angular.dev/reference/releases)).
 
 ## Node.js
 
-Angular 21.2 accepts Node `^20.19.0`, `^22.12.0`, or `^24.0.0` ([Angular version compatibility](https://angular.dev/reference/versions)).
+Angular 22 accepts Node `^20.19.0`, `^22.12.0`, or `^24.0.0` ([Angular version compatibility](https://angular.dev/reference/versions)).
 
-Install **Node.js 24 LTS**, latest 24.x patch published on https://nodejs.org at install time. On 14 Oct 2026 that patch was 24.22.0. Node 24 remains supported through 30 Apr 2028. Do not install Node 26 Current. Node 20 is end of life.
+Install **Node.js 24 LTS**, latest 24.x patch published on https://nodejs.org at install time. Node 24 remains supported through 30 Apr 2028. Do not install Node 26 Current. Node 20 is end of life.
 
-CI currently uses Node 22. Before the first UAT build, run `npm run lint`, `npm run test:ci`, and `npm run build:prod` on the Node 24 patch you installed. If that fails, use Node 22.23.3 or newer 22.x until the failure is fixed. Node 22 maintenance support ends 30 Apr 2027.
+CI uses Node 24. Before the first UAT build, run `npm run lint`, `npm run test:ci`, and `npm run build:prod` on the Node 24 patch you installed.
 
 npm is the npm shipped with that Node build. Install with `npm ci`. Do not run `npm update` or `npm install` to refresh the lockfile during deployment.
 
@@ -219,5 +219,5 @@ No database change belongs to this application. Rolling back the UI does not rol
 
 - `<GIT_REMOTE_UI>`, `<SSH_HOST>`, and the approved UAT hostnames
 - A reviewed Angular `uat` build configuration. Until it exists, UAT deployment of this UI is blocked
-- Node 24 has not been recorded as the CI version. The local check on the inspected workstation was Node v24.16.0, which is inside the Angular 21 range and older than 24.22.0
+- CI uses Node 24. Confirm the UAT host is on the same Node 24 LTS patch used for `npm ci` and `npm run build:prod`
 - No deployment command in this document has been executed against UAT or Production

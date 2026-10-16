@@ -129,6 +129,8 @@ describe('MainLayoutComponent (RBAC visibility)', () => {
             entitlements$: of(null),
             load: jest.fn().mockReturnValue(of(null)),
             clear: jest.fn(),
+            appliesToCurrentUser: jest.fn().mockReturnValue(false),
+            plan: jest.fn().mockReturnValue(null),
           },
         },
       ]

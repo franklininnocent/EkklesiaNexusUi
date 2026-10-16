@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-billing-admin-nav',
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <nav class="cf-panel marketing-website__section-tabs billing-workspace__nav" aria-label="Billing administration">
       <a routerLink="/settings/marketing-website/plans" routerLinkActive="cf-btn-primary" class="cf-btn cf-btn-sm">Website plans</a>

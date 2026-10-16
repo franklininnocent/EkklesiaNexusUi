@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs';
@@ -298,6 +298,7 @@ type ReceiptSortColumn = 'receipt_number' | 'issued_on' | 'family_name' | 'payer
     </section>
   `,
   styleUrls: ['../styles/stewardship-dashboard-shared.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .stewardship-panel-head__copy {
       display: grid;

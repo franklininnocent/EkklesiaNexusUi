@@ -54,3 +54,6 @@ Thumbs.db
 /blob-report/
 /playwright/.cache/
 
+# Jest JUnit reporter output from npm run test:ci
+/junit.xml
+

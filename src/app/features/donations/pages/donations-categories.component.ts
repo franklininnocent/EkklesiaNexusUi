@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -19,6 +19,7 @@ import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-acti
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CfEmptyStateComponent, EditIconButtonComponent, LoadingSkeletonComponent, PageHeaderComponent, CfActionIconComponent],
   templateUrl: './donations-categories.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-categories.component.scss'
 })
 export class DonationsCategoriesComponent implements OnInit, OnDestroy {

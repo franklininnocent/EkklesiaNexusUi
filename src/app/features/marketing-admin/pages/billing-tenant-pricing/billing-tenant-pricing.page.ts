@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -20,6 +20,7 @@ import { BillingAdminService } from '../../services/billing-admin.service';
     BillingTenantPickerComponent,
   ],
   templateUrl: './billing-tenant-pricing.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['../../styles/billing-workspace.scss', './billing-tenant-pricing.page.scss'],
 })
 export class BillingTenantPricingPage implements OnInit {

@@ -3,7 +3,7 @@ import { officialBrand } from '../app/core/config/official-brand';
 export const environment = {
   production: true,
   apiUrl: officialBrand.apiBaseUrl,
-  /** Public marketing site. Contact Support opens `{websiteUrl}/#contact`. */
+  /** Public marketing site origin. */
   websiteUrl: officialBrand.websiteUrl,
   appName: officialBrand.productName,
   appVersion: '1.0.0',

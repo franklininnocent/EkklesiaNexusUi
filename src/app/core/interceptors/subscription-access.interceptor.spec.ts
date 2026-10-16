@@ -1,4 +1,4 @@
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@core/services/auth.service';
@@ -18,7 +18,7 @@ describe('subscriptionAccessInterceptor', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([subscriptionAccessInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([subscriptionAccessInterceptor])),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authService },
         {

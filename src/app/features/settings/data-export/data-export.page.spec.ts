@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { DataExportPage } from './data-export.page';
 import { TenantDataExportService } from './tenant-data-export.service';
@@ -21,7 +21,7 @@ describe('DataExportPage progress modal (DOM)', () => {
     TestBed.configureTestingModule({
       imports: [DataExportPage],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         {
           provide: TenantDataExportService,

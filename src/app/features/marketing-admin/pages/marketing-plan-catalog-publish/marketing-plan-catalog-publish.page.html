@@ -194,10 +194,10 @@
                 <dd *ngIf="publicPlan(plan.code)?.pricing_type === 'FREE'">Free</dd>
                 <dd *ngIf="publicPlan(plan.code)?.pricing_type === 'FIXED'">
                   <ng-container *ngIf="publicPlan(plan.code)?.monthly_price as monthly">
-                    {{ monthly | cfCurrency: publicPlan(plan.code)?.currency_code }} / month
+                    {{ monthly | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / month
                   </ng-container>
                   <ng-container *ngIf="publicPlan(plan.code)?.annual_price as annual">
-                    · {{ annual | cfCurrency: publicPlan(plan.code)?.currency_code }} / year
+                    · {{ annual | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / year
                   </ng-container>
                 </dd>
               </div>
@@ -332,7 +332,7 @@
               <h3>{{ plan.name }}</h3>
               <p class="cf-meta" *ngIf="publicPlan(plan.code)?.pricing_type === 'CUSTOM'">Custom pricing</p>
               <p class="cf-meta" *ngIf="publicPlan(plan.code)?.pricing_type === 'FIXED' && publicPlan(plan.code)?.monthly_price">
-                {{ publicPlan(plan.code)?.monthly_price | cfCurrency: publicPlan(plan.code)?.currency_code }} / month
+                {{ $safeNavigationMigration(publicPlan(plan.code)?.monthly_price) | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / month
               </p>
               <ul>
                 <li *ngFor="let feature of cardFeatures(plan)">{{ feature.name }}</li>

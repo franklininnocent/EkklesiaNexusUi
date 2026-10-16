@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -12,6 +12,7 @@ import { BillingAdminService } from '../../services/billing-admin.service';
   standalone: true,
   imports: [CommonModule, FormsModule, PageHeaderComponent, BillingAdminNavComponent, ModalShellComponent],
   templateUrl: './billing-investigations.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['../../styles/billing-workspace.scss'],
 })
 export class BillingInvestigationsPage implements OnInit {

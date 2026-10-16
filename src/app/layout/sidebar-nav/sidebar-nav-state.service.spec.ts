@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { SidebarNavStateService } from './sidebar-nav-state.service';
 import { buildAppSidebarSections } from './app-sidebar.config';
 import { flattenForest } from './sidebar-nav.util';
 
-@Component({ template: '', standalone: true })
+@Component({ template: '', changeDetection: ChangeDetectionStrategy.Eager,
+ standalone: true })
 class StubPageComponent {}
 
 describe('SidebarNavStateService', () => {

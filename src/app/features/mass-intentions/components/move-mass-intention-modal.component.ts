@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, computed, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -15,6 +15,7 @@ import { addDaysIso, isoDateLocal } from '../utils/mass-week.util';
   standalone: true,
   imports: [CommonModule, FormsModule, ModalShellComponent, NgSelectModule],
   templateUrl: './move-mass-intention-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './move-mass-intention-modal.component.scss',
 })
 export class MoveMassIntentionModalComponent implements OnChanges {

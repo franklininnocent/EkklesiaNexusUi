@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -60,6 +60,7 @@ type CampaignScheduleFilter = '' | 'upcoming' | 'in_progress' | 'ended';
     SortableDirective,
   ],
   templateUrl: './donations-campaigns.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./donations-campaigns.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsCampaignsComponent implements OnInit {

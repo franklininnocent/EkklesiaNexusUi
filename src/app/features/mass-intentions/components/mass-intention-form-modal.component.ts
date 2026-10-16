@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
@@ -24,6 +24,7 @@ export const MASS_INTENTION_ADD_CATEGORY = '__add_new__';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, ModalShellComponent, AddMassModalComponent],
   templateUrl: './mass-intention-form-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-intention-form-modal.component.scss',
 })
 export class MassIntentionFormModalComponent implements OnChanges {

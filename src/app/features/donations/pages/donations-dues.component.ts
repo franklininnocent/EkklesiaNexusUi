@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ParamMap } from '@angular/router';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -78,6 +78,7 @@ function isDueStatusFilter(value: string | null | undefined): value is DueStatus
     SortableDirective,
   ],
   templateUrl: './donations-dues.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./donations-dues.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsDuesComponent implements OnInit {

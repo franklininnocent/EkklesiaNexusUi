@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import {
@@ -80,6 +80,7 @@ const SORT_COLUMNS: MassIntentionSortColumn[] = [
     CfActionIconComponent,
   ],
   templateUrl: './mass-intentions-list.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-intentions-list.page.scss',
 })
 export class MassIntentionsListPageComponent {

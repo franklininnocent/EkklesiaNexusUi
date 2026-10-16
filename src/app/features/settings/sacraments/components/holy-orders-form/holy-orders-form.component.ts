@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -33,6 +33,7 @@ import { isStarterSubscriptionPlan } from '@shared/utils/subscription-plan.util'
     CfBrandLoaderComponent,
   ],
   templateUrl: './holy-orders-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './holy-orders-form.component.scss',
 })
 export class HolyOrdersFormComponent implements OnInit, OnDestroy {

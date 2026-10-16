@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -27,6 +27,7 @@ interface OfflineMethodRow {
   standalone: true,
   imports: [CommonModule, FormsModule, BillingAdminNavComponent, PageHeaderComponent, ModalShellComponent],
   templateUrl: './billing-controls.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['../../styles/billing-workspace.scss', './billing-controls.page.scss'],
 })
 export class BillingControlsPage implements OnInit {

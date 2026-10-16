@@ -227,7 +227,7 @@
             </div>
           </div>
           <dl class="clw-summary__meta">
-            <div><dt>Appointment</dt><dd>{{ formatDisplayDate(form.get('appointed_date')?.value) }}</dd></div>
+            <div><dt>Appointment</dt><dd>{{ formatDisplayDate($safeNavigationMigration(form.get('appointed_date')?.value)) }}</dd></div>
             <div><dt>Email</dt><dd>{{ form.get('email')?.value || '—' }}</dd></div>
             <div><dt>Phone</dt><dd>{{ form.get('phone')?.value || form.get('whatsapp_number')?.value || '—' }}</dd></div>
           </dl>

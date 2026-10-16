@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface CertificateDetailRow {
@@ -18,6 +18,7 @@ export interface CertificateDetailRow {
       </div>
     </dl>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .cert-details {
       display: grid;

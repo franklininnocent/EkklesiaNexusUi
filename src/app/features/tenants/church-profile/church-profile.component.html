@@ -182,7 +182,7 @@
                   <span class="cp-hero__figure-label">The Pope</span>
                   <span class="cp-hero__figure-name">{{ getPopeDisplayName() }}</span>
                   <span class="cp-hero__figure-meta" *ngIf="popeDetails?.pope_effective_from">
-                    Since {{ formatDate(popeDetails?.pope_effective_from) }}
+                    Since {{ formatDate($safeNavigationMigration(popeDetails?.pope_effective_from)) }}
                   </span>
                 </div>
               </div>

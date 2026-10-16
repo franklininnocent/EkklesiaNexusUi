@@ -12,10 +12,10 @@ describe('ImageViewerComponent', () => {
 
     fixture = TestBed.createComponent(ImageViewerComponent);
     component = fixture.componentInstance;
-    component.src = 'https://example.com/photo.jpg';
-    component.alt = 'Rev. Fr. John Doe';
-    component.title = 'Rev. Fr. John Doe';
-    component.subtitle = 'Parish Priest';
+    fixture.componentRef.setInput('src', 'https://example.com/photo.jpg');
+    fixture.componentRef.setInput('alt', 'Rev. Fr. John Doe');
+    fixture.componentRef.setInput('title', 'Rev. Fr. John Doe');
+    fixture.componentRef.setInput('subtitle', 'Parish Priest');
     fixture.detectChanges();
   });
 
@@ -24,7 +24,9 @@ describe('ImageViewerComponent', () => {
     expect(fixture.nativeElement.querySelector('[aria-label="Zoom out"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[aria-label="Zoom in"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[aria-label="Reset zoom to fit"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('img')?.getAttribute('alt')).toBe('Rev. Fr. John Doe');
+    expect(fixture.nativeElement.querySelector('.cf-image-viewer__image')?.getAttribute('alt')).toBe(
+      'Rev. Fr. John Doe',
+    );
   });
 
   it('starts in fit mode after image load', () => {

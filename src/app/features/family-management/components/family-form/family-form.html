@@ -247,10 +247,10 @@
                   <div class="em-member-card__title-row">
                     <h4 class="em-member-card__name">{{ getMemberDisplayName(memberIndex) }}</h4>
                     <span class="em-badge em-badge--status" [ngClass]="getMemberStatusClass(memberIndex)">
-                      {{ getStatusLabel(members.at(memberIndex).get('status')?.value) }}
+                      {{ getStatusLabel($safeNavigationMigration(members.at(memberIndex).get('status')?.value)) }}
                     </span>
                     <span class="em-badge em-badge--relationship" [ngClass]="getMemberRelationshipClass(memberIndex)">
-                      {{ getRelationshipLabel(members.at(memberIndex).get('relationship_to_head')?.value) }}
+                      {{ getRelationshipLabel($safeNavigationMigration(members.at(memberIndex).get('relationship_to_head')?.value)) }}
                     </span>
                   </div>
                   <div class="em-member-card__contacts">
@@ -327,11 +327,11 @@
                   </header>
                   <div class="em-detail-panel__body">
                     <dl class="em-field-list">
-                      <div class="em-field"><dt>Date of Birth</dt><dd>{{ formatMemberDate(members.at(memberIndex).get('date_of_birth')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Gender</dt><dd>{{ formatMemberField(members.at(memberIndex).get('gender')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Marital Status</dt><dd>{{ formatMemberField(members.at(memberIndex).get('marital_status')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Occupation</dt><dd>{{ formatMemberField(members.at(memberIndex).get('occupation')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Education</dt><dd>{{ formatMemberField(members.at(memberIndex).get('education')?.value) }}</dd></div>
+                      <div class="em-field"><dt>Date of Birth</dt><dd>{{ formatMemberDate($safeNavigationMigration(members.at(memberIndex).get('date_of_birth')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Gender</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('gender')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Marital Status</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('marital_status')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Occupation</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('occupation')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Education</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('education')?.value)) }}</dd></div>
                     </dl>
                   </div>
                 </section>
@@ -355,14 +355,14 @@
                   </header>
                   <div class="em-detail-panel__body">
                     <dl class="em-field-list em-field-list--grid">
-                      <div class="em-field"><dt>Baptism</dt><dd>{{ formatMemberDate(members.at(memberIndex).get('baptism_date')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Baptism Church</dt><dd>{{ formatMemberField(members.at(memberIndex).get('baptism_church_name')?.value) }}</dd></div>
-                      <div class="em-field"><dt>First Communion</dt><dd>{{ formatMemberDate(members.at(memberIndex).get('first_communion_date')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Confirmation</dt><dd>{{ formatMemberDate(members.at(memberIndex).get('confirmation_date')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Marriage</dt><dd>{{ formatMemberDate(members.at(memberIndex).get('marriage_date')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Marriage Place</dt><dd>{{ formatMemberField(members.at(memberIndex).get('marriage_place')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Spouse</dt><dd>{{ formatMemberField(members.at(memberIndex).get('marriage_spouse_name')?.value) }}</dd></div>
-                      <div class="em-field"><dt>Priest</dt><dd>{{ formatMemberField(members.at(memberIndex).get('baptism_priest_name')?.value) }}</dd></div>
+                      <div class="em-field"><dt>Baptism</dt><dd>{{ formatMemberDate($safeNavigationMigration(members.at(memberIndex).get('baptism_date')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Baptism Church</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('baptism_church_name')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>First Communion</dt><dd>{{ formatMemberDate($safeNavigationMigration(members.at(memberIndex).get('first_communion_date')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Confirmation</dt><dd>{{ formatMemberDate($safeNavigationMigration(members.at(memberIndex).get('confirmation_date')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Marriage</dt><dd>{{ formatMemberDate($safeNavigationMigration(members.at(memberIndex).get('marriage_date')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Marriage Place</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('marriage_place')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Spouse</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('marriage_spouse_name')?.value)) }}</dd></div>
+                      <div class="em-field"><dt>Priest</dt><dd>{{ formatMemberField($safeNavigationMigration(members.at(memberIndex).get('baptism_priest_name')?.value)) }}</dd></div>
                     </dl>
                   </div>
                 </section>

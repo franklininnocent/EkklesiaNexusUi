@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -13,6 +13,7 @@ import { DonationsReportsWorkbenchComponent } from './reports/donations-reports-
   selector: 'app-donations-reports',
   standalone: true,
   imports: [CommonModule, RouterModule, DonationsReportsWorkbenchComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="reports cf-page cf-financial-dashboard">
       <app-donations-reports-workbench

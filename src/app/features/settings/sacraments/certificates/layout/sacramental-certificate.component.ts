@@ -11,6 +11,7 @@ import {
   ViewChild,
   ViewChildren,
   inject,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -41,6 +42,7 @@ const MM_TO_PX = 96 / 25.4;
   standalone: true,
   imports: [CommonModule],
   templateUrl: './sacramental-certificate.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sacramental-certificate.component.scss',
 })
 export class SacramentalCertificateComponent implements AfterViewInit, OnChanges, OnDestroy {
