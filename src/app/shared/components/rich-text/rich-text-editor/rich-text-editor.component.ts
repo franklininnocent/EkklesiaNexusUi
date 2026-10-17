@@ -132,6 +132,12 @@ export class RichTextEditorComponent
 
   ngAfterViewInit(): void {
     this.ngControl = this.injector.get(NgControl, null, { optional: true, self: true });
+    const boundValue = this.ngControl?.control?.value as string | null | undefined;
+    const initialContent = prepareRichTextForEditor(
+      boundValue !== null && boundValue !== undefined && String(boundValue).trim() !== ''
+        ? boundValue
+        : this.pendingValue,
+    );
     this.zone.runOutsideAngular(() => {
       this.editor = new Editor({
         element: this.editorHost.nativeElement,
@@ -140,7 +146,7 @@ export class RichTextEditorComponent
           editable: !this.isDisabled,
         }),
         editable: !this.isDisabled,
-        content: prepareRichTextForEditor(this.pendingValue),
+        content: initialContent,
         editorProps: {
           attributes: {
             id: this.id,

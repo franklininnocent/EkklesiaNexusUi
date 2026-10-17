@@ -47,8 +47,8 @@
         [errorText]="requiredError('category_id', 'Category is required.')"
       >
         <select id="org-field-category" formControlName="category_id">
-          <option value="">Select category</option>
-          <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
+          <option [ngValue]="''">Select category</option>
+          <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.name }}</option>
         </select>
       </app-form-field>
 
@@ -59,8 +59,8 @@
         [errorText]="requiredError('type_id', 'Type is required.')"
       >
         <select id="org-field-type" formControlName="type_id">
-          <option value="">Select type</option>
-          <option *ngFor="let type of types" [value]="type.id">{{ type.name }}</option>
+          <option [ngValue]="''">Select type</option>
+          <option *ngFor="let type of types" [ngValue]="type.id">{{ type.name }}</option>
         </select>
       </app-form-field>
 
