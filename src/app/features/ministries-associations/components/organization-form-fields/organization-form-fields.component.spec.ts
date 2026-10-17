@@ -28,4 +28,15 @@ describe('OrganizationFormFieldsComponent', () => {
     expect(root.querySelector('#org-field-mission')).not.toBeNull();
     expect(root.querySelector('#org-field-objectives')).not.toBeNull();
   });
+
+  it('mounts contenteditable ProseMirror surfaces for About fields', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const editors = root.querySelectorAll('.ProseMirror[contenteditable="true"]');
+    expect(editors.length).toBe(4);
+    const description = root.querySelector('#org-field-description');
+    expect(description?.classList.contains('ProseMirror')).toBe(true);
+    expect(description?.getAttribute('contenteditable')).toBe('true');
+  });
 });

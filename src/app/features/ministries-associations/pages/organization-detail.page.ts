@@ -230,6 +230,10 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
 
     this.organizationId = id;
     this.loadOrganization(id);
+    // #region agent log
+    typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-about-4',hypothesisId:'L',location:'organization-detail.page.ts:ngOnInit',message:'ministries detail init',data:{canEdit:this.canEdit,canArchive:this.canArchive},timestamp:Date.now()})}).catch(()=>{});
+    console.info('[EN-ABOUT] init', { canEdit: this.canEdit, canArchive: this.canArchive });
+    // #endregion
   }
 
   ngOnDestroy(): void {
