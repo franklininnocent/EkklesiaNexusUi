@@ -35,6 +35,28 @@ describe('WebSettingsApiService', () => {
     expect(result).toEqual(expect.objectContaining({ contact_recipient_email: 'ops@example.com' }));
   });
 
+  it('loads a single enquiry detail', () => {
+    let result: unknown;
+    api.getEnquiry('11111111-1111-4111-8111-111111111111').subscribe((data) => (result = data));
+    const req = http.expectOne(`${environment.apiUrl}/admin/contact-enquiries/11111111-1111-4111-8111-111111111111`);
+    req.flush({
+      success: true,
+      data: {
+        id: '11111111-1111-4111-8111-111111111111',
+        organisation: 'St Mary Parish',
+        subject: 'Demo request',
+        message: 'Please contact us.',
+      },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        organisation: 'St Mary Parish',
+        subject: 'Demo request',
+        message: 'Please contact us.',
+      }),
+    );
+  });
+
   it('lists enquiries with query params', () => {
     api.listEnquiries({ search: 'alpha', page: 2 }).subscribe((result) => {
       expect(result.rows.length).toBe(1);

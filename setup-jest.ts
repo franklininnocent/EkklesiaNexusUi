@@ -4,6 +4,13 @@ setupZoneTestEnv();
 // Workaround for Angular standalone tests where some browser APIs may be missing
 Object.defineProperty(window, 'scrollTo', { value: () => {}, writable: true });
 
+// jsdom does not implement canvas; Chart.js specs otherwise spam "Not implemented: getContext".
+if (typeof HTMLCanvasElement !== 'undefined') {
+  jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    () => ({}) as CanvasRenderingContext2D,
+  );
+}
+
 // Jasmine-style matcher shims
 expect.extend({
   toBeTrue(received: any) {
