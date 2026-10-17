@@ -367,6 +367,9 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
 
     this.ensureTaxonomiesLoaded(() => {
       this.patchFormFromOrganization(this.organization!);
+      // #region agent log
+      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix',hypothesisId:'G',location:'organization-detail.page.ts:startEditProfile',message:'edit profile started',data:{canEdit:this.canEdit,isArchived:this.isArchived},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       this.editingProfile = true;
       this.submitted = false;
       this.formError = null;
