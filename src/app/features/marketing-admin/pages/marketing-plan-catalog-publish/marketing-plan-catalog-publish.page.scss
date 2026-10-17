@@ -11,6 +11,17 @@
   max-width: 100%;
 }
 
+.mkt-plans__regional-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+.mkt-plans__regional-label {
+  display: block;
+  font-weight: 600;
+}
+
 .marketing-website__section-tabs {
   display: flex;
   flex-wrap: wrap;

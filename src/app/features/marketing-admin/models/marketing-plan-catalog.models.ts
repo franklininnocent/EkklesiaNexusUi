@@ -107,6 +107,22 @@ export type PlanCatalogEditorPlan = {
   features: PlanCatalogEditorFeature[];
 };
 
+export type PlanCatalogRegionalPriceEntry = {
+  monthly_price?: string | null;
+  annual_price?: string | null;
+};
+
+export type PlanCatalogRegionalPrices = Partial<
+  Record<'INR' | 'USD' | 'BRL', PlanCatalogRegionalPriceEntry>
+>;
+
+export type PlanCatalogRegionalPriceRow = {
+  currency: 'INR' | 'USD' | 'BRL';
+  label: string;
+  monthly: string | null;
+  annual: string | null;
+};
+
 export type PlanCatalogPublicPlan = {
   code: string;
   name: string;
@@ -119,6 +135,7 @@ export type PlanCatalogPublicPlan = {
   currency_code?: string | null;
   monthly_price?: string | null;
   annual_price?: string | null;
+  regional_prices?: PlanCatalogRegionalPrices;
   billing_intervals?: string[];
   trial_days?: number | null;
   limits?: PlanCatalogPublicLimit[];

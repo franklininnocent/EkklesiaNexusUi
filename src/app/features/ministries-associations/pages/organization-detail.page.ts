@@ -37,6 +37,8 @@ import { MinistriesApiService } from '../services/ministries-api.service';
 import {
   createOrganizationFormGroup,
   mapOrganizationFieldMessage,
+  mergeCurrentTaxonomy,
+  toDateInputValue,
   todayIsoDate,
 } from '../utils/organization-form.util';
 import { ministriesLink } from '../utils/ministries-links';
@@ -366,7 +368,19 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
     }
 
     this.ensureTaxonomiesLoaded(() => {
-      this.patchFormFromOrganization(this.organization!);
+      if (!this.organization) {
+        return;
+      }
+      // Patch before *ngIf creates editors so TipTap CVA pendingValue is populated.
+      this.categories = mergeCurrentTaxonomy(
+        this.categories,
+        this.organization.category as OrganizationCategory | undefined,
+      );
+      this.types = mergeCurrentTaxonomy(
+        this.types,
+        this.organization.type as OrganizationType | undefined,
+      );
+      this.patchFormFromOrganization(this.organization);
       this.editingProfile = true;
       this.submitted = false;
       this.formError = null;
@@ -395,6 +409,8 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.formError = 'Please fix the highlighted fields before saving.';
+      this.toastService.error(this.formError);
       this.cdr.markForCheck();
       return;
     }
@@ -663,7 +679,7 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
       mission: org.mission ?? '',
       objectives: org.objectives ?? '',
       patron_saint: org.patron_saint ?? '',
-      established_date: org.established_date ?? '',
+      established_date: toDateInputValue(org.established_date),
       theme_color: org.theme_color ?? '',
       email: org.email ?? '',
       phone: org.phone ?? '',
