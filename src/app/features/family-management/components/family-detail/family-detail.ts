@@ -291,7 +291,11 @@ export class FamilyDetail implements OnInit, OnDestroy {
     }
 
     if ((profile as any).address) {
-      this.homeParishAddress = String((profile as any).address);
+      const profileAddress = (profile as any).address;
+      // #region agent log
+      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'E',location:'family-detail.ts:applyChurchProfileContext',message:'church profile address field',data:{addressType:typeof profileAddress,addressString:String(profileAddress),hasObjectObject:String(profileAddress).includes('[object Object]')},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      this.homeParishAddress = String(profileAddress);
     }
   }
 
@@ -309,7 +313,14 @@ export class FamilyDetail implements OnInit, OnDestroy {
       return null;
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'A',location:'family-detail.ts:composeTenantAddress',message:'preferred address field types',data:{full_address:preferred.full_address??null,countryType:typeof (preferred as {country?:unknown}).country,countryValue:(preferred as {country?:unknown}).country,stateType:typeof preferred.state_province,stateValue:preferred.state_province},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
     if (preferred.full_address) {
+      // #region agent log
+      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'C',location:'family-detail.ts:composeTenantAddress',message:'using full_address branch',data:{full_address:preferred.full_address,hasObjectObject:String(preferred.full_address).includes('[object Object]')},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       return preferred.full_address;
     }
 
@@ -323,7 +334,12 @@ export class FamilyDetail implements OnInit, OnDestroy {
       preferred.pin_zip_code
     ].filter(segment => !!segment && String(segment).trim().length > 0);
 
-    return segments.length ? segments.join(', ') : null;
+    const composed = segments.length ? segments.join(', ') : null;
+    // #region agent log
+    fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'A',location:'family-detail.ts:composeTenantAddress',message:'composed tenant address',data:{composed,segmentStrings:segments.map(s=>String(s)),hasObjectObject:composed?.includes('[object Object]')??false},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
+    return composed;
   }
 
   private pickPreferredAddress(addresses: Address[]): Address | undefined {

@@ -158,6 +158,11 @@ export class MemberSacramentDetailComponent {
     const m = this.member;
     switch (this.canonical) {
       case 'baptism':
+        // #region agent log
+        if (m.baptism_church_address?.includes('[object Object]')) {
+          fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'D',location:'member-sacrament-detail.component.ts:displayFields',message:'baptism_church_address raw from member',data:{baptism_church_address:m.baptism_church_address,baptism_location_type:m.baptism_location_type},timestamp:Date.now()})}).catch(()=>{});
+        }
+        // #endregion
         return this.buildFields([
           { label: 'Date', value: m.baptism_date, always: true },
           { label: 'Church', value: m.baptism_church_name },
