@@ -49,6 +49,10 @@ import {
   isMemberApiSuccess,
   prepareFamilyMemberPayload
 } from '../../utils/prepare-family-member-payload.util';
+import {
+  joinAddressParts,
+  sanitizeStoredAddressDisplay
+} from '../../utils/family-address.util';
 import { PhoneCodeService } from '@core/services/phone-code.service';
 import { AuthService } from '@core/services/auth.service';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
@@ -292,10 +296,24 @@ export class FamilyDetail implements OnInit, OnDestroy {
 
     if ((profile as any).address) {
       const profileAddress = (profile as any).address;
+      const resolved =
+        typeof profileAddress === 'string'
+          ? sanitizeStoredAddressDisplay(profileAddress)
+          : joinAddressParts(
+              profileAddress.line1,
+              profileAddress.line2,
+              profileAddress.district,
+              profileAddress.city,
+              profileAddress.state_province,
+              profileAddress.country,
+              profileAddress.pin_zip_code
+            );
       // #region agent log
-      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'E',location:'family-detail.ts:applyChurchProfileContext',message:'church profile address field',data:{addressType:typeof profileAddress,addressString:String(profileAddress),hasObjectObject:String(profileAddress).includes('[object Object]')},timestamp:Date.now()})}).catch(()=>{});
+      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'post-fix',hypothesisId:'E',location:'family-detail.ts:applyChurchProfileContext',message:'church profile address resolved',data:{addressType:typeof profileAddress,resolved,hasObjectObject:resolved?.includes('[object Object]')??false},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
-      this.homeParishAddress = String(profileAddress);
+      if (resolved) {
+        this.homeParishAddress = resolved;
+      }
     }
   }
 
@@ -317,14 +335,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
     fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'A',location:'family-detail.ts:composeTenantAddress',message:'preferred address field types',data:{full_address:preferred.full_address??null,countryType:typeof (preferred as {country?:unknown}).country,countryValue:(preferred as {country?:unknown}).country,stateType:typeof preferred.state_province,stateValue:preferred.state_province},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
 
-    if (preferred.full_address) {
-      // #region agent log
-      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'C',location:'family-detail.ts:composeTenantAddress',message:'using full_address branch',data:{full_address:preferred.full_address,hasObjectObject:String(preferred.full_address).includes('[object Object]')},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-      return preferred.full_address;
-    }
-
-    const segments = [
+    const fromParts = joinAddressParts(
       preferred.line1,
       preferred.line2,
       preferred.district,
@@ -332,11 +343,13 @@ export class FamilyDetail implements OnInit, OnDestroy {
       preferred.state_province,
       preferred.country,
       preferred.pin_zip_code
-    ].filter(segment => !!segment && String(segment).trim().length > 0);
+    );
 
-    const composed = segments.length ? segments.join(', ') : null;
+    const fromFull = sanitizeStoredAddressDisplay(preferred.full_address);
+    const composed = fromFull && !fromFull.includes('[object Object]') ? fromFull : fromParts;
+
     // #region agent log
-    fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'pre-fix',hypothesisId:'A',location:'family-detail.ts:composeTenantAddress',message:'composed tenant address',data:{composed,segmentStrings:segments.map(s=>String(s)),hasObjectObject:composed?.includes('[object Object]')??false},timestamp:Date.now()})}).catch(()=>{});
+    fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'post-fix',hypothesisId:'A',location:'family-detail.ts:composeTenantAddress',message:'composed tenant address',data:{composed,fromFull,fromParts,hasObjectObject:composed?.includes('[object Object]')??false},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
 
     return composed;

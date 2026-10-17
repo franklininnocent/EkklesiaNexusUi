@@ -17,6 +17,7 @@ import {
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { resolveMarriageSpouseDisplayName } from '../../utils/marriage-spouse-display.util';
 import { sacramentSupportsCertificate } from '@features/settings/sacraments/utils/sacrament-certificate.util';
+import { sanitizeStoredAddressDisplay } from '../../utils/family-address.util';
 
 export interface SacramentDisplayField {
   label: string;
@@ -227,7 +228,9 @@ export class MemberSacramentDetailComponent {
         const display =
           entry.label === 'Date'
             ? this.formatSacramentDate(entry.value)
-            : this.formatText(entry.value);
+            : entry.label === 'Address'
+              ? this.formatAddress(entry.value)
+              : this.formatText(entry.value);
         if (!always && !entry.value?.trim()) {
           return null;
         }
@@ -238,6 +241,16 @@ export class MemberSacramentDetailComponent {
 
   private formatText(value: string | null | undefined): string {
     return value?.trim() ? value.trim() : '—';
+  }
+
+  private formatAddress(value: string | null | undefined): string {
+    const sanitized = sanitizeStoredAddressDisplay(value);
+    // #region agent log
+    if (value?.includes('[object Object]')) {
+      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'post-fix',hypothesisId:'D',location:'member-sacrament-detail.component.ts:formatAddress',message:'baptism address sanitized for display',data:{raw:value,sanitized},timestamp:Date.now()})}).catch(()=>{});
+    }
+    // #endregion
+    return sanitized || '—';
   }
 
   private locationChips(locationType: string | null | undefined): string[] {
