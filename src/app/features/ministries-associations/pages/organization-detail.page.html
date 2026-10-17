@@ -136,6 +136,9 @@
       [attr.aria-labelledby]="tabId('profile')"
       [hidden]="activeTab !== 'profile'"
     >
+      <div class="cf-inline-alert" *ngIf="!canEdit && !isArchived" role="status">
+        <p>You can view this profile. Ask your parish administrator if you need permission to edit organization details.</p>
+      </div>
       <form
         *ngIf="editingProfile; else profileReadonly"
         class="organization-profile-form"

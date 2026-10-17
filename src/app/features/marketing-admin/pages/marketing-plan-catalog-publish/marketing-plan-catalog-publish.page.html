@@ -167,7 +167,7 @@
 
       <ng-container *ngIf="workspaceTab === 'plans'">
         <p class="cf-meta mkt-plans__lead">
-          Uncheck a plan to keep it off the marketing website. This does not change Subscription entitlements. Use Features to choose what each listed plan advertises.
+          Choose which plans appear on the marketing homepage and confirm regional prices below. Homepage plan feature lists use fixed website copy for now; only plan names and prices come from this published catalog.
         </p>
         <app-cf-empty-state
           *ngIf="!status.draft"
@@ -199,20 +199,30 @@
                   <ng-container *ngIf="publicPlan(plan.code)?.annual_price as annual">
                     · {{ annual | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / year
                   </ng-container>
+                  <span class="cf-meta">Default list terms (subscription catalog).</span>
+                </dd>
+              </div>
+              <div *ngIf="regionalPriceRows(publicPlan(plan.code)).length">
+                <dt>Website regional pricing</dt>
+                <dd>
+                  <ul class="mkt-plans__regional-list">
+                    <li *ngFor="let row of regionalPriceRows(publicPlan(plan.code))">
+                      <span class="mkt-plans__regional-label">{{ row.label }}</span>
+                      <ng-container *ngIf="row.monthly as monthly">
+                        {{ monthly | cfCurrency: row.currency }} / month
+                      </ng-container>
+                      <ng-container *ngIf="row.annual as annual">
+                        · {{ annual | cfCurrency: row.currency }} / year
+                      </ng-container>
+                    </li>
+                  </ul>
                 </dd>
               </div>
               <div *ngIf="publicPlan(plan.code)?.billing_intervals?.length">
                 <dt>Billing</dt>
                 <dd>{{ publicPlan(plan.code)?.billing_intervals?.join(', ') }}</dd>
               </div>
-              <div>
-                <dt>On website</dt>
-                <dd>{{ plan.visible_count }} shown · {{ plan.hidden_count }} hidden</dd>
-              </div>
             </dl>
-            <ul class="mkt-plans__limits" *ngIf="publicPlan(plan.code)?.limits?.length">
-              <li *ngFor="let limit of publicPlan(plan.code)?.limits">{{ limitLabel(limit) }}</li>
-            </ul>
             <label class="mkt-plans__list-toggle">
               <input
                 type="checkbox"
@@ -222,7 +232,6 @@
               <span>Show this plan on the website</span>
             </label>
             <p class="cf-meta" *ngIf="!plan.listed">Hidden from the website until you check this and publish.</p>
-            <button type="button" class="cf-btn cf-btn-sm" (click)="selectPlan(plan.code)">Edit features</button>
           </article>
         </div>
       </ng-container>

@@ -113,6 +113,18 @@ curl -sS https://<APP_HOST>/ | grep -oE 'main-[A-Z0-9]+\.js'
 curl -sS "https://<APP_HOST>/$(curl -sS https://<APP_HOST>/ | grep -oE 'main-[A-Z0-9]+\.js')" | grep -q 'pathname.startsWith(`/api/`)&&' && echo LIVE_MEDIA_FIX_OK
 ```
 
+### Ministry About rich-text editor releases
+
+Before copying a new `browser/` tree to production, confirm the artifact has no debug endpoints:
+
+```bash
+grep -R --binary-files=without-match -n '127.0.0.1' dist/ekklesia-soft-ui/browser && echo LOOPBACK_FOUND || echo LOOPBACK_ABSENT
+```
+
+On the server, **do not assume** DocumentRoot. Inspect Apache `sites-enabled` for `app.ekklesianexus.com` and whether the live path is a directory, symlink, or `/srv/ekklesianexus/ui/releases/<id>`. Prior live ops used `/var/www/ekklesianexus-app` as DocumentRoot; reconcile with the active vhost before `rsync`.
+
+Post-publish functional check (authorized test ministry): Edit profile → type in Description, Vision, Mission, Objectives → Save → reload. See `docs/frontend/rich-text-editor.md` for the full checklist and rollback (preserve the previous `browser/` copy before overwrite).
+
 If portraits or logos break before a UI rollout, proxy `/api` on the application vhost to the API host. See `docs/deploy/apache-app-ekklesianexus.conf.example`.
 
 UAT, after a reviewed `uat` build configuration exists:

@@ -13,6 +13,7 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
+  ViewEncapsulation,
   forwardRef,
   inject,
 } from '@angular/core';
@@ -35,6 +36,9 @@ type AlignValue = 'left' | 'center' | 'right' | 'justify';
   imports: [CommonModule, FormsModule, ModalShellComponent],
   templateUrl: './rich-text-editor.component.html',
   styleUrl: './rich-text-editor.component.scss',
+  // TipTap creates .ProseMirror outside Angular's template; emulated
+  // encapsulation left the editable surface unstyled (tiny hit target).
+  encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
@@ -132,6 +136,12 @@ export class RichTextEditorComponent
 
   ngAfterViewInit(): void {
     this.ngControl = this.injector.get(NgControl, null, { optional: true, self: true });
+    const boundValue = this.ngControl?.control?.value as string | null | undefined;
+    const initialContent = prepareRichTextForEditor(
+      boundValue !== null && boundValue !== undefined && String(boundValue).trim() !== ''
+        ? boundValue
+        : this.pendingValue,
+    );
     this.zone.runOutsideAngular(() => {
       this.editor = new Editor({
         element: this.editorHost.nativeElement,
@@ -140,7 +150,7 @@ export class RichTextEditorComponent
           editable: !this.isDisabled,
         }),
         editable: !this.isDisabled,
-        content: prepareRichTextForEditor(this.pendingValue),
+        content: initialContent,
         editorProps: {
           attributes: {
             id: this.id,
@@ -191,7 +201,41 @@ export class RichTextEditorComponent
     });
 
     this.pendingValue = null;
+    this.applyEditableSurfaceLayout();
     this.cdr.markForCheck();
+  }
+
+  onSurfaceClick(event: MouseEvent): void {
+    if (this.isDisabled || !this.editor) {
+      return;
+    }
+    if (event.target === this.editorHost.nativeElement) {
+      this.editor.chain().focus('end').run();
+    }
+  }
+
+  private applyEditableSurfaceLayout(): void {
+    const pm = this.editor?.view.dom as HTMLElement | undefined;
+    if (!pm) {
+      return;
+    }
+    pm.style.minHeight = '100%';
+    pm.style.height = '100%';
+    pm.style.flex = '1 1 auto';
+    pm.style.boxSizing = 'border-box';
+    pm.style.padding = '0.75rem 0.85rem';
+    pm.style.outline = 'none';
+    pm.style.whiteSpace = 'pre-wrap';
+    pm.style.caretColor = 'currentColor';
+    pm.style.userSelect = 'text';
+    pm.style.setProperty('-webkit-user-select', 'text');
+    // Label `for` must target the contenteditable node, not the host.
+    if (this.hostEl.nativeElement.getAttribute('id') === this.id) {
+      this.hostEl.nativeElement.removeAttribute('id');
+    }
+    if (this.id) {
+      pm.setAttribute('id', this.id);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
