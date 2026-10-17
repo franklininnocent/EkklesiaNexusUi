@@ -230,10 +230,6 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
 
     this.organizationId = id;
     this.loadOrganization(id);
-    // #region agent log
-    typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-about-4',hypothesisId:'L',location:'organization-detail.page.ts:ngOnInit',message:'ministries detail init',data:{canEdit:this.canEdit,canArchive:this.canArchive},timestamp:Date.now()})}).catch(()=>{});
-    console.info('[EN-ABOUT] init', { canEdit: this.canEdit, canArchive: this.canArchive });
-    // #endregion
   }
 
   ngOnDestroy(): void {
@@ -390,9 +386,6 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
       this.formError = null;
       this.fieldErrors = {};
       this.setActiveTab('profile');
-      // #region agent log
-      typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-3',hypothesisId:'J',location:'organization-detail.page.ts:startEditProfile',message:'edit profile form patched before editors',data:{canEdit:this.canEdit,isArchived:this.isArchived,formValid:this.form.valid,categoryId:this.form.controls.category_id.value,typeId:this.form.controls.type_id.value,hasDescription:!!this.form.controls.description.value},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       this.cdr.markForCheck();
     });
   }
@@ -445,10 +438,6 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           this.savingProfile = false;
-          const status = error instanceof HttpErrorResponse ? error.status : null;
-          // #region agent log
-          typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-3',hypothesisId:'K',location:'organization-detail.page.ts:saveProfile',message:'save profile failed',data:{status},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
           this.applySubmitError(error, 'Could not update organization. Please try again.');
           this.cdr.markForCheck();
         },

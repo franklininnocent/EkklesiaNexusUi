@@ -203,33 +203,6 @@ export class RichTextEditorComponent
     this.pendingValue = null;
     this.applyEditableSurfaceLayout();
     this.cdr.markForCheck();
-    // #region agent log
-    const pm = this.editor?.view.dom as HTMLElement | undefined;
-    const mountData = {
-      id: this.id,
-      isDisabled: this.isDisabled,
-      isEditable: this.editor?.isEditable ?? null,
-      contenteditable: pm?.getAttribute('contenteditable') ?? null,
-      pmHeight: pm?.clientHeight ?? null,
-      surfaceHeight: this.editorHost.nativeElement.clientHeight,
-      pmClass: pm?.className ?? null,
-    };
-    console.info('[EN-ABOUT] editor mount', mountData);
-    typeof fetch === 'function' &&
-      fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '158497' },
-        body: JSON.stringify({
-          sessionId: '158497',
-          runId: 'ministries-about-5',
-          hypothesisId: 'P',
-          location: 'rich-text-editor.component.ts:ngAfterViewInit',
-          message: 'tiptap mount metrics',
-          data: mountData,
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-    // #endregion
   }
 
   onSurfaceClick(event: MouseEvent): void {

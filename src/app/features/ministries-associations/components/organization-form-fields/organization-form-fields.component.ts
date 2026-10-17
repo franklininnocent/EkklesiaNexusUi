@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  Input,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FormFieldComponent } from '@shared/components/form-field/form-field.component';
 import { RichTextEditorComponent } from '@shared/components/rich-text/rich-text-editor/rich-text-editor.component';
@@ -31,9 +24,7 @@ import { OrganizationFormGroup } from '../../utils/organization-form.util';
   styleUrl: './organization-form-fields.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,
 })
-export class OrganizationFormFieldsComponent implements AfterViewInit {
-  private readonly hostEl = inject(ElementRef<HTMLElement>);
-
+export class OrganizationFormFieldsComponent {
   @Input({ required: true }) form!: OrganizationFormGroup;
   @Input() categories: OrganizationCategory[] = [];
   @Input() types: OrganizationType[] = [];
@@ -42,13 +33,6 @@ export class OrganizationFormFieldsComponent implements AfterViewInit {
   @Input({ required: true }) maxEstablishedDate!: string;
   /** Desktop two-column section layout (create + detail edit). */
   @Input() columns = false;
-
-  ngAfterViewInit(): void {
-    const editorCount = this.hostEl.nativeElement.querySelectorAll('app-rich-text-editor').length;
-    // #region agent log
-    typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-3',hypothesisId:'F',location:'organization-form-fields.component.ts:ngAfterViewInit',message:'rich text editors mounted',data:{editorCount,expected:4},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }
 
   /** Resolves the first applicable validator/server error message for a control. */
   error(name: keyof OrganizationFormGroup['controls'], messages: Record<string, string>): string | null {
