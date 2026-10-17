@@ -94,15 +94,28 @@
     (close)="showFilters = false"
   ></app-advanced-search-panel>
 
-  <app-modal-shell *ngIf="detailOpen && selected" title="Enquiry details" size="md" (closeRequested)="closeDetail()">
-    <dl class="contact-enquiries__detail">
+  <app-modal-shell
+    *ngIf="detailOpen && selected"
+    title="Enquiry details"
+    size="md"
+    [loading]="detailLoading"
+    loadingLabel="Loading enquiry…"
+    (closeRequested)="closeDetail()"
+  >
+    <div class="cf-inline-alert cf-panel" *ngIf="detailError" role="alert">
+      <p>{{ detailError }}</p>
+    </div>
+    <dl class="contact-enquiries__detail" *ngIf="!detailLoading">
       <div><dt>Reference</dt><dd>{{ selected.reference_number }}</dd></div>
       <div><dt>Name</dt><dd>{{ selected.full_name }}</dd></div>
       <div><dt>Email</dt><dd>{{ selected.email }}</dd></div>
-      <div><dt>Phone</dt><dd>{{ selected.phone || '—' }}</dd></div>
-      <div><dt>Organisation</dt><dd>{{ selected.organisation || '—' }}</dd></div>
-      <div><dt>Subject</dt><dd>{{ selected.subject || '—' }}</dd></div>
-      <div><dt>Submitted</dt><dd>{{ selected.submitted_at | cfDate: 'datetime' }}</dd></div>
+      <div><dt>Phone</dt><dd>{{ displayField(selected.phone) }}</dd></div>
+      <div><dt>Organisation</dt><dd>{{ displayField(selected.organisation) }}</dd></div>
+      <div><dt>Subject</dt><dd>{{ displayField(selected.subject) }}</dd></div>
+      <div>
+        <dt>Submitted</dt>
+        <dd>{{ selected.submitted_at_label || (selected.submitted_at | cfDate: 'datetime') }}</dd>
+      </div>
       <div>
         <dt>Status</dt>
         <dd><app-status-badge [label]="statusLabel(selected.enquiry_status)" [tone]="enquiryTone(selected.enquiry_status)"></app-status-badge></dd>
@@ -112,7 +125,7 @@
         <dd><app-status-badge [label]="statusLabel(selected.delivery_status)" [tone]="deliveryTone(selected.delivery_status)"></app-status-badge></dd>
       </div>
       <div *ngIf="selected.last_delivery_error"><dt>Delivery note</dt><dd>{{ selected.last_delivery_error }}</dd></div>
-      <div class="contact-enquiries__message"><dt>Message</dt><dd>{{ selected.message }}</dd></div>
+      <div class="contact-enquiries__message"><dt>Details</dt><dd>{{ displayField(selected.message) }}</dd></div>
     </dl>
     <ul class="contact-enquiries__events" *ngIf="selected.delivery_events?.length">
       <li *ngFor="let event of selected.delivery_events">
