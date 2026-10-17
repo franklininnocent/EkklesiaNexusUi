@@ -16,15 +16,38 @@ export function todayIsoDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-export function notFutureDateValidator(control: AbstractControl): ValidationErrors | null {
-  const value = String(control.value ?? '').trim();
+/** HTML date inputs require YYYY-MM-DD; APIs often return ISO-8601 datetimes. */
+export function toDateInputValue(value: string | null | undefined): string {
   if (!value) {
+    return '';
+  }
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(String(value).trim());
+  return match ? match[1] : '';
+}
+
+export function notFutureDateValidator(control: AbstractControl): ValidationErrors | null {
+  const datePart = toDateInputValue(String(control.value ?? ''));
+  if (!datePart) {
     return null;
   }
-  if (value > todayIsoDate()) {
+  if (datePart > todayIsoDate()) {
     return { futureDate: true };
   }
   return null;
+}
+
+/** Keep the organization's current category/type selectable even if it is inactive. */
+export function mergeCurrentTaxonomy<T extends { id: string }>(
+  list: T[],
+  current: T | null | undefined,
+): T[] {
+  if (!current?.id) {
+    return list;
+  }
+  if (list.some((item) => item.id === current.id)) {
+    return list;
+  }
+  return [...list, current];
 }
 
 export function createOrganizationFormGroup(fb: FormBuilder) {

@@ -7,8 +7,6 @@ import {
   OnDestroy,
   OnInit,
   inject,
-  Injector,
-  afterNextRender,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -39,6 +37,8 @@ import { MinistriesApiService } from '../services/ministries-api.service';
 import {
   createOrganizationFormGroup,
   mapOrganizationFieldMessage,
+  mergeCurrentTaxonomy,
+  toDateInputValue,
   todayIsoDate,
 } from '../utils/organization-form.util';
 import { ministriesLink } from '../utils/ministries-links';
@@ -110,7 +110,6 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly injector = inject(Injector);
 
   readonly tabLabels = TAB_LABELS;
   readonly profileDirectionItems = PROFILE_DIRECTION_ITEMS;
@@ -369,26 +368,28 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
     }
 
     this.ensureTaxonomiesLoaded(() => {
+      if (!this.organization) {
+        return;
+      }
+      // Patch before *ngIf creates editors so TipTap CVA pendingValue is populated.
+      this.categories = mergeCurrentTaxonomy(
+        this.categories,
+        this.organization.category as OrganizationCategory | undefined,
+      );
+      this.types = mergeCurrentTaxonomy(
+        this.types,
+        this.organization.type as OrganizationType | undefined,
+      );
+      this.patchFormFromOrganization(this.organization);
       this.editingProfile = true;
       this.submitted = false;
       this.formError = null;
       this.fieldErrors = {};
       this.setActiveTab('profile');
+      // #region agent log
+      typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-3',hypothesisId:'J',location:'organization-detail.page.ts:startEditProfile',message:'edit profile form patched before editors',data:{canEdit:this.canEdit,isArchived:this.isArchived,formValid:this.form.valid,categoryId:this.form.controls.category_id.value,typeId:this.form.controls.type_id.value,hasDescription:!!this.form.controls.description.value},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       this.cdr.markForCheck();
-      afterNextRender(
-        () => {
-          if (!this.editingProfile || !this.organization) {
-            return;
-          }
-          this.patchFormFromOrganization(this.organization);
-          this.form.updateValueAndValidity({ emitEvent: false });
-          // #region agent log
-          fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-2',hypothesisId:'J',location:'organization-detail.page.ts:startEditProfile',message:'edit profile form patched after render',data:{canEdit:this.canEdit,isArchived:this.isArchived,formValid:this.form.valid,categoryId:this.form.controls.category_id.value,typeId:this.form.controls.type_id.value},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
-          this.cdr.markForCheck();
-        },
-        { injector: this.injector },
-      );
     });
   }
 
@@ -411,6 +412,8 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.formError = 'Please fix the highlighted fields before saving.';
+      this.toastService.error(this.formError);
       this.cdr.markForCheck();
       return;
     }
@@ -440,7 +443,7 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
           this.savingProfile = false;
           const status = error instanceof HttpErrorResponse ? error.status : null;
           // #region agent log
-          fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-2',hypothesisId:'K',location:'organization-detail.page.ts:saveProfile',message:'save profile failed',data:{status},timestamp:Date.now()})}).catch(()=>{});
+          typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-3',hypothesisId:'K',location:'organization-detail.page.ts:saveProfile',message:'save profile failed',data:{status},timestamp:Date.now()})}).catch(()=>{});
           // #endregion
           this.applySubmitError(error, 'Could not update organization. Please try again.');
           this.cdr.markForCheck();
@@ -683,7 +686,7 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
       mission: org.mission ?? '',
       objectives: org.objectives ?? '',
       patron_saint: org.patron_saint ?? '',
-      established_date: org.established_date ?? '',
+      established_date: toDateInputValue(org.established_date),
       theme_color: org.theme_color ?? '',
       email: org.email ?? '',
       phone: org.phone ?? '',

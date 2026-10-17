@@ -270,6 +270,12 @@
   box-shadow: none;
 }
 
+.rich-text-editor__content,
+.rich-text-editor__content .ProseMirror {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 .rich-text-editor__content p {
   margin: 0 0 0.65em;
 }

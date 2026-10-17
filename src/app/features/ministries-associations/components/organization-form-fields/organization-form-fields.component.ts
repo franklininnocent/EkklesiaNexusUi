@@ -46,7 +46,7 @@ export class OrganizationFormFieldsComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     const editorCount = this.hostEl.nativeElement.querySelectorAll('app-rich-text-editor').length;
     // #region agent log
-    fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix',hypothesisId:'F',location:'organization-form-fields.component.ts:ngAfterViewInit',message:'rich text editors mounted',data:{editorCount,expected:4},timestamp:Date.now()})}).catch(()=>{});
+    typeof fetch === 'function' && fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'158497'},body:JSON.stringify({sessionId:'158497',runId:'ministries-post-fix-3',hypothesisId:'F',location:'organization-form-fields.component.ts:ngAfterViewInit',message:'rich text editors mounted',data:{editorCount,expected:4},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
   }
 
