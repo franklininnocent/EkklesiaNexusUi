@@ -79,6 +79,8 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
   error: string | null = null;
   success: string | null = null;
   detailOpen = false;
+  detailLoading = false;
+  detailError: string | null = null;
   selected: ContactEnquiryRow | null = null;
   confirmOpen = false;
   pendingDelete: ContactEnquiryRow | null = null;
@@ -208,22 +210,39 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
 
   openDetail(row: ContactEnquiryRow): void {
     this.detailOpen = true;
+    this.detailLoading = true;
+    this.detailError = null;
     this.selected = row;
-    this.api.getEnquiry(row.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (detail) => {
-        this.selected = detail;
-        this.cdr.markForCheck();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.error = err.error?.message ?? 'Unable to load enquiry details.';
-        this.cdr.markForCheck();
-      },
-    });
+    this.cdr.markForCheck();
+    this.api
+      .getEnquiry(row.id)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.detailLoading = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (detail) => {
+          this.selected = detail;
+        },
+        error: (err: HttpErrorResponse) => {
+          this.detailError = err.error?.message ?? 'Unable to load enquiry details.';
+        },
+      });
   }
 
   closeDetail(): void {
     this.detailOpen = false;
+    this.detailLoading = false;
+    this.detailError = null;
     this.selected = null;
+  }
+
+  displayField(value: string | null | undefined): string {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : '—';
   }
 
   setStatus(row: ContactEnquiryRow, enquiry_status: string): void {
