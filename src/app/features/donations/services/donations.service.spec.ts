@@ -152,6 +152,14 @@ describe('DonationsService', () => {
       req.flush({ success: true, message: 'ok', data: { id: 'pay-1' } });
     });
 
+    it('uses a provided idempotency key when recording a payment', () => {
+      service.createPayment({ amount: 10, method: 'cash' }, { idempotencyKey: 'fixed-key-abc' }).subscribe();
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/tenant/donations/payments`);
+      expect(req.request.headers.get('Idempotency-Key')).toBe('fixed-key-abc');
+      req.flush({ success: true, message: 'ok', data: { id: 'pay-1' } });
+    });
+
     it('reverses a payment with an idempotency key', () => {
       service.reversePayment('pay-1', 'Entered twice').subscribe((response) => {
         expect(response.success).toBe(true);
