@@ -1,0 +1,56 @@
+<section class="marketing-website cf-page mkt-seo-runbook">
+  <app-page-header
+    title="SEO monitoring runbook"
+    subtitle="Operator procedures for the public marketing website. Super Admin only. This page does not run production checks from the application."
+    backLink="/settings"
+    backLabel="Settings">
+    <a routerLink="/settings/marketing-website" class="cf-btn">Content &amp; SEO</a>
+    <a routerLink="/settings/marketing-website/plans" class="cf-btn">Website plans</a>
+  </app-page-header>
+
+  <nav class="cf-panel marketing-website__section-tabs" aria-label="Web Management sections">
+    <a routerLink="/settings/marketing-website" class="cf-btn cf-btn-sm">Content &amp; SEO</a>
+    <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-sm">Website plans</a>
+    <a routerLink="/settings/marketing-website/seo-monitoring" class="cf-btn cf-btn-sm cf-btn-primary" aria-current="page">SEO monitoring</a>
+  </nav>
+
+  <div class="cf-panel mkt-seo-runbook__panel">
+    <h2 class="mkt-seo-runbook__h2">Known production risks (verify weekly)</h2>
+    <ul class="mkt-seo-runbook__list">
+      <li>GSC verification file may 404 until marketing deploy includes <code>public/google161c1efd34d8a358.html</code>.</li>
+      <li>Alternate hosts (Matchpoint / raw IP) must not serve marketing HTML — Apache catch-all required.</li>
+      <li>Live metadata may lag repository until an authorized deploy.</li>
+    </ul>
+  </div>
+
+  <div class="cf-panel mkt-seo-runbook__panel">
+    <h2 class="mkt-seo-runbook__h2">Weekly (~15–20 min)</h2>
+    <p>From the <code>EkklesiaNexusWeb</code> clone on an operator machine:</p>
+    <pre class="mkt-seo-runbook__pre" *ngFor="let line of weeklyCommands">{{ line }}</pre>
+    <p>Paste output into the repository template <code>docs/seo/templates/WEEKLY_SEO_HEALTH_CHECK.md</code> and update <code>docs/seo/SEO_ISSUE_REGISTER.md</code>.</p>
+  </div>
+
+  <div class="cf-panel mkt-seo-runbook__panel">
+    <h2 class="mkt-seo-runbook__h2">External tools (manual)</h2>
+    <ul class="mkt-seo-runbook__list">
+      <li><a [href]="gscUrl" target="_blank" rel="noopener noreferrer">Google Search Console</a> — performance, indexing, sitemaps</li>
+      <li><a [href]="psiUrl" target="_blank" rel="noopener noreferrer">PageSpeed Insights</a> — lab/field CWV for <a [href]="marketingSite + '/'" target="_blank" rel="noopener noreferrer">EN home</a> and <a [href]="marketingSite + '/pt-br'" target="_blank" rel="noopener noreferrer">pt-BR home</a></li>
+      <li><a [href]="ga4Url" target="_blank" rel="noopener noreferrer">Google Analytics 4</a> — only if enabled on production (organic landing + conversions)</li>
+    </ul>
+    <p class="mkt-seo-runbook__muted">Mark metrics <strong>UNAVAILABLE</strong> when access is missing — do not enter zero.</p>
+  </div>
+
+  <div class="cf-panel mkt-seo-runbook__panel">
+    <h2 class="mkt-seo-runbook__h2">Monthly &amp; quarterly</h2>
+    <ul class="mkt-seo-runbook__list">
+      <li>Monthly: 28-day GSC comparison — template <code>docs/seo/templates/MONTHLY_SEO_PERFORMANCE_REPORT.md</code></li>
+      <li>Quarterly: <code>docs/seo/templates/QUARTERLY_SEO_AUDIT.md</code> and <code>npm run test:unit</code></li>
+    </ul>
+    <p>Full procedure: <code>docs/seo/SEO_MONITORING_OPERATING_PROCEDURE.md</code> in the marketing web repository.</p>
+  </div>
+
+  <div class="cf-panel mkt-seo-runbook__panel">
+    <h2 class="mkt-seo-runbook__h2">Local regression (no production network)</h2>
+    <pre class="mkt-seo-runbook__pre" *ngFor="let line of localRegression">{{ line }}</pre>
+  </div>
+</section>

@@ -15,4 +15,11 @@ export const MARKETING_ADMIN_ROUTES: Routes = [
         (m) => m.MarketingPlanCatalogPublishPage,
       ),
   },
+  {
+    path: 'seo-monitoring',
+    loadComponent: () =>
+      import('./pages/marketing-seo-monitoring-runbook/marketing-seo-monitoring-runbook.page').then(
+        (m) => m.MarketingSeoMonitoringRunbookPage,
+      ),
+  },
 ];

@@ -72,6 +72,12 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     visibility: 'marketing-website',
   },
   {
+    id: 'settings-marketing-website-seo-monitoring',
+    label: 'SEO monitoring',
+    route: '/settings/marketing-website/seo-monitoring',
+    visibility: 'marketing-website',
+  },
+  {
     id: 'settings-web-settings',
     label: 'Web Settings',
     route: '/settings/web-settings',
