@@ -16,20 +16,35 @@ import { localDateOnly, newIdempotencyKey, requiresGatewayReference } from '../.
 import { formatPaymentDateTime } from '../../utils/payment-datetime';
 import {
   CollectPaymentContext,
+  ContributionDue,
   DonationFamilyFinancialProfile,
   DonationPayment,
   DonationReceiptPreview,
   UpiPaymentIntent
 } from '../../models/donation.model';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
+import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { CfFamilyPickerLabelPipe } from '@shared/pipes/cf-family-picker-label.pipe';
 import { formatFamilyPickerLabel, resolveFamilyHeadPersonName } from '@shared/utils/family-display.util';
+import {
+  InstallmentSelectionLine,
+  QuickCollectDuesPanelComponent
+} from '../quick-collect-dues-panel/quick-collect-dues-panel.component';
+import { FamilyCollectDuesInstallmentRow, FamilyCollectDuesPayload } from '../../models/donation.model';
 
-type CollectPhase = 'collect' | 'success';
+type CollectPhase = 'collect' | 'review' | 'success';
 type CollectType = 'general' | 'mandatory' | 'project' | 'offering';
+type CollectionMode = 'project_installments' | 'mandatory_dues' | 'general';
+
+interface MandatoryDueSelectionLine {
+  id: string;
+  label: string;
+  remaining: number;
+  collectAmount: number;
+}
 
 interface AllocationOption {
   label: string;
@@ -51,7 +66,7 @@ interface ActivityRow {
 @Component({
   selector: 'app-quick-collect-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, CfCurrencyPipe, CfActionIconComponent, CfBrandLoaderComponent, CfFamilyPickerLabelPipe],
+  imports: [CommonModule, FormsModule, RouterModule, CfCurrencyPipe, CfDatePipe, CfActionIconComponent, CfBrandLoaderComponent, CfFamilyPickerLabelPipe, QuickCollectDuesPanelComponent],
   template: `
     <div class="qc-backdrop" *ngIf="isOpen" [style.z-index]="overlayZIndex" (click)="close()" aria-hidden="true"></div>
 
@@ -86,6 +101,12 @@ interface ActivityRow {
                 <div *ngIf="lastSuccess.receiptNumber"><dt>Receipt #</dt><dd>{{ lastSuccess.receiptNumber }}</dd></div>
                 <div *ngIf="!lastSuccess.receiptNumber"><dt>Receipt</dt><dd>{{ lastSuccess.receiptGenerated ? 'Generating…' : 'Not requested' }}</dd></div>
               </dl>
+              <ul class="qc-success__allocations" *ngIf="lastSuccessAllocations.length">
+                <li *ngFor="let row of lastSuccessAllocations">
+                  <span>{{ row.label }}</span>
+                  <strong>{{ row.amount | cfCurrency : null : 0 }}</strong>
+                </li>
+              </ul>
               <p class="qc-success__hint" *ngIf="lastPaymentId">
                 Print a receipt for the payer now, or find it later under Stewardship → Receipts.
               </p>
@@ -131,8 +152,8 @@ interface ActivityRow {
               </div>
             </section>
 
-            <ng-container *ngIf="phase === 'collect'">
-              <section class="qc-section" aria-labelledby="qc-family-heading">
+            <ng-container *ngIf="phase === 'collect' || phase === 'review'">
+              <section class="qc-section" *ngIf="phase === 'collect'" aria-labelledby="qc-family-heading">
                 <h3 id="qc-family-heading" class="qc-section__title">Family</h3>
 
                 <label class="qc-field">
@@ -203,14 +224,106 @@ interface ActivityRow {
                       <app-cf-action-icon name="x" />
                     </button>
                   </div>
-                  <p *ngIf="familyProfile" class="qc-selected__meta">
-                    Outstanding {{ familyProfile.totals.pending_due | cfCurrency : null : 0 }}
-                    · Paid {{ familyProfile.totals.total_paid | cfCurrency : null : 0 }}
+                  <p *ngIf="collectDues?.summary" class="qc-selected__meta">
+                    Collectible due {{ collectDues!.summary.collectible_due | cfCurrency : null : 0 }}
+                    · Paid {{ collectDues!.summary.total_paid | cfCurrency : null : 0 }}
                   </p>
                   <p *ngIf="contextHint" class="qc-selected__hint">{{ contextHint }}</p>
                 </article>
 
-                <div class="qc-suggestions" *ngIf="selectedFamily && allocationOptions.length">
+                <div class="qc-mode" *ngIf="selectedFamily">
+                  <button
+                    type="button"
+                    class="qc-mode__btn"
+                    [class.active]="collectionMode === 'project_installments'"
+                    (click)="setCollectionMode('project_installments')"
+                  >
+                    Project installments
+                  </button>
+                  <button
+                    type="button"
+                    class="qc-mode__btn"
+                    [class.active]="collectionMode === 'mandatory_dues'"
+                    (click)="setCollectionMode('mandatory_dues')"
+                  >
+                    Mandatory dues
+                  </button>
+                  <button
+                    type="button"
+                    class="qc-mode__btn"
+                    [class.active]="collectionMode === 'general'"
+                    (click)="setCollectionMode('general')"
+                  >
+                    General / suggested
+                  </button>
+                </div>
+
+                <section
+                  class="qc-mandatory"
+                  *ngIf="selectedFamily && collectionMode === 'mandatory_dues' && mandatoryCollectableDues.length"
+                  aria-labelledby="qc-mandatory-heading"
+                >
+                  <div class="qc-mandatory__head">
+                    <h4 id="qc-mandatory-heading" class="qc-section__title">Mandatory dues</h4>
+                    <button type="button" class="cf-btn cf-btn-sm" (click)="selectAllMandatoryOverdue()">Select all overdue</button>
+                  </div>
+                  <table class="qc-inst-table">
+                    <thead>
+                      <tr>
+                        <th scope="col"><span class="sr-only">Select</span></th>
+                        <th scope="col">Due</th>
+                        <th scope="col">Due date</th>
+                        <th scope="col" class="num">Remaining</th>
+                        <th scope="col" class="num">Collect</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let due of mandatoryCollectableDues" [class.is-selected]="isMandatoryDueSelected(due.id)">
+                        <td>
+                          <input
+                            type="checkbox"
+                            [checked]="isMandatoryDueSelected(due.id)"
+                            (change)="toggleMandatoryDue(due)"
+                            [attr.aria-label]="'Select ' + (due.plan?.name || due.period_label || 'due')"
+                          />
+                        </td>
+                        <td>{{ due.plan?.name || due.period_label || 'Mandatory due' }}</td>
+                        <td>{{ due.due_date | cfDate }}</td>
+                        <td class="num">{{ (due.outstanding_amount ?? 0) | cfCurrency : null : 0 }}</td>
+                        <td class="num">
+                          <input
+                            type="number"
+                            class="qc-collect-input"
+                            min="0.01"
+                            [max]="due.outstanding_amount ?? due.amount_due"
+                            step="0.01"
+                            [disabled]="!isMandatoryDueSelected(due.id)"
+                            [ngModel]="mandatoryCollectAmountFor(due)"
+                            (ngModelChange)="onMandatoryCollectAmountChange(due, $event)"
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p class="qc-dues__hint">Selected {{ mandatoryDueSelection.length }} · {{ mandatoryDueSelectionTotal | cfCurrency : null : 0 }}</p>
+                </section>
+
+                <app-quick-collect-dues-panel
+                  *ngIf="selectedFamily && collectionMode === 'project_installments' && collectDues"
+                  [collectDues]="collectDues"
+                  [expandedProjectId]="expandedProjectId"
+                  [installmentRows]="installmentRows"
+                  [loadingInstallments]="loadingInstallments"
+                  [installmentScope]="installmentScope"
+                  [selection]="installmentSelection"
+                  [activeProjectId]="activeProjectId"
+                  (toggleProjectId)="onToggleProject($event)"
+                  (requestBulkSelect)="onBulkSelect($event)"
+                  (scopeChange)="onInstallmentScopeChange($event)"
+                  (selectionChange)="onInstallmentSelectionChange($event)"
+                />
+
+                <div class="qc-suggestions" *ngIf="selectedFamily && collectionMode === 'general' && allocationOptions.length">
                   <span class="qc-suggestions__label">Suggested amounts</span>
                   <div class="qc-suggestions__chips">
                     <button
@@ -226,7 +339,30 @@ interface ActivityRow {
                 </div>
               </section>
 
-              <section class="qc-section" *ngIf="selectedFamily" aria-labelledby="qc-payment-heading">
+              <section class="qc-section qc-review" *ngIf="phase === 'review' && reviewPayload && selectedFamily" aria-labelledby="qc-review-heading">
+                <h3 id="qc-review-heading" class="qc-section__title">Review payment</h3>
+                <p class="qc-meta">{{ selectedFamily | cfFamilyPickerLabel }} · {{ methodLabel(method) }} · {{ paymentDate | cfDate }}</p>
+                <p class="qc-meta">Confirm allocations before recording.</p>
+                <table class="qc-review-table">
+                  <thead>
+                    <tr><th>{{ collectionMode === 'mandatory_dues' ? 'Due' : 'Installment' }}</th><th class="num">Amount</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let line of reviewSelectionLines">
+                      <td>{{ line.label }}</td>
+                      <td class="num">{{ line.collectAmount | cfCurrency : null : 0 }}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th>Total</th>
+                      <td class="num">{{ reviewSelectionTotal | cfCurrency : null : 0 }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </section>
+
+              <section class="qc-section" *ngIf="selectedFamily && phase === 'collect'" aria-labelledby="qc-payment-heading">
                 <h3 id="qc-payment-heading" class="qc-section__title">Payment details</h3>
 
                 <div class="qc-grid">
@@ -244,8 +380,12 @@ interface ActivityRow {
                         placeholder="500"
                         aria-required="true"
                         inputmode="decimal"
+                        [readonly]="isStrictSelectionActive"
                       />
                     </div>
+                    <span class="qc-field__hint" *ngIf="isStrictSelectionActive">
+                      Total follows selected dues or installments.
+                    </span>
                   </label>
 
                   <label class="qc-field">
@@ -348,9 +488,43 @@ interface ActivityRow {
           </button>
           <button
             type="button"
+            class="cf-btn cf-btn-icon"
+            *ngIf="phase === 'review'"
+            (click)="backToCollect()"
+            aria-label="Back to edit"
+            title="Back to edit"
+          >
+            <app-cf-action-icon name="arrow-left" />
+          </button>
+          <button
+            type="button"
             class="cf-btn cf-btn-icon cf-btn-primary"
-            *ngIf="phase === 'collect'"
+            *ngIf="phase === 'collect' && (collectionMode === 'project_installments' || collectionMode === 'mandatory_dues')"
+            [disabled]="!canContinueToReview || saving"
+            (click)="goToReview()"
+            aria-label="Continue to review"
+            title="Continue to review"
+          >
+            <app-cf-action-icon name="arrow-right" />
+          </button>
+          <button
+            type="button"
+            class="cf-btn cf-btn-icon cf-btn-primary"
+            *ngIf="phase === 'collect' && collectionMode === 'general'"
             [disabled]="!canSubmit || saving"
+            [attr.aria-busy]="saving"
+            (click)="submit()"
+            [attr.aria-label]="submitLabel"
+            [attr.title]="submitLabel"
+          >
+            <app-cf-brand-loader *ngIf="saving" size="button" label="Recording payment" [showLabel]="false" />
+            <app-cf-action-icon *ngIf="!saving" name="collect-payment" />
+          </button>
+          <button
+            type="button"
+            class="cf-btn cf-btn-icon cf-btn-primary"
+            *ngIf="phase === 'review'"
+            [disabled]="!canSubmitReview || saving"
             [attr.aria-busy]="saving"
             (click)="submit()"
             [attr.aria-label]="submitLabel"
@@ -456,6 +630,16 @@ interface ActivityRow {
     .qc-selected__hint { margin: 0.45rem 0 0; font-size: 0.8rem; color: var(--cf-muted); line-height: 1.4; }
     .qc-link { border: 0; background: none; padding: 0; color: var(--cf-primary); font-size: 0.82rem; cursor: pointer; }
     .qc-suggestions { display: grid; gap: 0.4rem; }
+    .qc-mode { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    .qc-mode__btn {
+      border: 1px solid var(--cf-panel-border); background: #fff; border-radius: 999px;
+      padding: 0.35rem 0.65rem; font-size: 0.78rem; cursor: pointer; color: var(--cf-slate-700);
+    }
+    .qc-mode__btn.active { border-color: var(--cf-primary); background: var(--cf-indigo-soft); color: var(--cf-slate-900); font-weight: 600; }
+    .qc-review-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .qc-review-table th, .qc-review-table td { padding: 0.4rem 0.25rem; border-bottom: 1px solid var(--cf-slate-100); }
+    .qc-review-table .num { text-align: right; }
+    .qc-field__hint { font-size: 0.72rem; color: var(--cf-muted); }
     .qc-suggestions__label { font-size: 0.78rem; color: var(--cf-muted); font-weight: 600; }
     .qc-suggestions__chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .qc-suggestion-chip {
@@ -567,6 +751,17 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
   upiLoading = false;
   allocationOptions: AllocationOption[] = [];
   selectedAllocation: AllocationOption | null = null;
+  collectionMode: CollectionMode = 'project_installments';
+  collectDues: FamilyCollectDuesPayload | null = null;
+  expandedProjectId: string | null = null;
+  installmentRows: FamilyCollectDuesInstallmentRow[] = [];
+  loadingInstallments = false;
+  installmentScope: 'outstanding' | 'overdue' = 'outstanding';
+  installmentSelection: InstallmentSelectionLine[] = [];
+  mandatoryDueSelection: MandatoryDueSelectionLine[] = [];
+  activeProjectId: string | null = null;
+  reviewPayload: Record<string, unknown> | null = null;
+  private familyLoadGeneration = 0;
   activityRows: ActivityRow[] = [];
   lastSuccess: {
     familyName: string;
@@ -575,6 +770,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     receiptGenerated: boolean;
     receiptNumber?: string | null;
   } | null = null;
+  lastSuccessAllocations: Array<{ label: string; amount: number }> = [];
 
   get canSubmit(): boolean {
     return !!this.selectedFamily
@@ -583,6 +779,54 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
       && this.amount > 0
       && !!this.fundId
       && (!this.needsReference || !!this.gatewayReference.trim());
+  }
+
+  get mandatoryCollectableDues() {
+    return this.familyProfile?.mandatory_contributions?.outstanding_dues ?? [];
+  }
+
+  get isStrictSelectionActive(): boolean {
+    return (this.collectionMode === 'project_installments' && this.installmentSelection.length > 0)
+      || (this.collectionMode === 'mandatory_dues' && this.mandatoryDueSelection.length > 0);
+  }
+
+  get reviewSelectionLines(): Array<{ label: string; collectAmount: number }> {
+    return this.collectionMode === 'mandatory_dues'
+      ? this.mandatoryDueSelection
+      : this.installmentSelection;
+  }
+
+  get reviewSelectionTotal(): number {
+    return this.collectionMode === 'mandatory_dues'
+      ? this.mandatoryDueSelectionTotal
+      : this.installmentSelectionTotal;
+  }
+
+  get mandatoryDueSelectionTotal(): number {
+    return this.mandatoryDueSelection.reduce((sum, line) => sum + line.collectAmount, 0);
+  }
+
+  get canContinueToReview(): boolean {
+    if (!this.canSubmit) {
+      return false;
+    }
+    if (this.collectionMode === 'project_installments') {
+      return this.installmentSelection.length > 0
+        && this.installmentSelection.every((line) => line.collectAmount > 0 && line.collectAmount <= line.remaining);
+    }
+    if (this.collectionMode === 'mandatory_dues') {
+      return this.mandatoryDueSelection.length > 0
+        && this.mandatoryDueSelection.every((line) => line.collectAmount > 0 && line.collectAmount <= line.remaining);
+    }
+    return false;
+  }
+
+  get canSubmitReview(): boolean {
+    return !!this.reviewPayload && this.canContinueToReview;
+  }
+
+  get installmentSelectionTotal(): number {
+    return this.installmentSelection.reduce((sum, line) => sum + line.collectAmount, 0);
   }
 
   get needsReference(): boolean {
@@ -657,7 +901,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
   }
 
   onDrawerKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Enter' || this.phase !== 'collect' || !this.canSubmit || this.saving) {
+    if (event.key !== 'Enter' || this.phase !== 'collect' || this.saving) {
       return;
     }
     const target = event.target as HTMLElement;
@@ -665,6 +909,17 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.searchResults.length && !this.selectedFamily) {
+      return;
+    }
+    if (this.collectionMode === 'project_installments' || this.collectionMode === 'mandatory_dues') {
+      if (!this.canContinueToReview) {
+        return;
+      }
+      event.preventDefault();
+      this.goToReview();
+      return;
+    }
+    if (!this.canSubmit) {
       return;
     }
     event.preventDefault();
@@ -742,19 +997,29 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         ...(familyChanged ? { dueId: undefined, installmentId: undefined, memberId: undefined } : {}),
       };
     }
+    this.resetInstallmentCollectionState();
     this.selectedFamily = family;
     this.payerName = resolveFamilyHeadPersonName(family) || family.head_of_family || '';
     this.searchResults = [];
     this.highlightedIndex = -1;
     this.searchQuery = formatFamilyPickerLabel(family);
     this.familyProfile = null;
+    this.collectDues = null;
     this.error = null;
     this.selectedAllocation = null;
+    this.phase = 'collect';
+    this.reviewPayload = null;
+    this.pendingIdempotencyKey = null;
     this.quickCollectService.rememberFamily(family);
     this.recentFamilies = this.quickCollectService.getRecentFamilies();
 
+    const generation = ++this.familyLoadGeneration;
+
     this.donationsService.getFamilyFinancialProfile(family.id).subscribe({
       next: (res) => {
+        if (generation !== this.familyLoadGeneration) {
+          return;
+        }
         this.familyProfile = res.data ?? null;
         if (!this.fundId && this.funds.length) {
           this.fundId = this.funds[0].id;
@@ -763,18 +1028,210 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.applyAuthoritativeContext(family.id);
         this.refreshUpiIntent();
         setTimeout(() => this.amountInput?.nativeElement.focus(), 0);
+        this.cdr.markForCheck();
       },
       error: () => {
+        if (generation !== this.familyLoadGeneration) {
+          return;
+        }
         this.error = 'Unable to load family financial details.';
       }
     });
+
+    this.loadCollectDuesSummary(family.id, generation);
+  }
+
+  setCollectionMode(mode: CollectionMode): void {
+    if (this.collectionMode === mode) {
+      return;
+    }
+    this.collectionMode = mode;
+    this.resetInstallmentCollectionState();
+    this.phase = 'collect';
+    this.reviewPayload = null;
+    if (mode === 'general') {
+      this.autoSelectCollectableAllocation();
+    }
+    this.cdr.markForCheck();
+  }
+
+  onToggleProject(projectId: string): void {
+    this.expandedProjectId = this.expandedProjectId === projectId ? null : projectId;
+    if (this.expandedProjectId) {
+      this.loadInstallmentPage(projectId);
+    }
+    this.cdr.markForCheck();
+  }
+
+  onInstallmentScopeChange(scope: 'outstanding' | 'overdue'): void {
+    this.installmentScope = scope;
+    if (this.expandedProjectId) {
+      this.loadInstallmentPage(this.expandedProjectId);
+    }
+  }
+
+  isMandatoryDueSelected(dueId: string): boolean {
+    return this.mandatoryDueSelection.some((line) => line.id === dueId);
+  }
+
+  toggleMandatoryDue(due: ContributionDue & { outstanding_amount?: number; period_label?: string; plan?: { name?: string } }): void {
+    const remaining = due.outstanding_amount ?? Math.max(0, (due.amount_due ?? 0) - (due.amount_paid ?? 0));
+    if (remaining <= 0) {
+      return;
+    }
+    const index = this.mandatoryDueSelection.findIndex((line) => line.id === due.id);
+    if (index >= 0) {
+      this.mandatoryDueSelection = this.mandatoryDueSelection.filter((line) => line.id !== due.id);
+    } else {
+      this.mandatoryDueSelection = [
+        ...this.mandatoryDueSelection,
+        {
+          id: due.id,
+          label: due.plan?.name || due.period_label || 'Mandatory due',
+          remaining,
+          collectAmount: remaining
+        }
+      ];
+    }
+    this.syncMandatorySelectionState();
+  }
+
+  mandatoryCollectAmountFor(due: { id: string }): number {
+    return this.mandatoryDueSelection.find((line) => line.id === due.id)?.collectAmount ?? 0;
+  }
+
+  onMandatoryCollectAmountChange(
+    due: ContributionDue & { outstanding_amount?: number; period_label?: string; plan?: { name?: string } },
+    value: number | string | null
+  ): void {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return;
+    }
+    const remaining = due.outstanding_amount ?? Math.max(0, (due.amount_due ?? 0) - (due.amount_paid ?? 0));
+    const capped = Math.min(parsed, remaining);
+    this.mandatoryDueSelection = this.mandatoryDueSelection.map((line) =>
+      line.id === due.id ? { ...line, collectAmount: capped } : line
+    );
+    this.syncMandatorySelectionState();
+  }
+
+  selectAllMandatoryOverdue(): void {
+    const overdue = this.mandatoryCollectableDues.filter((due) => {
+      const remaining = due.outstanding_amount ?? Math.max(0, (due.amount_due ?? 0) - (due.amount_paid ?? 0));
+      return remaining > 0 && due.is_overdue;
+    });
+    this.mandatoryDueSelection = overdue.map((due) => {
+      const remaining = due.outstanding_amount ?? Math.max(0, (due.amount_due ?? 0) - (due.amount_paid ?? 0));
+      return {
+        id: due.id,
+        label: due.plan?.name || due.period_label || 'Mandatory due',
+        remaining,
+        collectAmount: remaining
+      };
+    });
+    this.syncMandatorySelectionState();
+  }
+
+  private syncMandatorySelectionState(): void {
+    if (this.mandatoryDueSelection.length) {
+      this.collectType = 'mandatory';
+      this.amount = this.mandatoryDueSelectionTotal;
+      this.selectedAllocation = null;
+    } else if (this.collectionMode === 'mandatory_dues') {
+      this.amount = null;
+    }
+    this.refreshUpiIntent();
+    this.cdr.markForCheck();
+  }
+
+  onInstallmentSelectionChange(selection: InstallmentSelectionLine[]): void {
+    this.installmentSelection = selection;
+    if (selection.length) {
+      this.activeProjectId = selection[0].project_id;
+      const project = this.collectDues?.projects.find((item) => item.project_id === this.activeProjectId);
+      if (project?.fund_id && this.funds.some((fund) => fund.id === project.fund_id)) {
+        this.fundId = project.fund_id;
+      }
+      this.collectType = 'project';
+      this.amount = this.installmentSelectionTotal;
+      this.selectedAllocation = null;
+    } else {
+      this.activeProjectId = null;
+      this.amount = null;
+    }
+    this.refreshUpiIntent();
+    this.cdr.markForCheck();
+  }
+
+  onBulkSelect(event: { projectId: string; scope: 'overdue' | 'outstanding' }): void {
+    if (!this.selectedFamily) {
+      return;
+    }
+    this.loadingInstallments = true;
+    this.donationsService.getFamilyCollectDues(this.selectedFamily.id, {
+      project_id: event.projectId,
+      scope: event.scope,
+      per_page: 100,
+      bulk_select: true
+    }).subscribe({
+      next: (res) => {
+        this.installmentRows = res.data.installments?.data ?? [];
+        const bulk = res.data.bulk_select;
+        if (bulk) {
+          const byId = new Map(this.installmentRows.map((row) => [row.id, row]));
+          this.installmentSelection = bulk.installment_ids
+            .map((id) => byId.get(id))
+            .filter((row): row is FamilyCollectDuesInstallmentRow => !!row)
+            .map((row) => ({
+              id: row.id,
+              project_id: row.project_id,
+              label: row.installment_label,
+              remaining: row.remaining,
+              collectAmount: row.remaining
+            }));
+          this.activeProjectId = event.projectId;
+          const project = this.collectDues?.projects.find((item) => item.project_id === event.projectId);
+          if (project?.fund_id) {
+            this.fundId = project.fund_id;
+          }
+          this.amount = this.installmentSelectionTotal;
+          this.collectType = 'project';
+        }
+        this.loadingInstallments = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingInstallments = false;
+        this.error = 'Unable to load installments for bulk selection.';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  goToReview(): void {
+    if (!this.canContinueToReview || !this.selectedFamily) {
+      this.submitAttempted = true;
+      return;
+    }
+    this.reviewPayload = this.buildStrictCollectionPayload();
+    this.phase = 'review';
+    this.error = null;
+    this.cdr.markForCheck();
+  }
+
+  backToCollect(): void {
+    this.phase = 'collect';
+    this.cdr.markForCheck();
   }
 
   clearFamily(): void {
     this.selectedFamily = null;
     this.familyProfile = null;
+    this.collectDues = null;
     this.allocationOptions = [];
     this.selectedAllocation = null;
+    this.resetInstallmentCollectionState();
     this.searchQuery = '';
     setTimeout(() => this.searchInput?.nativeElement.focus(), 0);
   }
@@ -808,7 +1265,14 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
-    if (!this.canSubmit || !this.selectedFamily || this.saving) {
+    const strictReview = this.phase === 'review'
+      && (this.collectionMode === 'project_installments' || this.collectionMode === 'mandatory_dues');
+    if (strictReview) {
+      if (!this.canSubmitReview || !this.selectedFamily || this.saving) {
+        this.submitAttempted = true;
+        return;
+      }
+    } else if (!this.canSubmit || !this.selectedFamily || this.saving) {
       this.submitAttempted = true;
       if (!this.fundId) {
         this.error = 'Select a contribution category.';
@@ -822,23 +1286,27 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.submitAttempted = true;
     this.error = null;
 
-    const payload: Record<string, unknown> = {
-      family_id: this.selectedFamily.id,
-      payer_name: this.payerName.trim(),
-      payment_date: this.paymentDate,
-      amount: this.amount,
-      method: this.mapMethodForApi(this.method),
-      source_type: this.collectType === 'offering' ? 'voluntary' : 'general',
-      notes: this.notes.trim() || null
-    };
+    const payload: Record<string, unknown> = strictReview && this.reviewPayload
+      ? { ...this.reviewPayload }
+      : {
+        family_id: this.selectedFamily!.id,
+        payer_name: this.payerName.trim(),
+        payment_date: this.paymentDate,
+        amount: this.amount,
+        method: this.mapMethodForApi(this.method),
+        source_type: this.collectType === 'offering' ? 'voluntary' : 'general',
+        notes: this.notes.trim() || null
+      };
 
-    if (this.needsReference) {
-      payload['gateway_reference'] = this.gatewayReference.trim();
-    }
+    if (!strictReview) {
+      if (this.needsReference) {
+        payload['gateway_reference'] = this.gatewayReference.trim();
+      }
 
-    const allocations = this.buildAllocations();
-    if (allocations?.length) {
-      payload['allocations'] = allocations;
+      const allocations = this.buildAllocations();
+      if (allocations?.length) {
+        payload['allocations'] = allocations;
+      }
     }
 
     if (!this.pendingIdempotencyKey) {
@@ -850,6 +1318,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.saving = false;
         this.pendingIdempotencyKey = null;
         this.lastPaymentId = res.data?.id ?? null;
+        this.lastSuccessAllocations = this.mapConfirmedAllocations(res.data);
         const categoryLabel = this.funds.find((fund) => fund.id === this.fundId)?.name || 'Contribution';
         this.lastSuccess = {
           familyName: formatFamilyPickerLabel(this.selectedFamily!),
@@ -885,6 +1354,17 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.saving = false;
         this.error = this.parseApiError(err) || 'Unable to save payment. Please try again.';
         this.toastService.error(this.error, 'Quick Collect');
+        if ((this.collectionMode === 'project_installments' || this.collectionMode === 'mandatory_dues') && err?.status === 422) {
+          this.pendingIdempotencyKey = null;
+          this.phase = 'collect';
+          if (this.selectedFamily) {
+            const generation = ++this.familyLoadGeneration;
+            this.loadCollectDuesSummary(this.selectedFamily.id, generation);
+            if (this.expandedProjectId) {
+              this.loadInstallmentPage(this.expandedProjectId);
+            }
+          }
+        }
         this.cdr.markForCheck();
         console.error('Quick Collect payment failed', err);
       }
@@ -923,6 +1403,133 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     return labels[method] || method;
   }
 
+  private resetInstallmentCollectionState(): void {
+    this.expandedProjectId = null;
+    this.installmentRows = [];
+    this.loadingInstallments = false;
+    this.installmentScope = 'outstanding';
+    this.installmentSelection = [];
+    this.mandatoryDueSelection = [];
+    this.activeProjectId = null;
+    this.reviewPayload = null;
+  }
+
+  private loadCollectDuesSummary(familyId: string, generation: number): void {
+    this.donationsService.getFamilyCollectDues(familyId).subscribe({
+      next: (res) => {
+        if (generation !== this.familyLoadGeneration) {
+          return;
+        }
+        this.collectDues = res.data ?? null;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        if (generation !== this.familyLoadGeneration) {
+          return;
+        }
+        this.error = 'Unable to load collectible dues for this family.';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private loadInstallmentPage(projectId: string): void {
+    if (!this.selectedFamily) {
+      return;
+    }
+    const generation = this.familyLoadGeneration;
+    this.loadingInstallments = true;
+    this.donationsService.getFamilyCollectDues(this.selectedFamily.id, {
+      project_id: projectId,
+      scope: this.installmentScope,
+      per_page: 100
+    }).subscribe({
+      next: (res) => {
+        if (generation !== this.familyLoadGeneration) {
+          return;
+        }
+        this.installmentRows = res.data.installments?.data ?? [];
+        this.loadingInstallments = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        if (generation !== this.familyLoadGeneration) {
+          return;
+        }
+        this.loadingInstallments = false;
+        this.error = 'Unable to load project installments.';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private mapConfirmedAllocations(payment?: DonationPayment | null): Array<{ label: string; amount: number }> {
+    const rows = payment?.allocations ?? [];
+    if (!rows.length && this.reviewPayload?.['allocations']) {
+      const reviewLines = this.reviewSelectionLines;
+      const fromReview = (this.reviewPayload['allocations'] as Array<{ allocatable_id: string; amount: number }>) ?? [];
+      return fromReview.map((line) => {
+        const match = reviewLines.find((item) => 'id' in item && item.id === line.allocatable_id);
+        return {
+          label: match?.label ?? 'Allocation',
+          amount: Number(line.amount)
+        };
+      });
+    }
+    return rows
+      .filter((row) => row.allocatable_type !== 'advance')
+      .map((row) => ({
+        label: this.allocationLabelFromPaymentRow(row),
+        amount: Number(row.amount)
+      }));
+  }
+
+  private allocationLabelFromPaymentRow(row: { allocatable_type: string; allocatable_id: string; notes?: string | null | undefined }): string {
+    const fromReview = this.reviewSelectionLines.find(
+      (line) => 'id' in line && line.id === row.allocatable_id
+    );
+    if (fromReview?.label) {
+      return fromReview.label;
+    }
+    if (row.allocatable_type === 'project_installment') {
+      return 'Project installment';
+    }
+    if (row.allocatable_type === 'due') {
+      return 'Mandatory due';
+    }
+    return row.allocatable_type;
+  }
+
+  private buildStrictCollectionPayload(): Record<string, unknown> {
+    const mandatory = this.collectionMode === 'mandatory_dues';
+    const total = mandatory ? this.mandatoryDueSelectionTotal : this.installmentSelectionTotal;
+    const payload: Record<string, unknown> = {
+      family_id: this.selectedFamily!.id,
+      payer_name: this.payerName.trim(),
+      payment_date: this.paymentDate,
+      amount: total,
+      method: this.mapMethodForApi(this.method),
+      source_type: mandatory ? 'voluntary' : 'general',
+      notes: this.notes.trim() || null,
+      collection_mode: mandatory ? 'mandatory_dues' : 'project_installments',
+      allocations: mandatory
+        ? this.mandatoryDueSelection.map((line) => ({
+          allocatable_type: 'due',
+          allocatable_id: line.id,
+          amount: line.collectAmount
+        }))
+        : this.installmentSelection.map((line) => ({
+          allocatable_type: 'project_installment',
+          allocatable_id: line.id,
+          amount: line.collectAmount
+        }))
+    };
+    if (this.needsReference) {
+      payload['gateway_reference'] = this.gatewayReference.trim();
+    }
+    return payload;
+  }
+
   private buildAllocationOptions(profile: DonationFamilyFinancialProfile | null): AllocationOption[] {
     if (!profile) {
       return [];
@@ -940,7 +1547,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         allocatable_id: due.id
       });
     }
-    for (const installment of profile.project_contributions?.outstanding_installments?.slice(0, 2) ?? []) {
+    for (const installment of profile.project_contributions?.outstanding_installments ?? []) {
       options.push({
         label: `${installment.project_name || 'Project'} · ${installment.installment_label}`,
         amount: installment.outstanding_amount,
@@ -981,6 +1588,20 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
   }
 
   private buildAllocations(): Array<{ allocatable_type: string; allocatable_id: string; amount: number }> | undefined {
+    if (this.collectionMode === 'mandatory_dues' && this.mandatoryDueSelection.length) {
+      return this.mandatoryDueSelection.map((line) => ({
+        allocatable_type: 'due',
+        allocatable_id: line.id,
+        amount: line.collectAmount
+      }));
+    }
+    if (this.collectionMode === 'project_installments' && this.installmentSelection.length) {
+      return this.installmentSelection.map((line) => ({
+        allocatable_type: 'project_installment',
+        allocatable_id: line.id,
+        amount: line.collectAmount
+      }));
+    }
     const target = this.selectedAllocation ?? this.firstCollectableOption();
     if (target) {
       return [{
@@ -1074,6 +1695,10 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.phase = 'collect';
     this.selectedFamily = null;
     this.familyProfile = null;
+    this.collectDues = null;
+    this.collectionMode = 'project_installments';
+    this.resetInstallmentCollectionState();
+    this.reviewPayload = null;
     this.searchQuery = '';
     this.payerName = '';
     this.amount = null;
@@ -1081,6 +1706,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.receiptPreview = null;
     this.lastPaymentId = null;
     this.lastSuccess = null;
+    this.lastSuccessAllocations = [];
     this.error = null;
     this.submitAttempted = false;
     this.collectType = 'general';

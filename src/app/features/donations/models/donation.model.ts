@@ -1210,6 +1210,72 @@ export interface FamilyFinancialAnalytics {
   };
 }
 
+export interface FamilyCollectDuesSummary {
+  collectible_due: number;
+  overdue_amount: number;
+  pending_mandatory_due: number;
+  pending_project_due: number;
+  total_paid: number;
+}
+
+export interface FamilyCollectDuesProject {
+  project_id: string;
+  project_name: string;
+  project_code?: string | null;
+  fund_id?: string | null;
+  target_amount: number;
+  amount_collected: number;
+  target_gap: number;
+  installment_outstanding: number;
+  installment_status?: {
+    total: number;
+    paid: number;
+    pending: number;
+    overdue: number;
+  } | null;
+  status?: string | null;
+}
+
+export interface FamilyCollectDuesInstallmentRow {
+  id: string;
+  project_id: string;
+  installment_label: string;
+  due_date?: string | null;
+  amount_due: number;
+  amount_paid: number;
+  remaining: number;
+  outstanding_amount: number;
+  status: string;
+  is_overdue?: boolean;
+}
+
+export interface FamilyCollectDuesBulkSelect {
+  scope: string;
+  project_id: string;
+  installment_ids: string[];
+  total_remaining: number;
+  count: number;
+}
+
+export interface FamilyCollectDuesPayload {
+  family_id: string;
+  currency_code?: string | null;
+  as_of_date: string;
+  summary: FamilyCollectDuesSummary;
+  projects: FamilyCollectDuesProject[];
+  installments?: {
+    data: FamilyCollectDuesInstallmentRow[];
+    meta: {
+      current_page: number;
+      last_page: number;
+      per_page: number;
+      total: number;
+      scope: string;
+    };
+  };
+  bulk_select?: FamilyCollectDuesBulkSelect;
+}
+
 export interface CollectPaymentContext {
   family: {
     id: string;
@@ -1240,6 +1306,14 @@ export interface CollectPaymentContext {
   message?: string | null;
 }
 
+export interface DonationPaymentAllocation {
+  id?: string;
+  allocatable_type: string;
+  allocatable_id: string;
+  amount: number;
+  notes?: string | null;
+}
+
 export interface DonationPayment {
   id: string;
   payment_number: string;
@@ -1257,6 +1331,7 @@ export interface DonationPayment {
   refundable_remaining?: number;
   gateway_reference?: string;
   receipt?: { id?: string; receipt_number?: string | null } | null;
+  allocations?: DonationPaymentAllocation[];
 }
 
 export type DonationReportExportFormat = 'csv' | 'xlsx' | 'pdf';
