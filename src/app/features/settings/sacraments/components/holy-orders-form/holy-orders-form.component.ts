@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -14,6 +14,8 @@ import { ParticipantSourceControlComponent } from '../shared/participant-source-
 import { MinisterPickerComponent } from '../shared/minister-picker/minister-picker.component';
 import { SacramentReviewPanelComponent } from '../shared/sacrament-review-panel/sacrament-review-panel.component';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
+import { EntitlementService } from '@core/services/entitlement.service';
+import { isStarterSubscriptionPlan } from '@shared/utils/subscription-plan.util';
 
 /**
  * Phase 10C — dedicated multi-step Holy Orders registration (ADR-21).
@@ -31,6 +33,7 @@ import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-br
     CfBrandLoaderComponent,
   ],
   templateUrl: './holy-orders-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './holy-orders-form.component.scss',
 })
 export class HolyOrdersFormComponent implements OnInit, OnDestroy {
@@ -40,6 +43,10 @@ export class HolyOrdersFormComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly entitlements = inject(EntitlementService);
+
+  sacramentsBackLink: string[] = ['/sacraments'];
+  sacramentsBackLabel = 'Back to sacraments';
 
   step = 1;
   readonly totalSteps = 8;
@@ -80,6 +87,12 @@ export class HolyOrdersFormComponent implements OnInit, OnDestroy {
   witnessDrafts: SacramentParticipantDraft[] = [];
 
   ngOnInit(): void {
+    this.entitlements.load().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      if (this.entitlements.appliesToCurrentUser() && isStarterSubscriptionPlan(this.entitlements.plan())) {
+        this.sacramentsBackLink = ['/sacraments/register'];
+        this.sacramentsBackLabel = 'Back to register';
+      }
+    });
     const user = this.authService.currentUserValue;
     this.tenantId = user?.tenant_id ?? null;
     this.sacramentService.getSacramentTypes()

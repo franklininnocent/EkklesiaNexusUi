@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastService } from '@core/services/toast.service';
@@ -19,6 +19,7 @@ const MAX_SLOTS = 8;
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, ModalShellComponent],
   templateUrl: './special-day-schedule-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './special-day-schedule-modal.component.scss',
 })
 export class SpecialDayScheduleModalComponent implements OnChanges {

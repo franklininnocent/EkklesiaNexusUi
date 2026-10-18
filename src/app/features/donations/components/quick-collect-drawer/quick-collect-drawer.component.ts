@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, ViewChild, inject, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, ViewChild, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -364,6 +364,7 @@ interface ActivityRow {
     </aside>
   `,
   styleUrls: ['../../styles/stewardship-action-icons.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .sr-only {
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

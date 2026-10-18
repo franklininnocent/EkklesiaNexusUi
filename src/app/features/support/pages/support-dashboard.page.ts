@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ListToolbarComponent } from '@shared/components/list-toolbar/list-toolbar.component';
@@ -36,6 +36,7 @@ import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
     SupportTicketCreateModalComponent,
   ],
   templateUrl: './support-dashboard.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './support-dashboard.page.scss',
 })
 export class SupportDashboardPage implements OnInit {

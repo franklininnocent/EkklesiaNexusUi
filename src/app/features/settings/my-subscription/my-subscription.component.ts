@@ -30,6 +30,9 @@ import {
 } from '@features/subscriptions/models/tenant-subscription.models';
 import { Subject, catchError, finalize, forkJoin, of, take, takeUntil } from 'rxjs';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
+import { TenantBillingService } from '@features/settings/billing/tenant-billing.service';
+import { openRazorpayCheckout } from '@features/settings/billing/razorpay-checkout.util';
+import { BillingHistoryComponent } from '@features/settings/billing/billing-history.component';
 
 const FEATURE_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_]{1,63}$/;
 
@@ -68,6 +71,7 @@ export interface MySubscriptionSummary {
     PlanCompareTableComponent,
     PlanFeatureDetailsPanelComponent,
     ModalShellComponent,
+    BillingHistoryComponent,
   ],
   templateUrl: './my-subscription.component.html',
   styleUrl: './my-subscription.component.scss',
@@ -80,6 +84,7 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
+  private billing = inject(TenantBillingService);
   private destroy$ = new Subject<void>();
 
   loading = true;
@@ -104,6 +109,31 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
   planChangePreviewLoading = false;
   planChangePreviewError: string | null = null;
   private lastEntitlementPlanKey: string | null = null;
+
+  billingAvailability: {
+    can_quote?: boolean;
+    can_checkout_online?: boolean;
+    can_submit_offline_claim?: boolean;
+  } | null = null;
+  checkoutQuote: {
+    gross: string;
+    net: string;
+    tax: string;
+    currency_code: string;
+    tax_label?: string;
+    discount?: { type: string; amount_off?: string; list_price?: string };
+    quote_expires_at?: string;
+  } | null = null;
+  checkoutQuoteLoading = false;
+  checkoutQuoteError: string | null = null;
+  checkoutBusy = false;
+  checkoutError: string | null = null;
+  offlineInvoiceId: number | null = null;
+  offlineMethods: { code: string; label: string; instructions: { body?: string } | null }[] = [];
+  offlineReference = '';
+  offlineClaimBusy = false;
+  offlineEvidenceFile: File | null = null;
+  lastOfflineClaimId: number | null = null;
 
   ngOnInit(): void {
     const asked = this.route.snapshot.queryParamMap.get('request');
@@ -151,6 +181,7 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     this.comparisonError = null;
     forkJoin({
       overview: this.subscriptions.overview().pipe(catchError(() => of(null))),
+      billing: this.billing.availability().pipe(catchError(() => of(null))),
       comparison: this.subscriptions.comparison().pipe(
         catchError((err) => {
           this.comparisonError = subscriptionErrorMessage(err, 'Could not load plan comparison.');
@@ -160,8 +191,15 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
       requests: this.subscriptions.upgradeRequests().pipe(catchError(() => of([] as UpgradeRequest[]))),
     })
       .pipe(takeUntil(this.destroy$))
-      .subscribe(({ overview, comparison, requests }) => {
+      .subscribe(({ overview, billing, comparison, requests }) => {
         this.overview = overview;
+        this.billingAvailability = billing?.success
+          ? (billing.data as {
+              can_quote?: boolean;
+              can_checkout_online?: boolean;
+              can_submit_offline_claim?: boolean;
+            })
+          : null;
         const snapshot = comparison ?? overview?.comparison ?? null;
         this.currentPlanIdentity = snapshot?.current_plan ?? null;
         const planKey = `${this.currentPlanIdentity?.code ?? ''}|${this.currentPlanIdentity?.version_number ?? ''}`;
@@ -340,11 +378,19 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     }
     this.selectedPlan = plan;
     this.requestError = null;
+    this.checkoutError = null;
+    this.checkoutQuote = null;
+    this.checkoutQuoteError = null;
+    this.offlineInvoiceId = null;
+    this.offlineMethods = [];
     this.planChangePreview = null;
     this.planChangePreviewError = null;
     const intervals = plan.billing_intervals ?? [];
     this.requestInterval = intervals.includes('ANNUAL') ? 'ANNUAL' : intervals[0] ?? null;
     this.loadPlanChangePreview(plan.code);
+    if (this.billingSelfServeEnabled && plan.pricing_type !== 'CUSTOM') {
+      this.loadCheckoutQuote();
+    }
     this.cdr.markForCheck();
   }
 
@@ -353,7 +399,244 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     this.planChangePreview = null;
     this.planChangePreviewError = null;
     this.requestError = null;
+    this.checkoutQuote = null;
+    this.checkoutError = null;
+    this.offlineInvoiceId = null;
     this.cdr.markForCheck();
+  }
+
+  get billingSelfServeEnabled(): boolean {
+    if (!this.billingAvailability) {
+      return false;
+    }
+    return !!(
+      this.billingAvailability.can_quote ||
+      this.billingAvailability.can_checkout_online ||
+      this.billingAvailability.can_submit_offline_claim
+    );
+  }
+
+  get canPayOnline(): boolean {
+    return !!this.billingAvailability?.can_checkout_online && !!this.checkoutQuote;
+  }
+
+  get canPayOffline(): boolean {
+    return !!this.billingAvailability?.can_submit_offline_claim;
+  }
+
+  private checkoutInterval(): 'MONTHLY' | 'ANNUAL' | null {
+    const interval = this.requestInterval;
+    return interval === 'MONTHLY' || interval === 'ANNUAL' ? interval : null;
+  }
+
+  private loadCheckoutQuote(): void {
+    const plan = this.selectedPlan;
+    const interval = this.checkoutInterval();
+    if (!plan || !interval || plan.pricing_type === 'CUSTOM') {
+      return;
+    }
+    this.checkoutQuoteLoading = true;
+    this.checkoutQuoteError = null;
+    this.billing
+      .quote(plan.code, interval)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          this.checkoutQuote = res.success ? (res.data as typeof this.checkoutQuote) : null;
+          this.checkoutQuoteLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.checkoutQuote = null;
+          this.checkoutQuoteLoading = false;
+          this.checkoutQuoteError = subscriptionErrorMessage(err, 'Could not load checkout quote.');
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  onRequestIntervalChange(): void {
+    if (this.billingSelfServeEnabled && this.selectedPlan) {
+      this.loadCheckoutQuote();
+    }
+  }
+
+  payOnline(): void {
+    const plan = this.selectedPlan;
+    const interval = this.checkoutInterval();
+    if (!plan || !interval || this.checkoutBusy || !this.canPayOnline) {
+      return;
+    }
+    this.checkoutBusy = true;
+    this.checkoutError = null;
+    this.cdr.markForCheck();
+    const idempotencyKey = crypto.randomUUID();
+    this.billing
+      .createOrder(plan.code, interval, idempotencyKey)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: async (res) => {
+          if (!res.success || !res.data) {
+            this.checkoutBusy = false;
+            this.checkoutError = 'Could not start checkout.';
+            this.cdr.markForCheck();
+            return;
+          }
+          const payload = res.data as {
+            order: { id: number };
+            checkout: {
+              public_key_id: string;
+              provider_order_id: string;
+              amount_minor: number;
+              currency_code: string;
+            };
+          };
+          try {
+            await openRazorpayCheckout({
+              publicKeyId: payload.checkout.public_key_id,
+              providerOrderId: payload.checkout.provider_order_id,
+              amountMinor: payload.checkout.amount_minor,
+              currencyCode: payload.checkout.currency_code,
+              name: 'EkklesiaNexus',
+              description: `${plan.name} subscription`,
+              onSuccess: (paymentId, signature) => {
+                this.billing
+                  .verifyOrder(payload.order.id, paymentId, signature)
+                  .pipe(takeUntil(this.destroy$))
+                  .subscribe({
+                    next: () => {
+                      this.checkoutBusy = false;
+                      this.selectedPlan = null;
+                      this.toast.success('Payment received. Your subscription will update shortly.', 'Payment successful');
+                      this.load();
+                    },
+                    error: (err) => {
+                      this.checkoutBusy = false;
+                      this.checkoutError = subscriptionErrorMessage(err, 'Payment verification failed. Contact support with your receipt.');
+                      this.cdr.markForCheck();
+                    },
+                  });
+              },
+              onDismiss: () => {
+                this.checkoutBusy = false;
+                this.cdr.markForCheck();
+              },
+            });
+          } catch {
+            this.checkoutBusy = false;
+            this.checkoutError = 'Could not open the payment window.';
+            this.cdr.markForCheck();
+          }
+        },
+        error: (err) => {
+          this.checkoutBusy = false;
+          this.checkoutError = subscriptionErrorMessage(err, 'Could not start checkout.');
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  closeOfflineClaimModal(): void {
+    if (this.offlineClaimBusy) {
+      return;
+    }
+    this.offlineInvoiceId = null;
+    this.offlineEvidenceFile = null;
+    this.offlineReference = '';
+    this.cdr.markForCheck();
+  }
+
+  prepareOfflinePayment(): void {
+    const plan = this.selectedPlan;
+    const interval = this.checkoutInterval();
+    if (!plan || !interval || this.checkoutBusy || !this.canPayOffline) {
+      return;
+    }
+    this.checkoutBusy = true;
+    this.checkoutError = null;
+    this.cdr.markForCheck();
+    const idempotencyKey = crypto.randomUUID();
+    this.billing
+      .createPayableOrder(plan.code, interval, idempotencyKey)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          if (!res.success) {
+            this.checkoutBusy = false;
+            this.checkoutError = 'Could not prepare offline payment.';
+            this.cdr.markForCheck();
+            return;
+          }
+          this.offlineInvoiceId = res.data.invoice_id;
+          this.billing.offlineInstructions().pipe(take(1)).subscribe({
+            next: (instr) => {
+              this.offlineMethods = instr.data?.methods ?? [];
+              this.checkoutBusy = false;
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.checkoutBusy = false;
+              this.checkoutError = 'Could not load payment instructions.';
+              this.cdr.markForCheck();
+            },
+          });
+        },
+        error: (err) => {
+          this.checkoutBusy = false;
+          this.checkoutError = subscriptionErrorMessage(err, 'Could not prepare offline payment.');
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  offlineInstructionText(m: { instructions: { body?: string } | null }): string {
+    if (m.instructions?.body) {
+      return m.instructions.body;
+    }
+    return m.instructions ? JSON.stringify(m.instructions, null, 2) : '';
+  }
+
+  submitOfflineClaim(): void {
+    if (!this.offlineInvoiceId || !this.checkoutQuote || this.offlineClaimBusy) {
+      return;
+    }
+    const method = this.offlineMethods[0]?.code;
+    if (!method) {
+      this.checkoutError = 'No offline payment method is configured.';
+      return;
+    }
+    this.offlineClaimBusy = true;
+    this.checkoutError = null;
+    this.billing
+      .submitOfflineClaim({
+        billing_invoice_id: this.offlineInvoiceId,
+        method_code: method,
+        claimed_amount: this.checkoutQuote.gross,
+        currency_code: this.checkoutQuote.currency_code,
+        reference_number: this.offlineReference.trim() || undefined,
+      })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.offlineClaimBusy = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: (res) => {
+          const claimId = (res.data as { id?: number })?.id;
+          if (claimId && this.offlineEvidenceFile) {
+            this.billing.uploadOfflineClaimEvidence(claimId, this.offlineEvidenceFile).pipe(take(1)).subscribe();
+          }
+          this.toast.success('Your payment claim was submitted for review.', 'Claim submitted');
+          this.selectedPlan = null;
+          this.offlineInvoiceId = null;
+          this.offlineEvidenceFile = null;
+        },
+        error: (err) => {
+          this.checkoutError = subscriptionErrorMessage(err, 'Could not submit your claim.');
+        },
+      });
   }
 
   get usingSubscribedVersion(): boolean {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
@@ -59,6 +59,7 @@ type RegisterSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'me
     CfFamilyPickerLabelPipe,
   ],
   templateUrl: './donations-register.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./donations-register.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsRegisterComponent implements OnInit {

@@ -71,6 +71,57 @@ export const SETTINGS_ROUTES: Routes = [
     loadChildren: () => import('@features/subscriptions/subscriptions.routes').then(m => m.SUBSCRIPTION_ADMIN_ROUTES)
   },
   {
+    path: 'billing',
+    canActivate: [marketingSuperAdminGuard],
+    loadChildren: () =>
+      import('@features/billing-settings/billing-settings.routes').then((m) => m.BILLING_SETTINGS_ROUTES),
+  },
+  {
+    path: 'marketing-website/billing',
+    redirectTo: 'billing',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/controls',
+    redirectTo: 'billing/controls',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/promotions',
+    redirectTo: 'billing/promotions',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/offline-claims',
+    redirectTo: 'billing/offline-claims',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/transactions',
+    redirectTo: 'billing/transactions',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/investigations',
+    redirectTo: 'billing/investigations',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/audit',
+    redirectTo: 'billing/audit',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/tenant-pricing',
+    redirectTo: 'billing/tenant-pricing',
+    pathMatch: 'full',
+  },
+  {
+    path: 'marketing-website/billing/tenant-agreements',
+    redirectTo: 'billing/tenant-agreements',
+    pathMatch: 'full',
+  },
+  {
     path: 'marketing-website',
     canActivate: [marketingSuperAdminGuard],
     loadChildren: () =>

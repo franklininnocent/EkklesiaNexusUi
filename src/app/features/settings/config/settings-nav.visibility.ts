@@ -13,7 +13,8 @@ export type SettingsNavVisibilityKey =
   | 'default-seeds'
   | 'web-settings'
   | 'contact-enquiries'
-  | 'marketing-website';
+  | 'marketing-website'
+  | 'billing-payment-controls';
 
 function isSuperAdminCard(user: User, auth: AuthService): boolean {
   if (user.is_admin === true || user.is_super_admin === true) {
@@ -66,6 +67,7 @@ export function isSettingsNavItemVisible(
     case 'contact-enquiries':
       return auth.canViewContactEnquiries(user);
     case 'marketing-website':
+    case 'billing-payment-controls':
       return auth.isSuperAdmin(user);
     default:
       return false;

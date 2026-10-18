@@ -7,6 +7,7 @@ import { ParishPersonService, ParishPerson } from '@features/settings/sacraments
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { PhoneCodeService } from '@core/services/phone-code.service';
+import { CfOverlayStackService } from '@core/services/cf-overlay-stack.service';
 
 class GovernanceServiceMock {
   getCurrent = jest.fn(() =>
@@ -108,9 +109,72 @@ describe('ChurchLeadershipGovernanceComponent add leader modal', () => {
     component.canEdit = true;
     component.ngOnInit();
     fixture.detectChanges();
+    TestBed.inject(CfOverlayStackService).reset();
   });
 
-  it('requires governance category before Add Leader can submit', () => {
+  afterEach(() => {
+    fixture.destroy();
+    TestBed.inject(CfOverlayStackService).reset();
+  });
+
+  it('filters governance groups to parish clergy only', () => {
+    component.current = {
+      church_profile_id: 1,
+      active_count: 3,
+      groups: [
+        {
+          category: 'PARISH_CLERGY',
+          category_label: 'Parish Clergy',
+          hierarchical_level: 1,
+          assignments: [{ id: 'clergy-1' } as never],
+        },
+        {
+          category: 'PARISH_COUNCIL',
+          category_label: 'Parish Councils',
+          hierarchical_level: 2,
+          assignments: [{ id: 'council-1' } as never],
+        },
+        {
+          category: 'MINISTRY_PIOUS',
+          category_label: 'Ministries',
+          hierarchical_level: 3,
+          assignments: [{ id: 'ministry-1' } as never],
+        },
+      ],
+      assignments: [],
+    };
+
+    expect(component.parishClergyGroups.length).toBe(1);
+    expect(component.parishClergyGroups[0].category).toBe('PARISH_CLERGY');
+    expect(component.parishClergyActiveCount).toBe(1);
+  });
+
+  it('defaults parish clergy category when Add Parish Clergy opens', () => {
+    component.openAssignModal();
+    fixture.detectChanges();
+
+    expect(component.assignCategory).toBe('PARISH_CLERGY');
+    const categoryOptions = fixture.nativeElement.querySelectorAll(
+      '#assign_category option',
+    ) as NodeListOf<HTMLOptionElement>;
+    expect(categoryOptions.length).toBe(2);
+    expect(Array.from(categoryOptions).map((option) => option.textContent?.trim())).toEqual([
+      'Parish Clergy',
+      'Other',
+    ]);
+  });
+
+  it('supports Other governance category in Add Parish Clergy', () => {
+    component.openAssignModal();
+    component.assignCategory = 'OTHER';
+    component.onAssignCategoryChange();
+    fixture.detectChanges();
+
+    expect(component.assignCategory).toBe('OTHER');
+    expect(component.assignForm.controls.role_id.enabled).toBe(true);
+  });
+
+  it('requires role and person before Add Parish Clergy can submit', () => {
     component.openAssignModal();
     fixture.detectChanges();
 
@@ -119,7 +183,6 @@ describe('ChurchLeadershipGovernanceComponent add leader modal', () => {
     );
     expect(submitButton?.disabled).toBe(true);
     expect(component.canSubmitAssign).toBe(false);
-    expect(fixture.nativeElement.querySelector('#assign_category')).toBeTruthy();
 
     component.selectPerson(mockPerson);
     component.assignCategory = 'PARISH_CLERGY';
@@ -296,10 +359,75 @@ describe('ChurchLeadershipGovernanceComponent add leader modal', () => {
     });
   }));
 
+  it('opens Add New Role outside the Add Parish Clergy overlay', () => {
+    component.openAssignModal();
+    component.openAddRoleFromCombobox({ initialName: 'Chapel Chaplain', category: 'PARISH_CLERGY' });
+    fixture.detectChanges();
+
+    expect(component.showAddRoleModal).toBe(true);
+    expect(fixture.nativeElement.querySelector('#clg_new_role_name')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.clg-assign-modal')).toBeTruthy();
+  });
+
   it('does not open assign modal when canEdit is false', () => {
     component.canEdit = false;
     component.openAssignModal();
     expect(component.showAssignModal).toBe(false);
+  });
+
+  it('shows Leadership History in the Current Governance action row', () => {
+    const buttons = fixture.nativeElement.querySelectorAll('.clg__header-actions button') as NodeListOf<HTMLButtonElement>;
+    const historyButton = Array.from(buttons).find(
+      (button) => button.textContent?.trim() === 'Leadership History',
+    );
+    expect(historyButton).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.clg__header-actions button.cf-btn-primary')?.textContent?.trim()).toBe(
+      'Add Parish Clergy',
+    );
+  });
+
+  it('shows Leadership History when canEdit is false', () => {
+    fixture.componentRef.setInput('canEdit', false);
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('.clg__header-actions button') as NodeListOf<HTMLButtonElement>;
+    const historyButton = Array.from(buttons).find(
+      (button) => button.textContent?.trim() === 'Leadership History',
+    );
+    expect(historyButton).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.clg__header-actions button.cf-btn-primary')).toBeFalsy();
+  });
+
+  it('switches to leadership history view when Leadership History is clicked', () => {
+    const api = TestBed.inject(ChurchLeadershipGovernanceService) as unknown as GovernanceServiceMock;
+    api.getHistory.mockClear();
+
+    component.showLeadershipHistory();
+    fixture.detectChanges();
+
+    expect(component.contentView).toBe('leadership-history');
+    expect(api.getHistory).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.clg__history')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.clg__title')).toBeFalsy();
+  });
+
+  it('hides history by default and restores current governance from history view', () => {
+    const api = TestBed.inject(ChurchLeadershipGovernanceService) as unknown as GovernanceServiceMock;
+    expect(component.contentView).toBe('current-governance');
+    expect(fixture.nativeElement.querySelector('.clg__history')).toBeFalsy();
+
+    component.showLeadershipHistory();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.clg__history')).toBeTruthy();
+
+    api.getHistory.mockClear();
+    component.showCurrentGovernance();
+    fixture.detectChanges();
+
+    expect(component.contentView).toBe('current-governance');
+    expect(fixture.nativeElement.querySelector('.clg__history')).toBeFalsy();
+    expect(api.getHistory).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.clg__title')?.textContent?.trim()).toBe('Parish Clergy');
   });
 
   it('clears role when assign category changes to an incompatible group', () => {
@@ -400,6 +528,12 @@ describe('ChurchLeadershipGovernanceComponent photo viewer', () => {
     component = fixture.componentInstance;
     component.ngOnInit();
     fixture.detectChanges();
+    TestBed.inject(CfOverlayStackService).reset();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
+    TestBed.inject(CfOverlayStackService).reset();
   });
 
   it('shows a photo trigger only for assignments with photos', () => {

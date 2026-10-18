@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { StatusBadgeComponent } from '@shared/components/status-badge/status-badge.component';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
@@ -26,6 +26,7 @@ import { massIntentionStageLabel, massIntentionStageTone } from '../utils/mass-i
   standalone: true,
   imports: [CommonModule, ModalShellComponent, StatusBadgeComponent, CfActionIconComponent],
   templateUrl: './mass-intention-view-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-intention-view-modal.component.scss',
 })
 export class MassIntentionViewModalComponent implements OnChanges {

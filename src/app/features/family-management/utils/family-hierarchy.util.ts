@@ -158,8 +158,6 @@ export function buildHierarchyGroups(
   memberFilter?: (vm: NavMemberViewModel) => boolean
 ): HierarchyGroupViewModel[] {
   const members = family.members ?? [];
-  const totalCount = members.length;
-  const collapseRelatives = totalCount > 10;
 
   const buckets = new Map<HierarchyGroupKey, NavMemberViewModel[]>();
   for (const g of GROUP_ORDER) {
@@ -184,18 +182,11 @@ export function buildHierarchyGroups(
 
   return GROUP_ORDER.map(({ key, label }) => {
     const groupMembers = (buckets.get(key) ?? []).sort(sortMembers);
-    let defaultExpanded = true;
-    if (key === 'relatives' && collapseRelatives) {
-      defaultExpanded = false;
-    }
-    if (totalCount > 10 && key === 'grandparents') {
-      defaultExpanded = false;
-    }
     return {
       key,
       label,
       members: groupMembers,
-      defaultExpanded
+      defaultExpanded: key === 'head'
     };
   }).filter((g) => g.members.length > 0);
 }

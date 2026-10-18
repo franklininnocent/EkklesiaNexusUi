@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import {
   MassIntentionsApiService,
@@ -65,6 +65,7 @@ import {
       </form>
     </app-modal-shell>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .assign-intentions__body {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
@@ -47,6 +47,7 @@ type ReportTab =
     CfActionIconComponent,
   ],
   templateUrl: './mass-intentions-register.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mass-intentions-register.page.scss',
 })
 export class MassIntentionsRegisterPageComponent {

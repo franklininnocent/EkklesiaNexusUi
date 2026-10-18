@@ -15,6 +15,6 @@ import { MinistriesSubNavComponent } from '../components/ministries-sub-nav/mini
   ],
   templateUrl: './audit-log.page.html',
   // Default so header badge re-reads panel.drawerFilterCount after drawer apply/clear.
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class AuditLogPageComponent {}

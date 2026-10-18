@@ -1,12 +1,11 @@
 <section class="marketing-website cf-page">
   <app-page-header
     title="Web Management"
-    subtitle="Publish public marketing content and SEO for EkklesiaSoftWeb. Super Admin only."
+    subtitle="Publish public marketing content and SEO for EkklesiaNexusWeb. Super Admin only."
     backLink="/settings"
     backLabel="Settings"
     [statusLabel]="liveStatusLabel"
     [statusTone]="liveStatusTone">
-    <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-primary">Website plans</a>
     <button type="button" class="cf-btn" [disabled]="loading" (click)="reload()">
       Refresh
     </button>
@@ -30,6 +29,7 @@
     <a routerLink="/settings/marketing-website" class="cf-btn cf-btn-sm cf-btn-primary" aria-current="page">Content &amp; SEO</a>
     <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-sm">Website plans</a>
     <a routerLink="/settings/marketing-website/seo-monitoring" class="cf-btn cf-btn-sm">SEO monitoring</a>
+    <a routerLink="/settings/billing" class="cf-btn cf-btn-sm">Billing &amp; payments</a>
   </nav>
 
   <ng-container *ngIf="!loading && !loadError">
@@ -38,7 +38,7 @@
         <strong>How publishing works</strong>
         <span>
           Edit sections below or paste JSON, apply changes to the draft payload, then save a draft or publish to the
-          public API (<code>GET /api/public/marketing-content</code>). Export source files from EkklesiaSoftWeb with
+          public API (<code>GET /api/public/marketing-content</code>). Export source files from EkklesiaNexusWeb with
           <code>npm run export:content</code> when needed.
         </span>
       </div>
@@ -66,12 +66,18 @@
             <p class="cf-meta">
               Visitors see this revision when the marketing site uses API content mode.
             </p>
+            <button type="button" class="cf-btn cf-btn-primary marketing-website__load-live" (click)="loadLiveContentIntoEditor()">
+              Load live content into editor
+            </button>
           </ng-container>
           <ng-template #noLive>
             <app-cf-empty-state
               title="Nothing live yet"
-              description="The public API returns 404 until you publish. Start from an export or your last draft.">
+              description="The public API returns 404 until you publish. Load the starter template or import JSON from EkklesiaNexusWeb.">
             </app-cf-empty-state>
+            <button type="button" class="cf-btn cf-btn-primary marketing-website__load-live" (click)="importStarterTemplate()">
+              Load starter template
+            </button>
           </ng-template>
         </section>
 
@@ -231,6 +237,13 @@
             </label>
           </div>
         </section>
+
+        <p
+          *ngIf="jsonError"
+          class="marketing-website__field-error marketing-website__global-json-error"
+          role="alert">
+          {{ jsonError }}
+        </p>
 
         <footer class="cf-panel marketing-website__actions-bar" aria-label="Publish actions">
           <p class="cf-meta marketing-website__actions-hint">

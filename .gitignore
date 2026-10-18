@@ -29,6 +29,7 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
+*.backup
 /.angular/
 .sass-cache/
 /connect.lock
@@ -52,4 +53,7 @@ Thumbs.db
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Jest JUnit reporter output from npm run test:ci
+/junit.xml
 

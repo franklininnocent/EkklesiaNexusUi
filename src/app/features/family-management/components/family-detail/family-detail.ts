@@ -1,4 +1,13 @@
-import { ChangeDetectorRef, ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FamilyService } from '../../../../core/services/family.service';
@@ -40,6 +49,10 @@ import {
   isMemberApiSuccess,
   prepareFamilyMemberPayload
 } from '../../utils/prepare-family-member-payload.util';
+import {
+  joinAddressParts,
+  sanitizeStoredAddressDisplay
+} from '../../utils/family-address.util';
 import { PhoneCodeService } from '@core/services/phone-code.service';
 import { AuthService } from '@core/services/auth.service';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
@@ -82,6 +95,8 @@ const DEFAULT_SACRAMENT_TYPES: SacramentTypeDto[] = [
 export class FamilyDetail implements OnInit, OnDestroy {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly confirmationDialog = inject(ConfirmationDialogService);
+
+  @ViewChild('workspaceDetail') private workspaceDetailRef?: ElementRef<HTMLElement>;
 
   family: Family | null = null;
   loading = true;
@@ -280,7 +295,22 @@ export class FamilyDetail implements OnInit, OnDestroy {
     }
 
     if ((profile as any).address) {
-      this.homeParishAddress = String((profile as any).address);
+      const profileAddress = (profile as any).address;
+      const resolved =
+        typeof profileAddress === 'string'
+          ? sanitizeStoredAddressDisplay(profileAddress)
+          : joinAddressParts(
+              profileAddress.line1,
+              profileAddress.line2,
+              profileAddress.district,
+              profileAddress.city,
+              profileAddress.state_province,
+              profileAddress.country,
+              profileAddress.pin_zip_code
+            );
+      if (resolved) {
+        this.homeParishAddress = resolved;
+      }
     }
   }
 
@@ -298,11 +328,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
       return null;
     }
 
-    if (preferred.full_address) {
-      return preferred.full_address;
-    }
-
-    const segments = [
+    const fromParts = joinAddressParts(
       preferred.line1,
       preferred.line2,
       preferred.district,
@@ -310,9 +336,12 @@ export class FamilyDetail implements OnInit, OnDestroy {
       preferred.state_province,
       preferred.country,
       preferred.pin_zip_code
-    ].filter(segment => !!segment && String(segment).trim().length > 0);
+    );
 
-    return segments.length ? segments.join(', ') : null;
+    const fromFull = sanitizeStoredAddressDisplay(preferred.full_address);
+    const composed = fromFull && !fromFull.includes('[object Object]') ? fromFull : fromParts;
+
+    return composed;
   }
 
   private pickPreferredAddress(addresses: Address[]): Address | undefined {
@@ -1274,6 +1303,27 @@ export class FamilyDetail implements OnInit, OnDestroy {
       replaceUrl: true,
     });
     this.cdr.markForCheck();
+    this.scrollWorkspacePanelToTop();
+  }
+
+  /** Scroll main layout so the right-hand workspace starts at the top after member change. */
+  private scrollWorkspacePanelToTop(): void {
+    setTimeout(() => {
+      const detailEl = this.workspaceDetailRef?.nativeElement;
+      if (!detailEl) {
+        return;
+      }
+      const pageContent = detailEl.closest('.page-content') as HTMLElement | null;
+      if (pageContent) {
+        const top =
+          detailEl.getBoundingClientRect().top -
+          pageContent.getBoundingClientRect().top +
+          pageContent.scrollTop;
+        pageContent.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'auto' });
+        return;
+      }
+      detailEl.scrollIntoView({ block: 'start', behavior: 'auto' });
+    }, 0);
   }
 
   private loadMemberRegisterSacraments(): void {

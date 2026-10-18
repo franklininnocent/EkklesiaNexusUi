@@ -150,7 +150,7 @@ Prerequisites:
 
 ### Create tenant-admin auth file (one-time)
 
-From `EkklesiaSoftUi`, with Angular running:
+From `EkklesiaNexusUi`, with Angular running:
 
 ```bash
 mkdir -p .auth
@@ -180,7 +180,7 @@ Use the numeric tenant id (or uuid) that matches the parish in `RBAC_TENANT_ADMI
 Seed deterministic sacrament E2E members (idempotent; safe to re-run):
 
 ```bash
-cd ../EkklesiaSoftApi
+cd ../EkklesiaNexusApi
 SACRAMENT_E2E_TENANT_ID=2 php artisan db:seed --class=Modules\\Family\\Database\\Seeders\\SacramentE2eSeeder
 ```
 
@@ -189,7 +189,7 @@ Replace `2` with your parish tenant id (must match the tenant in `RBAC_TENANT_AD
 Run sacrament Playwright suite:
 
 ```bash
-cd EkklesiaSoftUi
+cd EkklesiaNexusUi
 npx playwright test e2e/sacraments
 ```
 
@@ -209,7 +209,7 @@ Prerequisites:
 Seed deterministic bishop fixtures for the parish tenant (idempotent):
 
 ```bash
-cd ../EkklesiaSoftApi
+cd ../EkklesiaNexusApi
 BISHOP_E2E_TENANT_ID=2 php artisan db:seed --class=Modules\\EcclesiasticalData\\Database\\Seeders\\BishopE2eSeeder
 ```
 
@@ -218,7 +218,7 @@ Replace `2` with the tenant id that matches `RBAC_TENANT_ADMIN_STORAGE_STATE`.
 Run bishop Playwright suite:
 
 ```bash
-cd EkklesiaSoftUi
+cd EkklesiaNexusUi
 RBAC_E2E_BASE_URL=http://localhost:4200 \
 RBAC_TENANT_ADMIN_STORAGE_STATE=.auth/tenant-admin.json \
 RBAC_PLATFORM_ADMIN_STORAGE_STATE=.auth/platform-admin.json \
@@ -244,7 +244,7 @@ Prerequisites:
 Seed deterministic fixtures (idempotent; safe to re-run before each suite, especially after renewal tests):
 
 ```bash
-cd ../EkklesiaSoftApi
+cd ../EkklesiaNexusApi
 php artisan db:seed --class=Modules\\Tenants\\Database\\Seeders\\SubscriptionExpiredE2eSeeder
 ```
 
@@ -253,7 +253,7 @@ Note the printed tenant ids. Admins: `e2e-expired-admin@example.test` / `e2e-gra
 Create Playwright storage states (one-time per environment):
 
 ```bash
-cd EkklesiaSoftUi
+cd EkklesiaNexusUi
 mkdir -p .auth
 npx playwright codegen http://localhost:4200 --save-storage=.auth/expired-tenant-admin.json
 # Log in as e2e-expired-admin@example.test
@@ -286,7 +286,7 @@ Re-run the seeder after renewal tests to restore expired dates.
 After `TENANT_SUBSCRIPTION_VIEW_ONLY_LOCKED_ENFORCEMENT=true` on the target API:
 
 ```bash
-cd EkklesiaSoftApi
+cd EkklesiaNexusApi
 php artisan db:seed --class=Modules\\Tenants\\Database\\Seeders\\SubscriptionEnforcementE2eSeeder
 php artisan tenants:subscription-enforcement-smoke --require-enforcement
 ```

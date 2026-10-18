@@ -31,7 +31,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
   visibleSections$: Observable<any[]>;
   
   settingsSections = [
-    { title: 'Profile Settings', description: 'Manage your personal information', icon: 'user', route: null },
+    {
+      title: 'Profile Settings',
+      description: 'Manage your parish church profile and general information',
+      icon: 'user',
+      route: '/church-profile',
+      requiresTenantAccess: true,
+    },
     { title: 'Notifications', description: 'Configure notification preferences', icon: 'bell', route: '/settings/notifications' },
     { title: 'My Subscription', description: 'View your church plan and access status', icon: 'credit-card', route: '/settings/my-subscription', requiresMySubscriptionAccess: true },
     { 
@@ -90,6 +96,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
       icon: 'subscription', 
       route: '/settings/subscription',
       requiresSuperAdmin: true
+    },
+    {
+      title: 'Billing & Payment Controls',
+      description: 'SaaS checkout, gateways, promotions, pricing, and payment operations',
+      icon: 'credit-card',
+      route: '/settings/billing',
+      requiresStrictSuperAdmin: true,
     },
     {
       title: 'Web Management',

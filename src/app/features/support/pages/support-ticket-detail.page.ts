@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -34,6 +34,7 @@ type LifecycleAction = 'cancel' | 'resolve' | 'reopen' | 'confirm';
     CfDatePipe,
   ],
   templateUrl: './support-ticket-detail.page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './support-ticket-detail.page.scss',
 })
 export class SupportTicketDetailPage implements OnInit {

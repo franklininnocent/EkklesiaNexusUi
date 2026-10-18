@@ -75,7 +75,7 @@
               </span>
             </div>
           </div>
-          <p class="cf-split-field__hint">{{ getLevelDescription(level?.value) }}</p>
+          <p class="cf-split-field__hint">{{ getLevelDescription($safeNavigationMigration(level?.value)) }}</p>
           <p class="cf-split-field__error" *ngIf="hasError('level')">{{ getErrorMessage('level') }}</p>
         </div>
       </div>

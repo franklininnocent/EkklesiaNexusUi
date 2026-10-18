@@ -78,6 +78,23 @@ export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
     visibility: 'marketing-website',
   },
   {
+    id: 'settings-billing-payment',
+    label: 'Billing & Payment Controls',
+    route: '/settings/billing',
+    visibility: 'billing-payment-controls',
+    children: [
+      { id: 'settings-billing-overview', label: 'Overview', route: '/settings/billing', exact: true },
+      { id: 'settings-billing-controls', label: 'Payment settings', route: '/settings/billing/controls' },
+      { id: 'settings-billing-promotions', label: 'Promotions', route: '/settings/billing/promotions' },
+      { id: 'settings-billing-tenant-pricing', label: 'Tenant pricing', route: '/settings/billing/tenant-pricing' },
+      { id: 'settings-billing-tenant-agreements', label: 'Agreements', route: '/settings/billing/tenant-agreements' },
+      { id: 'settings-billing-transactions', label: 'Transactions', route: '/settings/billing/transactions' },
+      { id: 'settings-billing-offline-claims', label: 'Offline claims', route: '/settings/billing/offline-claims' },
+      { id: 'settings-billing-investigations', label: 'Investigations', route: '/settings/billing/investigations' },
+      { id: 'settings-billing-audit', label: 'Billing audit', route: '/settings/billing/audit' },
+    ],
+  },
+  {
     id: 'settings-web-settings',
     label: 'Web Settings',
     route: '/settings/web-settings',

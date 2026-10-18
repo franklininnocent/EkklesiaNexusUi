@@ -54,11 +54,11 @@ describe('ReportDrillDownModalComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReportDrillDownModalComponent);
-    fixture.componentInstance.request = {
+    fixture.componentRef.setInput('request', {
       graph_id: 'financial_health',
       data_element_id: 'overall_score',
       slice_id: 'overall_score'
-    };
+    });
     fixture.detectChanges();
   });
 
@@ -69,11 +69,11 @@ describe('ReportDrillDownModalComponent', () => {
   });
 
   it('shows forecast banner when point_kind is forecast', () => {
-    fixture.componentInstance.request = {
+    fixture.componentRef.setInput('request', {
       graph_id: 'month_end_forecast',
       data_element_id: 'current_month_projection',
       slice_id: 'current_month_projection'
-    };
+    });
     const forecastResponse = {
       ...mockResponse,
       data: {
@@ -115,19 +115,19 @@ describe('ReportDrillDownModalComponent', () => {
       });
     });
 
-    fixture.componentInstance.request = {
+    fixture.componentRef.setInput('request', {
       graph_id: 'collections',
       data_element_id: 'current_month_collected',
       slice_id: 'current_month'
-    };
+    });
     fixture.detectChanges();
     tick(10);
 
-    fixture.componentInstance.request = {
+    fixture.componentRef.setInput('request', {
       graph_id: 'financial_health',
       data_element_id: 'overall_score',
       slice_id: 'overall_score'
-    };
+    });
     fixture.detectChanges();
     tick(100);
 
@@ -155,11 +155,11 @@ describe('ReportDrillDownModalComponent', () => {
     };
     donationsMock.getReportDrillDown.and.returnValue(of(emptyListResponse));
 
-    fixture.componentInstance.request = {
+    fixture.componentRef.setInput('request', {
       graph_id: 'collections',
       data_element_id: 'current_month_collected',
       slice_id: 'current_month'
-    };
+    });
     fixture.detectChanges();
     tick();
 

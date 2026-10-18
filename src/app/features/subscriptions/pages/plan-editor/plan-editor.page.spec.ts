@@ -86,7 +86,7 @@ function setup(
 ) {
   const api = {
     getPlan: jest.fn().mockReturnValue(of(catalogPlan)),
-    listFeatures: jest.fn().mockReturnValue(of([])),
+    listFeatureCatalog: jest.fn().mockReturnValue(of({ features: [], implementedEntitlementCodes: [] })),
     updateVersionTerms: jest.fn((_p: number, id: number, payload: object) =>
       of({ ...version({ id, status: 'DRAFT', is_editable: true }), ...payload }),
     ),
@@ -240,7 +240,7 @@ describe('PlanEditorPage pricing form', () => {
     const catalogPlan = plan();
     const api = {
       getPlan: jest.fn().mockReturnValue(of(catalogPlan)),
-      listFeatures: jest.fn().mockReturnValue(of([])),
+      listFeatureCatalog: jest.fn().mockReturnValue(of({ features: [], implementedEntitlementCodes: [] })),
       updatePlan: jest
         .fn()
         .mockReturnValueOnce(

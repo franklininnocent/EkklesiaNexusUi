@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
@@ -83,6 +83,7 @@ const GENERIC_TITLES = new Set([
       <p *ngIf="!loading && !error && !events.length" class="fat__state cf-state">No activity recorded yet.</p>
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .fat { display: grid; gap: 0.55rem; }
     .fat__header {

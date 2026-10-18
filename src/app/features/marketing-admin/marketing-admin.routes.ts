@@ -22,4 +22,13 @@ export const MARKETING_ADMIN_ROUTES: Routes = [
         (m) => m.MarketingSeoMonitoringRunbookPage,
       ),
   },
+  { path: 'billing', redirectTo: '/settings/billing', pathMatch: 'full' },
+  { path: 'billing/controls', redirectTo: '/settings/billing/controls', pathMatch: 'full' },
+  { path: 'billing/promotions', redirectTo: '/settings/billing/promotions', pathMatch: 'full' },
+  { path: 'billing/offline-claims', redirectTo: '/settings/billing/offline-claims', pathMatch: 'full' },
+  { path: 'billing/transactions', redirectTo: '/settings/billing/transactions', pathMatch: 'full' },
+  { path: 'billing/investigations', redirectTo: '/settings/billing/investigations', pathMatch: 'full' },
+  { path: 'billing/audit', redirectTo: '/settings/billing/audit', pathMatch: 'full' },
+  { path: 'billing/tenant-pricing', redirectTo: '/settings/billing/tenant-pricing', pathMatch: 'full' },
+  { path: 'billing/tenant-agreements', redirectTo: '/settings/billing/tenant-agreements', pathMatch: 'full' },
 ];

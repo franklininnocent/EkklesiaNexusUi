@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -42,6 +42,7 @@ type DonorSortColumn = 'name' | 'donor_type' | 'contact';
     SortableDirective,
   ],
   templateUrl: './donations-donors.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./donations-donors.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsDonorsComponent implements OnInit, OnDestroy {

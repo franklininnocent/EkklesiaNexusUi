@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { EntitlementService } from '@core/services/entitlement.service';
@@ -15,6 +15,7 @@ const entitlements = {
 @Component({
   standalone: true,
   imports: [IfFeatureDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <button id="plans" *appIfFeature="'CONTRIBUTION_PLANS'; else upsell">Plans</button>
     <ng-template #upsell><span id="upsell">Upgrade</span></ng-template>

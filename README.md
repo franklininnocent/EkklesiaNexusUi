@@ -1,6 +1,6 @@
 # EkklesiaNexus UI
 
-A large-scale, multi-tenant SaaS application built with Angular 20 (latest) and designed for enterprise-level scalability.
+A large-scale, multi-tenant SaaS application built with Angular 22 and designed for enterprise-level scalability.
 
 ## 🏗️ Architecture
 
@@ -33,7 +33,7 @@ src/
 
 ### Prerequisites
 
-- Node.js (v18+)
+- Node.js (v22.22+ or v24.15+)
 - npm or yarn
 - Angular CLI (`npm install -g @angular/cli`)
 

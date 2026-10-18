@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AuthService } from '@core/services/auth.service';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
@@ -29,6 +29,7 @@ import { StewardshipTablePanelComponent } from '../components/stewardship-table-
     DataTableComponent,
     StewardshipTablePanelComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <section class="approvals cf-page cf-financial-dashboard">
       <app-page-header

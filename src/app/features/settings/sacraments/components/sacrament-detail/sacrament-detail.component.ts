@@ -26,6 +26,10 @@ import { liturgicalTerminology } from '../../certificates/terminology/en.catalog
 import { SacramentalCertificateComponent } from '../../certificates/layout/sacramental-certificate.component';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { CfLoadingContainerComponent } from '@shared/components/cf-loading-container/cf-loading-container.component';
+import {
+  isReconciliationSacramentCode,
+  sacramentSupportsCertificate,
+} from '../../utils/sacrament-certificate.util';
 
 const SACRAMENT_VIEW_TYPE_CODES = new Set([
   'BAPTISM',
@@ -36,9 +40,6 @@ const SACRAMENT_VIEW_TYPE_CODES = new Set([
   'EUCHARIST',
   'FIRST_COMMUNION',
   'FIRST_HOLY_COMMUNION',
-  'RECONCILIATION',
-  'CONFESSION',
-  'PENANCE',
   'ANOINTING',
   'ANOINTING_SICK',
   'ANOINTINGOFTHESICK',
@@ -163,6 +164,15 @@ export class SacramentDetailComponent implements OnInit, OnDestroy {
     if (!this.sacramentId) {
       return;
     }
+    if (this.isReconciliationRecord()) {
+      this.latestCertificateRecord = null;
+      this.downloadHistory = [];
+      this.certView = null;
+      this.previewProjection = null;
+      this.previewVersionLabel = null;
+      this.isPreviewVisible = false;
+      return;
+    }
     this.sacramentService.getCertificateViewDetails(this.sacramentId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -192,8 +202,15 @@ export class SacramentDetailComponent implements OnInit, OnDestroy {
   }
 
   supportsOfficialCertificate(): boolean {
-    const code = (this.sacrament?.sacrament_type?.code || '').toUpperCase().trim();
-    return SACRAMENT_VIEW_TYPE_CODES.has(code);
+    const code = this.sacrament?.sacrament_type?.code;
+    if (!sacramentSupportsCertificate(code)) {
+      return false;
+    }
+    return SACRAMENT_VIEW_TYPE_CODES.has((code || '').toUpperCase().trim());
+  }
+
+  isReconciliationRecord(): boolean {
+    return isReconciliationSacramentCode(this.sacrament?.sacrament_type?.code);
   }
 
   latestIssued(): SacramentCertificate | null {
@@ -219,6 +236,9 @@ export class SacramentDetailComponent implements OnInit, OnDestroy {
   }
 
   certificateTypeBadge(): string {
+    if (this.isReconciliationRecord()) {
+      return 'Reconciliation Record';
+    }
     if (!this.sacrament?.sacrament_type) {
       return 'Sacramental Certificate';
     }

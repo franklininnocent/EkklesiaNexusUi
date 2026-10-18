@@ -16,6 +16,8 @@ import {
 } from '../../utils/register-sacrament.util';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { resolveMarriageSpouseDisplayName } from '../../utils/marriage-spouse-display.util';
+import { sacramentSupportsCertificate } from '@features/settings/sacraments/utils/sacrament-certificate.util';
+import { sanitizeStoredAddressDisplay } from '../../utils/family-address.util';
 
 export interface SacramentDisplayField {
   label: string;
@@ -139,6 +141,13 @@ export class MemberSacramentDetailComponent {
     return this.registerRecord ? `/sacraments/view/${this.registerRecord.id}` : null;
   }
 
+  get showCertificateLink(): boolean {
+    return (
+      this.registerRecord != null &&
+      sacramentSupportsCertificate(this.registerRecord.sacrament_type?.code ?? this.sacramentType.code)
+    );
+  }
+
   get registerDisplayFields(): SacramentDisplayField[] {
     if (!this.registerRecord) {
       return [];
@@ -214,7 +223,9 @@ export class MemberSacramentDetailComponent {
         const display =
           entry.label === 'Date'
             ? this.formatSacramentDate(entry.value)
-            : this.formatText(entry.value);
+            : entry.label === 'Address'
+              ? this.formatAddress(entry.value)
+              : this.formatText(entry.value);
         if (!always && !entry.value?.trim()) {
           return null;
         }
@@ -225,6 +236,11 @@ export class MemberSacramentDetailComponent {
 
   private formatText(value: string | null | undefined): string {
     return value?.trim() ? value.trim() : '—';
+  }
+
+  private formatAddress(value: string | null | undefined): string {
+    const sanitized = sanitizeStoredAddressDisplay(value);
+    return sanitized || '—';
   }
 
   private locationChips(locationType: string | null | undefined): string[] {

@@ -40,12 +40,7 @@
   }
 
   .organization-form-fields__stack.cf-form-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  /* Description spans full width; Vision/Mission/Objectives share a row. */
-  .organization-form-fields__stack app-form-field:first-of-type .cf-form-field {
-    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
   }
 }
 

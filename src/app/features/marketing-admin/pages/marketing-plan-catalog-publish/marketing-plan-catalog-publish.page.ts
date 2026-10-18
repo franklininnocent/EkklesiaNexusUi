@@ -21,6 +21,7 @@ import {
   PlanCatalogFeatureVisibilityEditor,
   PlanCatalogPublicLimit,
   PlanCatalogPublicPlan,
+  PlanCatalogRegionalPriceRow,
   PlanCatalogPublishDiff,
   PlanCatalogRevisionRow,
   PlanCatalogRevisionSummary,
@@ -346,6 +347,32 @@ export class MarketingPlanCatalogPublishPage implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  private readonly websiteRegionalCurrencies: Array<{ currency: 'INR' | 'USD' | 'BRL'; label: string }> = [
+    { currency: 'INR', label: 'India (INR)' },
+    { currency: 'USD', label: 'United States & rest of world (USD)' },
+    { currency: 'BRL', label: 'Brazil (BRL)' },
+  ];
+
+  regionalPriceRows(plan: PlanCatalogPublicPlan | null): PlanCatalogRegionalPriceRow[] {
+    if (!plan?.regional_prices) {
+      return [];
+    }
+    const rows: PlanCatalogRegionalPriceRow[] = [];
+    for (const { currency, label } of this.websiteRegionalCurrencies) {
+      const entry = plan.regional_prices[currency];
+      if (!entry) {
+        continue;
+      }
+      const monthly = entry.monthly_price ?? null;
+      const annual = entry.annual_price ?? null;
+      if (monthly == null && annual == null) {
+        continue;
+      }
+      rows.push({ currency, label, monthly, annual });
+    }
+    return rows;
   }
 
   publicPlan(code: string): PlanCatalogPublicPlan | null {

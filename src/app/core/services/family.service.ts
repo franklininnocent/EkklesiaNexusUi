@@ -103,6 +103,8 @@ export class FamilyService {
     from?: string;
     to?: string;
     refresh?: boolean;
+    /** Parish dashboard UI loads KPIs/charts only; skips unused full-dashboard sections. */
+    scope?: 'ui' | 'full';
   } = {}): Observable<ApiResponse<FamilyDashboardSummary>> {
     let httpParams = new HttpParams();
     if (params.bcc_id) httpParams = httpParams.set('bcc_id', params.bcc_id);
@@ -111,6 +113,7 @@ export class FamilyService {
     if (params.from) httpParams = httpParams.set('from', params.from);
     if (params.to) httpParams = httpParams.set('to', params.to);
     if (params.refresh) httpParams = httpParams.set('refresh', '1');
+    if (params.scope) httpParams = httpParams.set('scope', params.scope);
 
     return this.http.get<ApiResponse<FamilyDashboardSummary>>(`${this.apiUrl}/dashboard`, {
       params: httpParams,

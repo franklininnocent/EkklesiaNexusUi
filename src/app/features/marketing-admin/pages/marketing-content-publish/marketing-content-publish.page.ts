@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -29,6 +28,7 @@ import { MarketingSeoEditorComponent } from '../../components/marketing-seo-edit
 import {
   applySeoFormToPayload,
   defaultMarketingSeoForm,
+  duplicateSeoTitleWarnings,
   MarketingSeoForm,
   seoFormFromPayload,
 } from '../../models/marketing-seo.models';
@@ -51,7 +51,6 @@ import { MarketingFinalCtaEditorComponent } from '../../components/marketing-fin
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     PageHeaderComponent,
     CfEmptyStateComponent,
     LoadingSkeletonComponent,
@@ -85,6 +84,8 @@ export class MarketingContentPublishPage implements OnInit {
   notes = '';
   jsonText = '';
   jsonError = '';
+  /** Draft, published, bootstrap, or last parsed payload used when the JSON textarea is empty. */
+  private payloadCache: Record<string, unknown> | null = null;
   editorTab: 'seo' | 'hero' | 'navigation' | 'footer' | 'finalCta' | 'json' = 'seo';
 
   readonly editorTabStrip: TabStripItem[] = [
@@ -202,40 +203,160 @@ export class MarketingContentPublishPage implements OnInit {
   private loadLatestDraftIntoEditor(): void {
     this.api.getLatestDraft().subscribe({
       next: (draft) => {
-        if (draft && !this.jsonText.trim()) {
-          this.jsonText = JSON.stringify(draft.payload, null, 2);
-          if (draft.notes) this.notes = draft.notes;
-          this.syncFormsFromPayload(draft.payload as Record<string, unknown>);
+        if (draft?.payload && typeof draft.payload === 'object' && !Array.isArray(draft.payload)) {
+          if (draft.notes) {
+            this.notes = draft.notes;
+          }
+          this.seedEditorPayload(draft.payload as Record<string, unknown>);
+        } else if (this.published?.payload && typeof this.published.payload === 'object') {
+          this.seedEditorPayload(this.published.payload as Record<string, unknown>);
+        } else {
+          this.fetchBootstrapIfNeeded();
         }
         this.loading = false;
         this.cdr.markForCheck();
       },
       error: () => {
+        if (this.published?.payload && typeof this.published.payload === 'object') {
+          this.seedEditorPayload(this.published.payload as Record<string, unknown>);
+        } else {
+          this.fetchBootstrapIfNeeded();
+        }
         this.loading = false;
         this.cdr.markForCheck();
       },
     });
   }
 
-  saveDraft(): void {
-    const payload = this.parsePayload();
-    if (!payload) {
-      this.cdr.markForCheck();
+  /** Fills the JSON editor once from server payload (does not overwrite in-progress edits). */
+  private seedEditorPayload(payload: Record<string, unknown>): void {
+    this.rememberPayload(payload);
+    if (this.jsonText.trim()) {
       return;
     }
-    const merged = this.mergeEditorIntoPayload(payload);
-    this.savingDraft = true;
-    this.api.saveDraft(merged, this.notes).subscribe({
-      next: () => {
-        this.toast.success('Draft saved (not public yet).');
-        this.savingDraft = false;
-        this.reload();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.toast.error(err.error?.message ?? 'Draft save failed.');
-        this.savingDraft = false;
+    this.jsonText = JSON.stringify(payload, null, 2);
+    this.jsonError = '';
+    this.syncFormsFromPayload(payload);
+  }
+
+  private rememberPayload(payload: Record<string, unknown>): void {
+    this.payloadCache = payload;
+  }
+
+  private clonePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
+  }
+
+  private fetchBootstrapIfNeeded(): void {
+    if (this.jsonText.trim() || this.payloadCache) {
+      return;
+    }
+    this.api.getBootstrapPayload().subscribe({
+      next: (bootstrap) => {
+        this.seedEditorPayload(bootstrap);
         this.cdr.markForCheck();
       },
+      error: () => {
+        if (!this.jsonText.trim()) {
+          this.jsonError =
+            'No draft or live content yet. Use Load starter template or import JSON on the Full JSON tab.';
+        }
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  importStarterTemplate(): void {
+    this.api.getBootstrapPayload().subscribe({
+      next: (bootstrap) => {
+        this.jsonText = JSON.stringify(bootstrap, null, 2);
+        this.jsonError = '';
+        this.rememberPayload(bootstrap);
+        this.syncFormsFromPayload(bootstrap);
+        this.toast.success('Starter marketing template loaded into the editor.');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.toast.error('Could not load the starter template. Import marketing-content.export.json manually.');
+      },
+    });
+  }
+
+  loadLiveContentIntoEditor(): void {
+    if (!this.published?.payload || typeof this.published.payload !== 'object') {
+      this.toast.error('Nothing is published yet. Use Load starter template or import JSON from EkklesiaNexusWeb.');
+      return;
+    }
+    this.jsonText = JSON.stringify(this.published.payload, null, 2);
+    this.jsonError = '';
+    this.rememberPayload(this.published.payload as Record<string, unknown>);
+    this.syncFormsFromPayload(this.published.payload as Record<string, unknown>);
+    this.toast.success('Loaded the live published payload into the editor.');
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Resolves a payload from the JSON textarea, in-memory cache, or live publication.
+   * Does not fetch the bootstrap file (use withPayloadForEdit for save/publish).
+   */
+  private resolvePayloadForEdit(): Record<string, unknown> | null {
+    const fromJson = this.parseJsonText(false);
+    if (fromJson) {
+      this.rememberPayload(fromJson);
+      return fromJson;
+    }
+    if (this.payloadCache) {
+      return this.payloadCache;
+    }
+    if (this.published?.payload && typeof this.published.payload === 'object') {
+      return this.published.payload as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  private withPayloadForEdit(
+    showFeedback: boolean,
+    run: (payload: Record<string, unknown>) => void,
+  ): void {
+    const immediate = this.resolvePayloadForEdit();
+    if (immediate) {
+      run(immediate);
+      return;
+    }
+    this.api.getBootstrapPayload().subscribe({
+      next: (bootstrap) => {
+        this.seedEditorPayload(bootstrap);
+        run(bootstrap);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.jsonError =
+          'No marketing content to save. Use Load starter template or import JSON on the Full JSON tab.';
+        if (showFeedback) {
+          this.toast.error(this.jsonError);
+        }
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  saveDraft(): void {
+    this.withPayloadForEdit(true, (payload) => {
+      const merged = this.mergeEditorIntoPayload(this.clonePayload(payload));
+      this.savingDraft = true;
+      this.cdr.markForCheck();
+      this.api.saveDraft(merged, this.notes).subscribe({
+        next: () => {
+          this.toast.success('Draft saved (not public yet).');
+          this.savingDraft = false;
+          this.reload();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.toast.error(err.error?.message ?? 'Draft save failed.');
+          this.savingDraft = false;
+          this.cdr.markForCheck();
+        },
+      });
     });
   }
 
@@ -316,25 +437,23 @@ export class MarketingContentPublishPage implements OnInit {
   }
 
   applyStructureToJson(): void {
-    const payload = this.parsePayload();
-    if (!payload) {
+    this.withPayloadForEdit(true, (payload) => {
+      const merged = applyStructureToPayload(
+        this.clonePayload(payload),
+        this.navigationItems,
+        this.footerForm,
+        this.finalCtaForm,
+      );
+      this.jsonText = JSON.stringify(merged, null, 2);
+      this.rememberPayload(merged);
+      this.jsonError = '';
+      this.toast.success('Site structure applied to JSON.');
       this.cdr.markForCheck();
-      return;
-    }
-    const merged = applyStructureToPayload(
-      payload,
-      this.navigationItems,
-      this.footerForm,
-      this.finalCtaForm,
-    );
-    this.jsonText = JSON.stringify(merged, null, 2);
-    this.jsonError = '';
-    this.toast.success('Site structure applied to JSON.');
-    this.cdr.markForCheck();
+    });
   }
 
   syncStructureFromJson(showToast = true): boolean {
-    const payload = this.parsePayload();
+    const payload = this.resolvePayloadForEdit();
     if (!payload) {
       if (showToast) {
         this.toast.error('Load valid JSON before editing navigation or footer.');
@@ -362,20 +481,18 @@ export class MarketingContentPublishPage implements OnInit {
   }
 
   applySeoToJson(): void {
-    const payload = this.parsePayload();
-    if (!payload) {
+    this.withPayloadForEdit(true, (payload) => {
+      const merged = applySeoFormToPayload(this.clonePayload(payload), this.seoForm);
+      this.jsonText = JSON.stringify(merged, null, 2);
+      this.rememberPayload(merged);
+      this.jsonError = '';
+      this.toast.success('SEO settings applied to JSON.');
       this.cdr.markForCheck();
-      return;
-    }
-    const merged = applySeoFormToPayload(payload, this.seoForm);
-    this.jsonText = JSON.stringify(merged, null, 2);
-    this.jsonError = '';
-    this.toast.success('SEO settings applied to JSON.');
-    this.cdr.markForCheck();
+    });
   }
 
   syncSeoFromJson(showToast = true): boolean {
-    const payload = this.parsePayload();
+    const payload = this.resolvePayloadForEdit();
     if (!payload) {
       if (showToast) {
         this.toast.error('Load valid JSON before editing SEO.');
@@ -438,7 +555,7 @@ export class MarketingContentPublishPage implements OnInit {
   }
 
   syncHeroFromJson(showToast = true): boolean {
-    const payload = this.parsePayload();
+    const payload = this.resolvePayloadForEdit();
     if (!payload) {
       if (showToast) {
         this.toast.error('Load valid JSON before editing the hero.');
@@ -462,45 +579,44 @@ export class MarketingContentPublishPage implements OnInit {
   }
 
   applyHeroToJson(): void {
-    const payload = this.parsePayload();
-    if (!payload) {
+    this.withPayloadForEdit(true, (payload) => {
+      const working = this.clonePayload(payload);
+      const existingHero =
+        working['hero'] !== null && typeof working['hero'] === 'object' && !Array.isArray(working['hero'])
+          ? (working['hero'] as Record<string, unknown>)
+          : {};
+      const ctas = Array.isArray(existingHero['ctas']) ? existingHero['ctas'] : [];
+
+      const existingSeo = working['seo'];
+
+      working['hero'] = {
+        ...existingHero,
+        title: MARKETING_COPY_CONTRACT.slogan,
+        supportingLine: MARKETING_COPY_CONTRACT.supportingLine,
+        description: this.heroForm.description.trim(),
+        image: this.heroForm.image.trim(),
+        imageAlt: this.heroForm.imageAlt.trim(),
+        ctas,
+      };
+
+      if (existingSeo !== undefined) {
+        working['seo'] = existingSeo;
+      }
+
+      const site = working['site'];
+      if (site !== null && typeof site === 'object' && !Array.isArray(site)) {
+        const s = site as Record<string, unknown>;
+        s['slogan'] = MARKETING_COPY_CONTRACT.slogan;
+        s['supportingLine'] = MARKETING_COPY_CONTRACT.supportingLine;
+        s['tagline'] = MARKETING_COPY_CONTRACT.supportingLine;
+      }
+
+      this.jsonText = JSON.stringify(working, null, 2);
+      this.rememberPayload(working);
+      this.jsonError = '';
+      this.toast.success('Hero fields applied to JSON. Save draft or publish when ready.');
       this.cdr.markForCheck();
-      return;
-    }
-    const existingHero =
-      payload['hero'] !== null && typeof payload['hero'] === 'object' && !Array.isArray(payload['hero'])
-        ? (payload['hero'] as Record<string, unknown>)
-        : {};
-    const ctas = Array.isArray(existingHero['ctas']) ? existingHero['ctas'] : [];
-
-    const existingSeo = payload['seo'];
-
-    payload['hero'] = {
-      ...existingHero,
-      title: MARKETING_COPY_CONTRACT.slogan,
-      supportingLine: MARKETING_COPY_CONTRACT.supportingLine,
-      description: this.heroForm.description.trim(),
-      image: this.heroForm.image.trim(),
-      imageAlt: this.heroForm.imageAlt.trim(),
-      ctas,
-    };
-
-    if (existingSeo !== undefined) {
-      payload['seo'] = existingSeo;
-    }
-
-    const site = payload['site'];
-    if (site !== null && typeof site === 'object' && !Array.isArray(site)) {
-      const s = site as Record<string, unknown>;
-      s['slogan'] = MARKETING_COPY_CONTRACT.slogan;
-      s['supportingLine'] = MARKETING_COPY_CONTRACT.supportingLine;
-      s['tagline'] = MARKETING_COPY_CONTRACT.supportingLine;
-    }
-
-    this.jsonText = JSON.stringify(payload, null, 2);
-    this.jsonError = '';
-    this.toast.success('Hero fields applied to JSON. Save draft or publish when ready.');
-    this.cdr.markForCheck();
+    });
   }
 
   onFileSelected(event: Event): void {
@@ -513,6 +629,7 @@ export class MarketingContentPublishPage implements OnInit {
       this.jsonError = '';
       try {
         const parsed = JSON.parse(this.jsonText) as Record<string, unknown>;
+        this.rememberPayload(parsed);
         this.syncFormsFromPayload(parsed);
       } catch {
         /* invalid JSON — forms unchanged */
@@ -523,64 +640,75 @@ export class MarketingContentPublishPage implements OnInit {
     input.value = '';
   }
 
-  private parsePayload(): Record<string, unknown> | null {
-    this.jsonError = '';
+  /** Parses only the Full JSON textarea (ignores bootstrap cache). */
+  private parseJsonText(showFeedback = false): Record<string, unknown> | null {
     const trimmed = this.jsonText.trim();
     if (!trimmed) {
-      this.jsonError = 'Paste or upload marketing content JSON first.';
       return null;
     }
     try {
       const parsed = JSON.parse(trimmed) as unknown;
       if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
         this.jsonError = 'JSON must be an object matching MarketingContent.';
+        if (showFeedback) {
+          this.toast.error(this.jsonError);
+        }
         return null;
       }
+      this.jsonError = '';
       return parsed as Record<string, unknown>;
     } catch {
-      this.jsonError = 'Invalid JSON.';
+      this.jsonError = 'Invalid JSON. Fix errors on the Full JSON tab.';
+      if (showFeedback) {
+        this.toast.error(this.jsonError);
+      }
       return null;
     }
   }
 
   publish(): void {
-    const payload = this.parsePayload();
-    if (!payload) {
-      this.cdr.markForCheck();
-      return;
-    }
-    const merged = this.mergeEditorIntoPayload(payload);
+    this.withPayloadForEdit(true, (payload) => {
+      const merged = this.mergeEditorIntoPayload(this.clonePayload(payload));
 
-    this.confirm
-      .confirm({
-        title: 'Publish marketing website content?',
-        message:
-          'This replaces the live public marketing payload read by EkklesiaSoftWeb when CMS mode is enabled. Continue?',
-        confirmText: 'Publish',
-        cancelText: 'Cancel',
-        variant: 'primary',
-      })
-      .subscribe((result) => {
-        if (!result.confirmed) return;
-        this.publishing = true;
-        this.cdr.markForCheck();
-        this.api.publish(merged, this.notes).subscribe({
-          next: () => {
-            this.toast.success('Marketing content published.');
-            this.publishing = false;
-            this.notes = '';
-            this.reload();
-          },
-          error: (err: HttpErrorResponse) => {
-            const msg =
-              err.error?.message ??
-              (err.error?.errors?.payload?.[0] as string | undefined) ??
-              'Publish failed.';
-            this.toast.error(msg);
-            this.publishing = false;
-            this.cdr.markForCheck();
-          },
+      const seoWarnings = duplicateSeoTitleWarnings(this.seoForm);
+      if (seoWarnings.length > 0) {
+        this.toast.warning(seoWarnings[0]);
+      }
+
+      this.confirm
+        .confirm({
+          title: 'Publish marketing website content?',
+          message:
+            (seoWarnings.length > 0
+              ? `${seoWarnings.join(' ')} `
+              : '') +
+            'This replaces the live public marketing payload read by EkklesiaNexusWeb when CMS mode is enabled. Continue?',
+          confirmText: 'Publish',
+          cancelText: 'Cancel',
+          variant: 'primary',
+        })
+        .subscribe((result) => {
+          if (!result.confirmed) return;
+          this.publishing = true;
+          this.cdr.markForCheck();
+          this.api.publish(merged, this.notes).subscribe({
+            next: () => {
+              this.toast.success('Marketing content published.');
+              this.publishing = false;
+              this.notes = '';
+              this.reload();
+            },
+            error: (err: HttpErrorResponse) => {
+              const msg =
+                err.error?.message ??
+                (err.error?.errors?.payload?.[0] as string | undefined) ??
+                'Publish failed.';
+              this.toast.error(msg);
+              this.publishing = false;
+              this.cdr.markForCheck();
+            },
+          });
         });
-      });
+    });
   }
 }

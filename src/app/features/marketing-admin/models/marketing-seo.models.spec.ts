@@ -2,6 +2,7 @@ import { MARKETING_CANONICAL_ORIGINS } from '../constants/marketing-seo.constant
 import {
   applySeoFormToPayload,
   defaultMarketingSeoForm,
+  duplicateSeoTitleWarnings,
   seoFormFromPayload,
 } from './marketing-seo.models';
 
@@ -40,5 +41,25 @@ describe('marketing-seo.models', () => {
     const form = seoFormFromPayload(payload);
     expect(form.canonicalOrigin).toBe('https://ekklesianexus.com');
     expect(form.pages.home.seoTitle).toBe('Home title');
+  });
+
+  it('includes optional static page defaults', () => {
+    const form = defaultMarketingSeoForm();
+    expect(form.pages.features.path).toBe('/features');
+    expect(form.pages.features.seoTitle).toContain('features');
+  });
+
+  it('flags duplicate SEO titles across pages', () => {
+    const form = defaultMarketingSeoForm();
+    form.pages.about.seoTitle = form.pages.home.seoTitle;
+    const warnings = duplicateSeoTitleWarnings(form);
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  it('applySeoFormToPayload writes optional page ids', () => {
+    const form = defaultMarketingSeoForm();
+    const result = applySeoFormToPayload({ site: { name: 'EkklesiaNexus' } }, form);
+    const pages = (result['seo'] as Record<string, unknown>)['pages'] as Record<string, unknown>;
+    expect(pages['features']).toBeTruthy();
   });
 });

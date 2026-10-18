@@ -33,10 +33,13 @@ import { VoidSacramentDialogComponent } from '../shared/void-sacrament-dialog/vo
 import { CorrectSacramentDialogComponent } from '../shared/correct-sacrament-dialog/correct-sacrament-dialog.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { EntitlementService } from '@core/services/entitlement.service';
+import { isStarterSubscriptionPlan } from '@shared/utils/subscription-plan.util';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
+import { sacramentSupportsCertificate } from '../../utils/sacrament-certificate.util';
 
 @Component({
   selector: 'app-sacrament-list',
@@ -68,6 +71,10 @@ import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-br
 })
 export class SacramentListComponent implements OnInit, OnDestroy, AfterViewChecked {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
+  private readonly entitlements = inject(EntitlementService);
+
+  /** Hidden on Starter — module home is this register list. */
+  showSacramentsDashboard = true;
 
   sacraments: Sacrament[] = [];
   sacramentTypes: SacramentType[] = [];
@@ -265,7 +272,17 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
     }
   }
 
+  private syncSacramentsDashboardVisibility(): void {
+    this.showSacramentsDashboard =
+      !this.entitlements.appliesToCurrentUser() ||
+      !isStarterSubscriptionPlan(this.entitlements.plan());
+  }
+
   ngOnInit(): void {
+    this.entitlements.load().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.syncSacramentsDashboardVisibility();
+      this.cdr.markForCheck();
+    });
     this.initializeSearchFields();
     this.loadCurrentUser();
     this.loadSacramentTypes();
@@ -958,7 +975,15 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
   /**
    * Navigate to certificate view page
    */
+  supportsSacramentCertificate(sacrament: Sacrament): boolean {
+    return sacramentSupportsCertificate(sacrament.sacrament_type?.code);
+  }
+
   viewCertificate(sacrament: Sacrament): void {
+    if (!this.supportsSacramentCertificate(sacrament)) {
+      this.viewSacrament(sacrament);
+      return;
+    }
     this.router.navigate(['/sacraments/view', sacrament.id]);
   }
 

@@ -22,7 +22,7 @@
     aria-live="polite"
     aria-busy="true"
   >
-    <app-loading-skeleton label="Loading organizations…" type="table" [rows]="5" [columns]="7"></app-loading-skeleton>
+    <app-loading-skeleton label="Loading organizations…" type="table" [rows]="5" [columns]="6"></app-loading-skeleton>
   </div>
 
   <ng-container *ngIf="loaded">
@@ -42,7 +42,7 @@
     </div>
 
     <div class="cf-panel organization-list__panel" *ngIf="!loadError && organizations.length">
-      <app-data-table [clickableRows]="true">
+      <app-data-table [clickableRows]="false">
         <thead>
           <tr>
             <th
@@ -93,34 +93,26 @@
             >
               Status
             </th>
-            <th scope="col" class="cf-table__actions-col"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            *ngFor="let organization of organizations"
-            tabindex="0"
-            (click)="openOrganization(organization)"
-            (keydown.enter)="openOrganization(organization)"
-          >
-            <td><strong>{{ organization.name }}</strong></td>
+          <tr *ngFor="let organization of organizations; trackBy: trackByOrganizationId">
+            <td class="organization-list__cell--primary">
+              <button
+                type="button"
+                class="organization-list__name"
+                (click)="openOrganization(organization)"
+                [attr.aria-label]="'View ' + organization.name"
+              >
+                <strong>{{ organization.name }}</strong>
+              </button>
+            </td>
             <td>{{ organization.code }}</td>
             <td>{{ organization.category?.name || '—' }}</td>
             <td>{{ organization.type?.name || '—' }}</td>
             <td>{{ activeMemberCount(organization) }}</td>
             <td>
               <app-status-badge [label]="statusLabel(organization.status)" [tone]="statusTone(organization.status)"></app-status-badge>
-            </td>
-            <td class="cf-table__actions-cell" (click)="$event.stopPropagation()">
-              <button
-                type="button"
-                class="cf-btn cf-btn-icon cf-btn--sm"
-                (click)="openOrganization(organization)"
-                [attr.aria-label]="'View ' + organization.name"
-                [attr.title]="'View ' + organization.name"
-              >
-                <app-cf-action-icon name="eye" />
-              </button>
             </td>
           </tr>
         </tbody>

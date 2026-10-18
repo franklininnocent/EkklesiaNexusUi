@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -39,6 +39,7 @@ import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-acti
     CfActionIconComponent,
   ],
   templateUrl: './donations-history.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-history.component.scss'
 })
 export class DonationsHistoryComponent implements OnInit, OnDestroy {

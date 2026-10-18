@@ -71,7 +71,7 @@
       <form *ngIf="activeId === r.id" class="sa-stack" (ngSubmit)="submit(r)">
         <p class="sa-muted" *ngIf="action === 'approve'">
           The church moves to {{ r.requested_plan?.name }} straight away, on the plan's published price.
-          To set a special price or start date, use <a [routerLink]="['/tenants', r.tenant?.id]">the church's subscription tab</a> instead.
+          To set a special price or start date, use <a [routerLink]="['/tenants', $safeNavigationMigration(r.tenant?.id)]">the church's subscription tab</a> instead.
         </p>
         <div class="sa-field sa-field--full">
           <label [for]="'sa-note-' + r.id">

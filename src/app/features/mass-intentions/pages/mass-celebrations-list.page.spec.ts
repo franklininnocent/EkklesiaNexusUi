@@ -23,7 +23,10 @@ describe('MassCelebrationsListPageComponent', () => {
         },
         {
           provide: AuthService,
-          useValue: { hasPermission: jest.fn().mockReturnValue(false) },
+          useValue: {
+            hasPermission: jest.fn().mockReturnValue(false),
+            hasTenantPermission: jest.fn().mockReturnValue(false),
+          },
         },
       ],
     }).compileComponents();
@@ -35,9 +38,9 @@ describe('MassCelebrationsListPageComponent', () => {
   it('loads celebrations for the current calendar month', () => {
     expect(listCelebrations).toHaveBeenCalled();
     const params = listCelebrations.mock.calls[0][0] as Record<string, string | number>;
-    expect(params.from).toMatch(/^\d{4}-\d{2}-01$/);
-    expect(params.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(params.per_page).toBe(100);
+    expect(params['from']).toMatch(/^\d{4}-\d{2}-01$/);
+    expect(params['to']).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(params['per_page']).toBe(100);
   });
 
   it('uses the filter side panel instead of inline filters', () => {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { isMassIntentionsChromeV2 } from '../config/mass-intentions-chrome.version';
 import { MassIntentionsWorkspaceShellV1Component } from './mass-intentions-workspace-shell.v1.component';
@@ -24,6 +24,7 @@ import { MassIntentionsWorkspaceShellV2Component } from './mass-intentions-works
       </div>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [
     `
       .mass-intentions-shell-host {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
@@ -217,6 +217,7 @@ type PaymentSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'met
       ></app-advanced-search-panel>
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .stewardship-panel-head__copy { display: grid; gap: 0.08rem; }
     .stewardship-table-panel__empty { margin: 0; padding: 0 var(--cf-panel-pad) var(--cf-space-3); text-align: center; }

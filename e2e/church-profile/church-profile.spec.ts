@@ -53,7 +53,7 @@ test.describe('Church profile navigation', () => {
     await page.goto('/settings');
     await page.getByText('Priests', { exact: true }).click();
     await expect(page).toHaveURL(/\/church-profile\?tab=leadership/);
-    await expect(page.getByRole('heading', { name: 'Current Governance' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Parish Clergy' })).toBeVisible();
 
     await context.close();
   });
@@ -68,8 +68,9 @@ test.describe('Church profile leadership', () => {
 
     await page.goto('/church-profile?tab=leadership');
     await expect(page).toHaveURL(/\/church-profile\?tab=leadership/);
-    await expect(page.getByRole('heading', { name: 'Current Governance' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add Leader' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Parish Clergy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add Parish Clergy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Leadership History' })).toBeVisible();
 
     await context.close();
   });
@@ -79,9 +80,16 @@ test.describe('Church profile leadership', () => {
     const page = await context.newPage();
 
     await page.goto('/church-profile?tab=leadership');
-    await expect(page.getByText('Leadership History')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Parish Clergy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Table' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Leadership History' })).toBeVisible();
+    await page.getByRole('button', { name: 'Leadership History' }).click();
     await expect(page.getByRole('button', { name: 'Table' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Timeline' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Back to Parish Clergy' })).toBeVisible();
+    await page.getByRole('button', { name: 'Back to Parish Clergy' }).click();
+    await expect(page.getByRole('heading', { name: 'Parish Clergy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Table' })).toHaveCount(0);
 
     await context.close();
   });
@@ -95,7 +103,7 @@ test.describe('Church profile leadership photo viewer', () => {
     const page = await context.newPage();
 
     await page.goto('/church-profile?tab=leadership');
-    await expect(page.getByRole('heading', { name: 'Current Governance' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Parish Clergy' })).toBeVisible();
 
     const photoTrigger = page.getByRole('button', { name: /^View photo of / });
     if ((await photoTrigger.count()) === 0) {
@@ -129,13 +137,13 @@ test.describe('Church profile leadership photo viewer', () => {
 test.describe('Church profile leadership role combobox', () => {
   test.skip(skipWithoutTenantAdmin(), 'RBAC tenant admin storage state not available');
 
-  test('tenant admin can select an existing system role in Add Leader', async ({ browser }) => {
+  test('tenant admin can select an existing system role in Add Parish Clergy', async ({ browser }) => {
     const context = await createTenantAdminContext(browser);
     const page = await context.newPage();
 
     await page.goto('/church-profile?tab=leadership');
-    await page.getByRole('button', { name: 'Add Leader' }).click();
-    await expect(page.getByRole('heading', { name: 'Add Leader' })).toBeVisible();
+    await page.getByRole('button', { name: 'Add Parish Clergy' }).click();
+    await expect(page.getByRole('heading', { name: 'Add Parish Clergy' })).toBeVisible();
 
     await page.locator('#assign_role_id').click();
     await page.getByRole('searchbox', { name: 'Search leadership roles' }).fill('Pastor');
@@ -145,19 +153,48 @@ test.describe('Church profile leadership role combobox', () => {
     await context.close();
   });
 
-  test('tenant admin can create a custom role without closing Add Leader', async ({ browser }) => {
+  test('tenant admin can add a new role from the nested Add New Role modal', async ({ browser }) => {
+    const context = await createTenantAdminContext(browser);
+    const page = await context.newPage();
+    const customRole = `Chapel Chaplain ${Date.now()}`;
+
+    await page.goto('/church-profile?tab=leadership');
+    await page.getByRole('button', { name: 'Add Parish Clergy' }).click();
+    await page.locator('#assign_role_id').click();
+    await expect(page.getByRole('button', { name: '+ Add New Role' })).toBeVisible();
+    await page.getByRole('button', { name: '+ Add New Role' }).click();
+    await expect(page.getByRole('heading', { name: 'Add New Role' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Add Parish Clergy' })).toBeVisible();
+
+    await page.getByRole('dialog', { name: 'Add New Role' }).getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('heading', { name: 'Add New Role' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Add Parish Clergy' })).toBeVisible();
+
+    await page.locator('#assign_role_id').click();
+    await page.getByRole('button', { name: '+ Add New Role' }).click();
+    await page.locator('#clg_new_role_name').fill(customRole);
+    await page.getByRole('button', { name: 'Save Role' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Add New Role' })).toHaveCount(0);
+    await expect(page.locator('#assign_role_id')).toContainText(customRole);
+    await expect(page.getByRole('heading', { name: 'Add Parish Clergy' })).toBeVisible();
+
+    await context.close();
+  });
+
+  test('tenant admin can create a custom role without closing Add Parish Clergy', async ({ browser }) => {
     const context = await createTenantAdminContext(browser);
     const page = await context.newPage();
     const customRole = `Associate Parish Priest ${Date.now()}`;
 
     await page.goto('/church-profile?tab=leadership');
-    await page.getByRole('button', { name: 'Add Leader' }).click();
+    await page.getByRole('button', { name: 'Add Parish Clergy' }).click();
     await page.locator('#assign_role_id').click();
     await page.getByRole('searchbox', { name: 'Search leadership roles' }).fill(customRole);
     await page.getByRole('button', { name: new RegExp(`Add "${customRole}" as custom role`) }).click();
 
     await expect(page.locator('#assign_role_id')).toContainText(customRole);
-    await expect(page.getByRole('heading', { name: 'Add Leader' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Add Parish Clergy' })).toBeVisible();
 
     await context.close();
   });
@@ -167,7 +204,7 @@ test.describe('Church profile leadership role combobox', () => {
     const page = await context.newPage();
 
     await page.goto('/church-profile?tab=leadership');
-    await page.getByRole('button', { name: 'Add Leader' }).click();
+    await page.getByRole('button', { name: 'Add Parish Clergy' }).click();
     await page.locator('#assign_role_id').click();
     await page.getByRole('searchbox', { name: 'Search leadership roles' }).fill('pastor');
 
@@ -181,13 +218,13 @@ test.describe('Church profile leadership role combobox', () => {
 test.describe('Church profile viewer permissions', () => {
   test.skip(skipWithoutTenantMember(), 'RBAC tenant member storage state not available');
 
-  test('tenant member does not see Add Leader on leadership tab', async ({ browser }) => {
+  test('tenant member does not see Add Parish Clergy on leadership tab', async ({ browser }) => {
     const context = await createTenantMemberContext(browser);
     const page = await context.newPage();
 
     await page.goto('/church-profile?tab=leadership');
-    await expect(page.getByRole('heading', { name: 'Current Governance' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add Leader' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Parish Clergy' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add Parish Clergy' })).toHaveCount(0);
 
     await context.close();
   });

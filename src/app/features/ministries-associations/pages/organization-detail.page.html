@@ -136,6 +136,9 @@
       [attr.aria-labelledby]="tabId('profile')"
       [hidden]="activeTab !== 'profile'"
     >
+      <div class="cf-inline-alert" *ngIf="!canEdit && !isArchived" role="status">
+        <p>You can view this profile. Ask your parish administrator if you need permission to edit organization details.</p>
+      </div>
       <form
         *ngIf="editingProfile; else profileReadonly"
         class="organization-profile-form"
@@ -233,11 +236,11 @@
                 </div>
                 <div>
                   <dt>Category</dt>
-                  <dd>{{ displayValue(organization.category?.name) }}</dd>
+                  <dd>{{ displayValue($safeNavigationMigration(organization.category?.name)) }}</dd>
                 </div>
                 <div>
                   <dt>Type</dt>
-                  <dd>{{ displayValue(organization.type?.name) }}</dd>
+                  <dd>{{ displayValue($safeNavigationMigration(organization.type?.name)) }}</dd>
                 </div>
                 <div>
                   <dt>Status</dt>
@@ -332,7 +335,7 @@
                     class="organization-profile__flag"
                     [class.organization-profile__flag--yes]="organization.settings?.allow_multi_role_holding"
                   >
-                    {{ yesNo(organization.settings?.allow_multi_role_holding) }}
+                    {{ yesNo($safeNavigationMigration(organization.settings?.allow_multi_role_holding)) }}
                   </span>
                 </li>
                 <li>
@@ -341,7 +344,7 @@
                     class="organization-profile__flag"
                     [class.organization-profile__flag--yes]="organization.settings?.guests_can_hold_office"
                   >
-                    {{ yesNo(organization.settings?.guests_can_hold_office) }}
+                    {{ yesNo($safeNavigationMigration(organization.settings?.guests_can_hold_office)) }}
                   </span>
                 </li>
               </ul>

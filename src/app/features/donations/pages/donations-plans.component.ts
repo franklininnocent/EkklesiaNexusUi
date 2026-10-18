@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription, switchMap } from 'rxjs';
@@ -31,6 +31,7 @@ interface ApiErrorBody {
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CfEmptyStateComponent, LoadingSkeletonComponent, PageHeaderComponent, CfCurrencyPipe, CfActionIconComponent, EditIconButtonComponent, CfFamilyPickerLabelPipe],
   templateUrl: './donations-plans.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-plans.component.scss'
 })
 export class DonationsPlansComponent implements OnInit, OnDestroy {

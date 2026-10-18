@@ -15,9 +15,9 @@ import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
         <h1>Account access restricted</h1>
         <p>
           Your subscription expired on
-          <strong>{{ access.snapshotSignal()?.subscription_ends_at | cfDate }}</strong>.
+          <strong>{{ $safeNavigationMigration(access.snapshotSignal()?.subscription_ends_at) | cfDate }}</strong>.
           Your grace period ended on
-          <strong>{{ access.snapshotSignal()?.grace_ends_at | cfDate }}</strong>.
+          <strong>{{ $safeNavigationMigration(access.snapshotSignal()?.grace_ends_at) | cfDate }}</strong>.
           Renew your subscription to restore access to parish records.
         </p>
         <div class="locked-page__actions">

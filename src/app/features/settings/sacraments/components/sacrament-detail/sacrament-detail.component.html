@@ -47,7 +47,10 @@
       <app-sacramental-certificate [data]="cert" [paper]="paper" />
     </div>
 
-    <div class="certificate-bottom-grid no-print" *ngIf="supportsOfficialCertificate()">
+    <div
+      class="certificate-bottom-grid no-print"
+      *ngIf="supportsOfficialCertificate() || isReconciliationRecord()"
+    >
       <section class="detail-section register-notes" aria-labelledby="register-notes-title">
         <h3 id="register-notes-title" class="section-title">Parish Register Notes &amp; Sacramental Remarks</h3>
         <p class="register-notes__hint">
@@ -150,7 +153,11 @@
         </div>
       </section>
 
-      <section *ngIf="canViewDownloadHistory" class="detail-section download-history" aria-labelledby="download-history-title">
+      <section
+        *ngIf="canViewDownloadHistory && supportsOfficialCertificate()"
+        class="detail-section download-history"
+        aria-labelledby="download-history-title"
+      >
         <h3 id="download-history-title" class="section-title">Download History Audit Log</h3>
         <div class="download-history__table-wrap" *ngIf="downloadHistory.length; else noDownloadHistory">
           <table class="download-history__table">

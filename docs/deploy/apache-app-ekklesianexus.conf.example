@@ -1,0 +1,41 @@
+# Example Apache vhost for https://app.ekklesianexus.com
+# Static Angular output: dist/ekklesia-soft-ui/browser (or /srv/ekklesianexus/ui/current)
+#
+# Signed portrait/logo URLs are served from the API at /api/tenant/media/serve.
+# Older UI bundles rewrite those URLs to same-origin /api/... ; without a proxy,
+# Apache returns index.html and images break. Either deploy a current UI build
+# (keeps https://api.ekklesianexus.com URLs) or enable the proxy block below.
+
+<VirtualHost *:80>
+    ServerName app.ekklesianexus.com
+    Redirect permanent / https://app.ekklesianexus.com/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName app.ekklesianexus.com
+    DocumentRoot /srv/ekklesianexus/ui/current
+
+    # SSLEngine on
+    # SSLCertificateFile /etc/letsencrypt/live/app.ekklesianexus.com/fullchain.pem
+    # SSLCertificateKeyFile /etc/letsencrypt/live/app.ekklesianexus.com/privkey.pem
+
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+
+    # Forward /api to the Laravel API host (required for legacy UI media URL rewriting).
+    ProxyPreserveHost On
+    SSLProxyEngine On
+    ProxyPass /api https://api.ekklesianexus.com/api
+    ProxyPassReverse /api https://api.ekklesianexus.com/api
+
+    <Directory /srv/ekklesianexus/ui/current>
+        Options -Indexes +FollowSymLinks
+        AllowOverride None
+        Require all granted
+        FallbackResource /index.html
+    </Directory>
+
+    <Files "index.html">
+        Header set Cache-Control "no-cache"
+    </Files>
+</VirtualHost>

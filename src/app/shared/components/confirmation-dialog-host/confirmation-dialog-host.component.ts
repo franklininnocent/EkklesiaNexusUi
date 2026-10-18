@@ -22,7 +22,7 @@ import { ConfirmationModalComponent, ConfirmationResult } from '../confirmation-
         [message]="state.options?.message ?? ''"
         [confirmText]="state.options?.confirmText ?? 'Confirm'"
         [cancelText]="state.options?.cancelText ?? 'Cancel'"
-        [confirmButtonClass]="confirmButtonClass(state.options?.variant)"
+        [confirmButtonClass]="confirmButtonClass($safeNavigationMigration(state.options?.variant))"
         [showDescriptionInput]="state.options?.showDescriptionInput ?? false"
         [descriptionLabel]="state.options?.descriptionLabel ?? 'Description (Optional)'"
         [descriptionPlaceholder]="state.options?.descriptionPlaceholder ?? 'Enter a reason or note...'"
