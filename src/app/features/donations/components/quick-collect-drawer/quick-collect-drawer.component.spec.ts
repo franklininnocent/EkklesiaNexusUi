@@ -138,10 +138,13 @@ describe('QuickCollectDrawerComponent', () => {
 
     component.submit();
 
-    expect(donationsService.createPayment).toHaveBeenCalledWith(expect.objectContaining({
-      method: 'online_placeholder',
-      allocations: [{ allocatable_type: 'fund', allocatable_id: 'fund-1', amount: 500 }]
-    }));
+    expect(donationsService.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'online_placeholder',
+        allocations: [{ allocatable_type: 'fund', allocatable_id: 'fund-1', amount: 500 }]
+      }),
+      expect.objectContaining({ idempotencyKey: expect.any(String) })
+    );
     expect(component.phase).toBe('success');
   });
 
@@ -211,9 +214,52 @@ describe('QuickCollectDrawerComponent', () => {
 
     component.submit();
 
-    expect(donationsService.createPayment).toHaveBeenCalledWith(expect.objectContaining({
-      allocations: [{ allocatable_type: 'due', allocatable_id: 'due-1', amount: 100 }]
+    expect(donationsService.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allocations: [{ allocatable_type: 'due', allocatable_id: 'due-1', amount: 100 }]
+      }),
+      expect.objectContaining({ idempotencyKey: expect.any(String) })
+    );
+  });
+
+  it('reuses the same idempotency key when submit is retried after failure', () => {
+    component.selectedFamily = { id: 'f1', family_name: 'Smith Family', family_code: 'FAM001' } as any;
+    component.payerName = 'John Smith';
+    component.amount = 500;
+    component.fundId = 'fund-1';
+
+    donationsService.createPayment.mockReturnValue(throwError(() => ({ status: 0, message: 'network' })));
+    component.submit();
+    const firstKey = donationsService.createPayment.mock.calls[0]?.[1]?.idempotencyKey;
+
+    donationsService.createPayment.mockReturnValue(of({
+      success: true,
+      message: 'Payment recorded.',
+      data: { id: 'pay-1' } as any
     }));
+    donationsService.getReceiptPreview.mockReturnValue(of({ success: true, data: {} as any }));
+    component.submit();
+
+    const secondKey = donationsService.createPayment.mock.calls[1]?.[1]?.idempotencyKey;
+    expect(firstKey).toBeTruthy();
+    expect(secondKey).toBe(firstKey);
+  });
+
+  it('shows uncertain-outcome copy when payment status is zero', () => {
+    component.selectedFamily = { id: 'f1', family_name: 'Smith Family', family_code: 'FAM001' } as any;
+    component.payerName = 'John Smith';
+    component.amount = 500;
+    component.fundId = 'fund-1';
+
+    donationsService.createPayment.mockReturnValue(throwError(() => ({
+      status: 0,
+      message: 'Unable to reach the server right now. Please check your internet connection and try again.'
+    })));
+
+    component.submit();
+
+    expect(component.error).toContain('could not be confirmed');
+    expect(component.error).toContain('payment register');
   });
 
   it('prefills family, due, and collectible amount from authoritative collect-context', () => {
