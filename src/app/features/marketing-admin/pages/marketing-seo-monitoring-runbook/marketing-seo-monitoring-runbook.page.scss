@@ -1,5 +1,96 @@
 @use '../../styles/marketing-admin.shared';
 
+.mkt-seo-monitor__snapshot-label {
+  margin-block: 0.5rem 0;
+}
+
+.mkt-seo-monitor__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.mkt-seo-monitor__prod-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 22rem;
+  font-size: 0.875rem;
+  margin-inline-end: 0.75rem;
+}
+
+.mkt-seo-monitor__overview {
+  margin-block: 1rem;
+}
+
+.mkt-seo-monitor__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.mkt-seo-monitor__filters {
+  margin-block: 1rem;
+}
+
+.mkt-seo-monitor__filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.mkt-seo-monitor__search {
+  flex: 1 1 12rem;
+}
+
+.mkt-seo-monitor__view-toggle {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mkt-seo-monitor__table-panel {
+  margin-block: 1rem;
+}
+
+.mkt-seo-monitor__url-cell {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-seo-monitor__gsc {
+  margin-block: 1rem;
+}
+
+.mkt-seo-monitor__dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--cf-drawer-overlay-bg, rgba(0, 0, 0, 0.45));
+  z-index: 1000;
+}
+
+.mkt-seo-monitor__dialog {
+  position: fixed;
+  z-index: 1001;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.mkt-seo-monitor__dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .mkt-seo-runbook__panel {
   margin-block: 1rem;
 }
@@ -26,4 +117,10 @@
 .mkt-seo-runbook__muted {
   color: var(--cf-text-muted, #5c6570);
   font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .mkt-seo-monitor__prod-opt {
+    max-width: none;
+  }
 }
