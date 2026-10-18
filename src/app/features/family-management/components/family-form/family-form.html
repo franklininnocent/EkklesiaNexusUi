@@ -400,6 +400,7 @@
   <app-family-member-form-modal
     *ngIf="showMemberModal"
     [member]="memberToEditIndex !== null ? (members.at(memberToEditIndex).getRawValue()) : null"
+    [familyMembers]="members.getRawValue()"
     [saving]="memberModalSaving"
     [error]="memberModalError"
     (save)="onMemberModalSave($event)"

@@ -56,4 +56,12 @@ describe('FamilyMetricChartComponent legend', () => {
 
     expect(selected).toEqual([slices[0]]);
   });
+
+  it('does not render a duplicate comma-separated summary line', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.fam-metric-chart__sr')).toBeNull();
+    const canvas = fixture.nativeElement.querySelector('canvas') as HTMLCanvasElement;
+    expect(canvas.getAttribute('aria-hidden')).toBe('true');
+    expect(canvas.getAttribute('aria-label')).toBeNull();
+  });
 });

@@ -49,7 +49,8 @@ export interface SacramentContextConflict {
 }
 
 export interface SacramentEvidenceSummary {
-  sacrament_id: string | number;
+  sacrament_id?: string | number | null;
+  member_id?: string | null;
   date?: SacramentContextField<string | null>;
   place?: SacramentContextField<string | null>;
   parish?: SacramentContextField<string | null>;
@@ -63,6 +64,12 @@ export interface SacramentEvidenceSummary {
   recipient_birth_date?: string | null;
   father_name?: string | null;
   mother_name?: string | null;
+  baptism_location_type?: string | null;
+  baptism_church_name?: string | null;
+  baptism_church_address?: string | null;
+  baptism_godparent_primary?: string | null;
+  baptism_godparent_secondary?: string | null;
+  baptism_priest_name?: string | null;
 }
 
 export interface SacramentSacramentEvidenceBlock {

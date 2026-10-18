@@ -95,6 +95,7 @@ function createLocalPhoneValidator(getDialCode: () => string): ValidatorFn {
 })
 export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
   @Input() member: FamilyMemberFormValue | null = null;
+  @Input() familyMembers: Array<{ id?: string | null; relationship_to_head?: string | null; status?: string | null }> = [];
   @Input() isHeadOnly: boolean = false; // When true, relationship is locked to "Family Head" (self)
   @Input()
   set saving(value: boolean) {
@@ -112,6 +113,27 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
   get callingCode(): string { return this.phoneCodeService.getPhoneCodeSync(); }
   get showMarriageDate(): boolean {
     return String(this.form.get('marital_status')?.value || '').toLowerCase() === 'married';
+  }
+
+  get secondHeadWarning(): string | null {
+    const relationship = String(this.form.get('relationship_to_head')?.value || '').toLowerCase().trim();
+    if (!['self', 'head'].includes(relationship)) {
+      return null;
+    }
+    const currentId = String(this.form.get('id')?.value || this.member?.id || '').trim();
+    const hasOtherActiveHead = this.familyMembers.some((item) => {
+      const itemRelationship = String(item.relationship_to_head || '').toLowerCase().trim();
+      const status = String(item.status || 'active').toLowerCase().trim();
+      if (!['self', 'head'].includes(itemRelationship) || status !== 'active') {
+        return false;
+      }
+      const itemId = String(item.id || '').trim();
+      return !currentId || !itemId || itemId !== currentId;
+    });
+    if (!hasOtherActiveHead) {
+      return null;
+    }
+    return 'This family already has an active head of household. Demote or deactivate the current head first. This warning is shown early; the server still enforces a single active head.';
   }
   get todayIsoDate(): string {
     const now = new Date();
