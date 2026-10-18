@@ -475,10 +475,28 @@
                   *ngIf="usesPersonRecipientWorkflow()"
                   [context]="recipientContext"
                   [loading]="recipientContextLoading"
+                  [error]="recipientContextError"
                 ></app-person-context-summary>
-                <p class="cf-split-field__hint cf-split-field__hint--warn" *ngIf="baptismDuplicateWarning">
+                <p class="cf-split-field__hint" *ngIf="isBaptism() && !isEditMode">
+                  This form creates an official Baptism register entry maintained by this parish. Existing member-profile details may be prefilled for review. Saving this form does not automatically update the member's sacramental profile.
+                </p>
+                <p
+                  class="cf-split-field__hint"
+                  [class.cf-split-field__hint--warn]="baptismEligibilityIsBlocking || baptismEligibilityKind === 'profile' || baptismEligibilityKind === 'conflict'"
+                  *ngIf="baptismDuplicateWarning"
+                  role="status"
+                >
                   {{ baptismDuplicateWarning }}
                 </p>
+                <div class="cf-split-field__hint" *ngIf="baptismEligibilityKind === 'lookup_failed'">
+                  <button type="button" class="cf-btn" (click)="retryRecipientContext()">Retry verification</button>
+                </div>
+                <div class="cf-split-field__hint" *ngIf="baptismEligibilityKind === 'register' && existingRegisterId && canViewSacramentRegister">
+                  <button type="button" class="cf-btn" (click)="openExistingBaptismRegister()">Open existing register record</button>
+                </div>
+                <div class="cf-split-field__hint" *ngIf="(baptismEligibilityKind === 'register' || baptismEligibilityKind === 'profile' || baptismEligibilityKind === 'conflict') && selectedFamilyId && canOpenMemberProfile">
+                  <button type="button" class="cf-btn" (click)="returnToSelectedMemberFamily()">Return to member profile</button>
+                </div>
                 <p class="cf-split-field__hint">
                   Selecting a member prefills their person record. It does not change their saved profile.
                 </p>

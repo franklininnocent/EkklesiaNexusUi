@@ -148,6 +148,7 @@
   <app-family-member-form-modal
     *ngIf="showMemberModal"
     [member]="memberToEdit"
+    [familyMembers]="family?.members || []"
     [isHeadOnly]="isHeadMemberMode"
   [saving]="memberModalSaving"
   [error]="memberModalError"

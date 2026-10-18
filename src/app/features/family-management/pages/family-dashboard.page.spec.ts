@@ -146,6 +146,28 @@ describe('FamilyDashboardPageComponent', () => {
     expect(charts.every((chart) => chart.componentInstance.legendBeside)).toBe(true);
   });
 
+  it('hides the missing-head household slice when every family has an active head', () => {
+    const fixture = TestBed.createComponent(FamilyDashboardPageComponent);
+    fixture.detectChanges();
+    const labels = fixture.componentInstance.householdSlices().map((row) => row.label);
+    expect(labels).not.toContain('Families missing an active head');
+    expect(labels).toEqual([
+      'Have children or teenagers',
+      'Have seniors',
+      'Two or more adults',
+    ]);
+  });
+
+  it('shows the missing-head slice when at least one family lacks an active head', () => {
+    dashboardData = {
+      ...summary,
+      household: { ...summary.household, no_active_head: 2 },
+    };
+    const fixture = TestBed.createComponent(FamilyDashboardPageComponent);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.householdSlices().some((row) => row.key === 'missing_head')).toBe(true);
+  });
+
   it('opens the filtered list for every chart legend item', () => {
     dashboardData = {
       ...summary,
@@ -195,7 +217,7 @@ describe('FamilyDashboardPageComponent', () => {
     clickLegend('gender-heading', 'Male');
     clickLegend('size-heading', '1 member');
     clickLegend('household-heading', 'Have children or teenagers');
-    clickLegend('household-heading', 'No active family head');
+    clickLegend('household-heading', 'Families missing an active head');
 
     const background = fixture.nativeElement.querySelector('[aria-label="Occupation and education"]') as HTMLElement;
     const occupationButton = Array.from(background.querySelectorAll('button')).find((node) =>

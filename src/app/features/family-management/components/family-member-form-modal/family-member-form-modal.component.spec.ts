@@ -154,4 +154,54 @@ describe('FamilyMemberFormModalComponent (basics)', () => {
     expect(fixture.nativeElement.querySelector('#member_marriage_date')).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('parish marriage register');
   });
+
+  it('warns immediately when another active family head already exists', () => {
+    TestBed.configureTestingModule({
+      imports: [FamilyMemberFormModalComponent, HttpClientTestingModule]
+    });
+    const fixture = TestBed.createComponent(FamilyMemberFormModalComponent);
+    const component = fixture.componentInstance;
+    component.familyMembers = [
+      { id: 'head-1', relationship_to_head: 'self', status: 'active' },
+    ];
+    fixture.detectChanges();
+
+    component.form.patchValue({
+      first_name: 'Pat',
+      last_name: 'Second',
+      relationship_to_head: 'self',
+      date_of_birth: '1980-01-01',
+    });
+    fixture.detectChanges();
+
+    expect(component.secondHeadWarning).toContain('already has an active head');
+  });
+
+  it('does not warn when the only active head is the member being edited', () => {
+    TestBed.configureTestingModule({
+      imports: [FamilyMemberFormModalComponent, HttpClientTestingModule]
+    });
+    const fixture = TestBed.createComponent(FamilyMemberFormModalComponent);
+    const component = fixture.componentInstance;
+    component.familyMembers = [
+      { id: 'head-1', relationship_to_head: 'self', status: 'active' },
+    ];
+    component.member = {
+      id: 'head-1',
+      first_name: 'Pat',
+      last_name: 'Head',
+      relationship_to_head: 'self',
+    };
+    component.ngOnChanges({
+      member: {
+        currentValue: component.member,
+        previousValue: null,
+        firstChange: true,
+        isFirstChange: () => true,
+      }
+    });
+    fixture.detectChanges();
+
+    expect(component.secondHeadWarning).toBeNull();
+  });
 });
