@@ -93,8 +93,8 @@ export class DonationsService {
     return params;
   }
 
-  private financialPostOptions(): { headers: HttpHeaders } {
-    return { headers: new HttpHeaders({ 'Idempotency-Key': newIdempotencyKey() }) };
+  private financialPostOptions(idempotencyKey?: string): { headers: HttpHeaders } {
+    return { headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey ?? newIdempotencyKey() }) };
   }
 
   getDashboardSummary(
@@ -540,11 +540,14 @@ export class DonationsService {
     );
   }
 
-  createPayment(payload: Record<string, unknown>): Observable<{ success: boolean; message: string; data?: DonationPayment }> {
+  createPayment(
+    payload: Record<string, unknown>,
+    options?: { idempotencyKey?: string }
+  ): Observable<{ success: boolean; message: string; data?: DonationPayment }> {
     return this.http.post<{ success: boolean; message: string; data?: DonationPayment }>(
       `${this.baseUrl}/payments`,
       payload,
-      this.financialPostOptions()
+      this.financialPostOptions(options?.idempotencyKey)
     ).pipe(tap(() => this.notifyLedgerMutated()));
   }
 
