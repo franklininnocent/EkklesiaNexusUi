@@ -19,7 +19,7 @@ export const MARKETING_ADMIN_ROUTES: Routes = [
     path: 'seo-monitoring',
     loadComponent: () =>
       import('./pages/marketing-seo-monitoring-runbook/marketing-seo-monitoring-runbook.page').then(
-        (m) => m.MarketingSeoMonitoringRunbookPage,
+        (m) => m.MarketingSeoMonitoringPage,
       ),
   },
   { path: 'billing', redirectTo: '/settings/billing', pathMatch: 'full' },
