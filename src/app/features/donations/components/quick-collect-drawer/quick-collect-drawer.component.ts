@@ -12,7 +12,7 @@ import { restoreActiveElement, saveActiveElement, trapFocus } from '@shared/util
 import { DonationsService } from '../../services/donations.service';
 import { QuickCollectLaunchContext, QuickCollectRecentFamily, QuickCollectService } from '../../services/quick-collect.service';
 import { ReceiptPrintService } from '../../services/receipt-print.service';
-import { localDateOnly, requiresGatewayReference } from '../../utils/local-date-only';
+import { localDateOnly, newIdempotencyKey, requiresGatewayReference } from '../../utils/local-date-only';
 import { formatPaymentDateTime } from '../../utils/payment-datetime';
 import {
   CollectPaymentContext,
@@ -558,6 +558,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
   gatewayReference = '';
   keepQuickCollectOpen = true;
   saving = false;
+  private pendingIdempotencyKey: string | null = null;
   submitAttempted = false;
   error: string | null = null;
   lastPaymentId: string | null = null;
@@ -840,9 +841,14 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
       payload['allocations'] = allocations;
     }
 
-    this.donationsService.createPayment(payload).subscribe({
+    if (!this.pendingIdempotencyKey) {
+      this.pendingIdempotencyKey = newIdempotencyKey();
+    }
+
+    this.donationsService.createPayment(payload, { idempotencyKey: this.pendingIdempotencyKey }).subscribe({
       next: (res: { success: boolean; message: string; data?: DonationPayment }) => {
         this.saving = false;
+        this.pendingIdempotencyKey = null;
         this.lastPaymentId = res.data?.id ?? null;
         const categoryLabel = this.funds.find((fund) => fund.id === this.fundId)?.name || 'Contribution';
         this.lastSuccess = {
@@ -875,7 +881,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
           });
         }
       },
-      error: (err: { error?: { message?: string; errors?: Record<string, string[]> } }) => {
+      error: (err: { message?: string; status?: number; error?: { message?: string; errors?: Record<string, string[]> } }) => {
         this.saving = false;
         this.error = this.parseApiError(err) || 'Unable to save payment. Please try again.';
         this.toastService.error(this.error, 'Quick Collect');
@@ -1086,6 +1092,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.highlightedIndex = -1;
     this.contextHint = null;
     this.paymentDate = '';
+    this.pendingIdempotencyKey = null;
     if (focusSearch) {
       setTimeout(() => this.searchInput?.nativeElement.focus(), 0);
     }
@@ -1210,7 +1217,15 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.previousActiveElement = null;
   }
 
-  private parseApiError(err: { error?: { message?: string; errors?: Record<string, string[]> } }): string {
+  private parseApiError(err: {
+    message?: string;
+    status?: number;
+    error?: { message?: string; errors?: Record<string, string[]> };
+  }): string {
+    if (err?.status === 0) {
+      return 'The payment could not be confirmed. Check the payment register before submitting again.';
+    }
+
     const errors = err?.error?.errors;
     if (errors) {
       const firstField = Object.keys(errors)[0];
@@ -1219,9 +1234,16 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         return firstMessage;
       }
     }
-    if (err?.error?.message && err.error.message !== 'Validation error') {
-      return err.error.message;
+
+    const apiMessage = err?.error?.message;
+    if (apiMessage && apiMessage !== 'Validation error') {
+      return apiMessage;
     }
+
+    if (err?.message && err.message !== 'Validation error') {
+      return err.message;
+    }
+
     return 'Unable to save payment. Please try again.';
   }
 }
