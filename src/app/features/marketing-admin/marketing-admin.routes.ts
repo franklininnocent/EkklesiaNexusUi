@@ -15,6 +15,13 @@ export const MARKETING_ADMIN_ROUTES: Routes = [
         (m) => m.MarketingPlanCatalogPublishPage,
       ),
   },
+  {
+    path: 'seo-monitoring',
+    loadComponent: () =>
+      import('./pages/marketing-seo-monitoring-runbook/marketing-seo-monitoring-runbook.page').then(
+        (m) => m.MarketingSeoMonitoringRunbookPage,
+      ),
+  },
   { path: 'billing', redirectTo: '/settings/billing', pathMatch: 'full' },
   { path: 'billing/controls', redirectTo: '/settings/billing/controls', pathMatch: 'full' },
   { path: 'billing/promotions', redirectTo: '/settings/billing/promotions', pathMatch: 'full' },
