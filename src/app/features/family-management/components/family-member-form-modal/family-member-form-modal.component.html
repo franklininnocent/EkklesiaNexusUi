@@ -110,6 +110,7 @@
             <option value="other" *ngIf="!isHeadOnly">Other</option>
           </select>
           <p class="cf-split-field__error" *ngIf="isFieldInvalid('relationship_to_head')">{{ getErrorMessage('relationship_to_head') }}</p>
+          <p class="cf-split-field__hint" *ngIf="secondHeadWarning">{{ secondHeadWarning }}</p>
           <p class="cf-split-field__hint" *ngIf="isHeadOnly">This member will be saved as the Family Head</p>
         </div>
         <div class="cf-split-field">

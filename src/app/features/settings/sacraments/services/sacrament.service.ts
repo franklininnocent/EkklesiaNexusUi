@@ -138,7 +138,11 @@ export class SacramentService {
       .pipe(
         catchError((error: HttpErrorResponse) => {
           const errorMessage = handleApiError(error, 'Failed to create sacrament');
-          return throwError(() => new Error(errorMessage));
+          return throwError(() => Object.assign(new Error(errorMessage), {
+            code: error.error?.code,
+            context: error.error?.context,
+            error: error.error,
+          }));
         })
       );
   }

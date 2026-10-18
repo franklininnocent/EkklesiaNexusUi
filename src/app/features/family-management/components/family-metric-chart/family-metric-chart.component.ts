@@ -87,11 +87,10 @@ export function metricSliceIndexAt(
       [style.--fam-chart-min]="usesFixedHeight ? stageHeight + 'px' : null"
       [attr.aria-label]="title"
     >
-      <p class="fam-metric-chart__sr" *ngIf="slices.length">{{ summary }}</p>
       <div class="fam-metric-chart__layout" *ngIf="slices.length; else empty">
         <div class="fam-metric-chart__canvas-wrap">
           <div class="fam-metric-chart__canvas-stage">
-            <canvas #canvas role="img" [attr.aria-label]="summary" (click)="onCanvasClick($event)"></canvas>
+            <canvas #canvas aria-hidden="true" (click)="onCanvasClick($event)"></canvas>
           </div>
         </div>
         <ul class="fam-metric-chart__legend">
@@ -116,6 +115,7 @@ export function metricSliceIndexAt(
   `,
   styles: [`
     :host { display: block; container-type: inline-size; }
+    .fam-metric-chart { position: relative; }
     .fam-metric-chart__layout { display: grid; grid-template-columns: 62% 38%; gap: 0.75rem; align-items: center; }
     .fam-metric-chart--bar .fam-metric-chart__layout,
     .fam-metric-chart--beside .fam-metric-chart__layout {
@@ -153,7 +153,6 @@ export function metricSliceIndexAt(
       color: inherit; font: inherit;
     }
     .fam-metric-chart__legend-btn i { width: 0.65rem; height: 0.65rem; border-radius: 999px; display: block; }
-    .fam-metric-chart__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
     @container (max-width: 20rem) {
       .fam-metric-chart--beside .fam-metric-chart__layout { grid-template-columns: 1fr; }
     }
@@ -177,10 +176,6 @@ export class FamilyMetricChartComponent implements AfterViewInit, OnChanges, OnD
 
   private chart: Chart | null = null;
   private emitLock = false;
-
-  get summary(): string {
-    return this.slices.map((s) => `${s.label}: ${s.count} (${s.percent}%)`).join(', ');
-  }
 
   get usesFixedHeight(): boolean {
     return this.type === 'bar' || this.type === 'column';

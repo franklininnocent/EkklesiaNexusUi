@@ -125,9 +125,14 @@ export class FamilyDashboardPageComponent implements OnDestroy {
       { key: 'under_18', label: 'Have children or teenagers', count: household.have_under_18 },
       { key: 'seniors', label: 'Have seniors', count: household.have_seniors },
       { key: 'multiple_adults', label: 'Two or more adults', count: household.multiple_adults },
-      { key: 'missing_head', label: 'No active family head', count: household.no_active_head },
+      {
+        key: 'missing_head',
+        label: 'Families missing an active head',
+        count: household.no_active_head,
+      },
     ];
-    return rows.map((row, index) => ({
+    const visibleRows = rows.filter((row) => row.key !== 'missing_head' || row.count > 0);
+    return visibleRows.map((row, index) => ({
       ...row,
       percent: this.percentOfFamilies(row.count),
       color: this.chartPalette[index],
