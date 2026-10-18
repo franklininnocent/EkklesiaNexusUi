@@ -61,7 +61,8 @@ import {
 import { MinisterPickerComponent } from '../shared/minister-picker/minister-picker.component';
 import { SacramentReviewPanelComponent } from '../shared/sacrament-review-panel/sacrament-review-panel.component';
 import { SacramentPersonContextService } from '../../services/sacrament-person-context.service';
-import { SacramentContextResponse } from '../../models/sacrament-context.model';
+import { SacramentContextResponse, SacramentEvidenceSummary } from '../../models/sacrament-context.model';
+import { cfFormatDate } from '@shared/utils/cf-intl.util';
 import { PersonContextSummaryComponent } from '../shared/person-context-summary/person-context-summary.component';
 import { SacramentEvidenceSummaryComponent } from '../shared/sacrament-evidence-summary/sacrament-evidence-summary.component';
 import {
@@ -204,7 +205,14 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
   groomContextError: string | null = null;
   recipientContext: SacramentContextResponse | null = null;
   recipientContextLoading = false;
+  recipientContextError: string | null = null;
   baptismDuplicateWarning: string | null = null;
+  baptismEligibilityKind: 'none' | 'profile' | 'register' | 'multiple' | 'conflict' | 'lookup_failed' | null = null;
+  baptismRegisterBlocksCreate = false;
+  existingRegisterId: number | null = null;
+  private recipientContextRequestId = 0;
+  private lastRecipientContextQuery: { family_member_id?: string; person_id?: string } | null = null;
+  private autoFilledFields: Partial<Record<'date_administered' | 'place_administered' | 'godparent1_name' | 'godparent2_name', string>> = {};
   confirmandDraft: SacramentParticipantDraft | null = null;
   useSharedPeopleControls = true;
   homeParishDisplayName = '';
@@ -274,6 +282,19 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
   get marriageRequiresDispensation(): boolean {
     return this.marriageClassificationCode === 'mixed_marriage'
       || this.marriageClassificationCode === 'disparity_of_cult';
+  }
+
+  get canViewSacramentRegister(): boolean {
+    return this.authService.hasPermission('sacraments.view');
+  }
+
+  get canOpenMemberProfile(): boolean {
+    return this.authService.hasPermission('families.view')
+      || this.authService.hasPermission('families.edit');
+  }
+
+  get baptismEligibilityIsBlocking(): boolean {
+    return this.baptismRegisterBlocksCreate || this.baptismEligibilityKind === 'lookup_failed';
   }
 
   // Constants for template
@@ -895,6 +916,14 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
           if (code === 'possible_person_match') {
             this.personMatches = error?.context?.matches || error?.error?.context?.matches || [];
             this.toastService.error('A possible existing person was found. Choose Use Existing Person or Create New Person.');
+          } else if (code === 'duplicate_sacrament') {
+            const existingId = error?.context?.existing_sacrament_id || error?.error?.context?.existing_sacrament_id;
+            this.existingRegisterId = this.asRegisterId(existingId);
+            this.baptismRegisterBlocksCreate = true;
+            this.baptismEligibilityKind = 'register';
+            this.baptismDuplicateWarning = error?.message
+              || 'An official register entry already exists for this person in this parish.';
+            this.toastService.error(this.baptismDuplicateWarning || 'An official register entry already exists for this person in this parish.');
           } else {
             this.toastService.error(error?.message || error?.error?.message || 'Failed to create sacrament.');
           }
@@ -1041,8 +1070,16 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
         this.fieldErrors['minister_name'] = 'Minister is required for Baptism.';
         isValid = false;
       }
-      if (this.baptismDuplicateWarning) {
-        this.fieldErrors['baptism_duplicate'] = this.baptismDuplicateWarning;
+      if (this.recipientContextLoading) {
+        this.fieldErrors['baptism_duplicate'] = 'Please wait while existing Baptism records are checked.';
+        isValid = false;
+      } else if (this.baptismEligibilityKind === 'lookup_failed') {
+        this.fieldErrors['baptism_duplicate'] = this.baptismDuplicateWarning
+          || 'Baptism records could not be verified. Retry before saving.';
+        isValid = false;
+      } else if (this.baptismRegisterBlocksCreate) {
+        this.fieldErrors['baptism_duplicate'] = this.baptismDuplicateWarning
+          || 'An official Baptism register entry already exists for this person in this parish.';
         isValid = false;
       }
     }
@@ -1654,9 +1691,9 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
       this.formData['recipient_gender'] = draft.external_gender;
     }
     if (draft.source === 'member' && draft.family_member_id) {
-      this.loadRecipientContext(draft.family_member_id);
+      this.loadRecipientContext({ family_member_id: draft.family_member_id });
     } else {
-      this.recipientContext = null;
+      this.clearRecipientEligibility();
     }
     this.cdr.markForCheck();
   }
@@ -1878,31 +1915,266 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
     });
   }
 
-  private loadRecipientContext(familyMemberId: string): void {
+  private loadRecipientContext(query: { family_member_id?: string; person_id?: string }): void {
+    this.clearRecipientEligibility({ keepQuery: true });
+    this.lastRecipientContextQuery = { ...query };
+    const requestId = ++this.recipientContextRequestId;
     const workflow = this.isBaptism() ? 'BAPTISM' : this.isEucharist() ? 'EUCHARIST' : 'CONFIRMATION';
     this.recipientContextLoading = true;
-    this.baptismDuplicateWarning = null;
+    this.recipientContextError = null;
     this.contextService.getContext({
-      family_member_id: familyMemberId,
+      family_member_id: query.family_member_id,
+      person_id: query.person_id,
       workflow,
       participant_role: 'recipient',
     }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (context) => {
+        if (requestId !== this.recipientContextRequestId) {
+          return;
+        }
         this.recipientContext = context;
         this.recipientContextLoading = false;
-        if (this.isBaptism() && context.record_status?.['baptism'] === 'FOUND') {
-          this.baptismDuplicateWarning = 'A baptism record already exists for this person. Review before creating a duplicate.';
-        }
+        this.applyRecipientSacramentEligibility(context);
         if (this.isEucharist() && context.sacraments?.baptism?.evidence?.date?.value) {
           this.formData['baptism_date'] = context.sacraments.baptism.evidence.date.value;
         }
         this.cdr.markForCheck();
       },
       error: () => {
+        if (requestId !== this.recipientContextRequestId) {
+          return;
+        }
         this.recipientContextLoading = false;
+        this.recipientContextError = 'Existing Baptism records could not be verified. Retry before continuing.';
+        this.baptismEligibilityKind = 'lookup_failed';
+        this.baptismDuplicateWarning = this.recipientContextError;
+        this.baptismRegisterBlocksCreate = this.isBaptism() && !this.isEditMode;
         this.cdr.markForCheck();
       },
     });
+  }
+
+  retryRecipientContext(): void {
+    if (this.lastRecipientContextQuery) {
+      this.loadRecipientContext(this.lastRecipientContextQuery);
+    }
+  }
+
+  openExistingBaptismRegister(): void {
+    if (!this.existingRegisterId) {
+      return;
+    }
+    this.cancel.emit();
+    void this.router.navigate(['/sacraments/view', this.existingRegisterId]);
+  }
+
+  returnToSelectedMemberFamily(): void {
+    const familyId = this.selectedFamilyId || this.formData['family_id'];
+    if (!familyId) {
+      return;
+    }
+    this.cancel.emit();
+    void this.router.navigate(['/families', familyId]);
+  }
+
+  private applyRecipientSacramentEligibility(context: SacramentContextResponse): void {
+    if (this.isEditMode) {
+      return;
+    }
+
+    if (this.isConfirmation()) {
+      const confirmationRegister = context.record_status?.['confirmation_register']
+        ?? context.sacraments?.confirmation?.register_record_status;
+      if (confirmationRegister === 'FOUND' || confirmationRegister === 'MULTIPLE_CANDIDATES') {
+        this.baptismRegisterBlocksCreate = true;
+        this.baptismEligibilityKind = confirmationRegister === 'MULTIPLE_CANDIDATES' ? 'multiple' : 'register';
+        this.existingRegisterId = confirmationRegister === 'FOUND'
+          ? this.asRegisterId(context.sacraments?.confirmation?.evidence?.sacrament_id)
+          : null;
+        this.baptismDuplicateWarning = confirmationRegister === 'MULTIPLE_CANDIDATES'
+          ? 'More than one Confirmation register entry matches this person in this parish. Review the existing records instead of creating another.'
+          : 'An official Confirmation register entry already exists for this person in this parish. Open the existing record instead of creating a duplicate.';
+      }
+      return;
+    }
+
+    if (!this.isBaptism()) {
+      return;
+    }
+
+    const block = context.sacraments?.baptism;
+    const registerStatus = context.record_status?.['baptism_register'] ?? block?.register_record_status;
+    const knownRegisterStatuses = ['FOUND', 'NOT_FOUND', 'MULTIPLE_CANDIDATES'];
+    if (!registerStatus || !knownRegisterStatuses.includes(registerStatus)) {
+      this.baptismEligibilityKind = 'lookup_failed';
+      this.baptismRegisterBlocksCreate = true;
+      this.existingRegisterId = null;
+      this.baptismDuplicateWarning = 'Existing Baptism records could not be verified. Retry before continuing.';
+      return;
+    }
+
+    const dateLabel = this.formatEvidenceDate(block?.evidence?.date?.value);
+    const registerId = this.asRegisterId(block?.evidence?.sacrament_id);
+
+    if (registerStatus === 'MULTIPLE_CANDIDATES' || block?.record_status === 'MULTIPLE_CANDIDATES') {
+      this.baptismEligibilityKind = 'multiple';
+      this.baptismRegisterBlocksCreate = true;
+      this.existingRegisterId = null;
+      const candidateDates = (block?.candidates || [])
+        .map((candidate) => this.formatEvidenceDate(candidate.date?.value))
+        .filter(Boolean);
+      this.baptismDuplicateWarning = 'More than one Baptism register entry matches this person in this parish'
+        + (candidateDates.length ? ` (${candidateDates.join('; ')})` : '')
+        + '. Review the existing records. A matching record will not be selected automatically.';
+      return;
+    }
+
+    if (registerStatus === 'FOUND') {
+      this.baptismEligibilityKind = context.conflicts?.some((conflict) => conflict.field === 'baptism_date')
+        ? 'conflict'
+        : 'register';
+      this.baptismRegisterBlocksCreate = true;
+      this.existingRegisterId = registerId;
+      const place = this.evidenceText(block?.evidence?.place) || this.evidenceText(block?.evidence?.parish);
+      const conflict = context.conflicts?.find((item) => item.field === 'baptism_date');
+      if (conflict) {
+        const registerDate = this.formatEvidenceDate(conflict.candidates.find((c) => c.source_type === 'BAPTISM_RECORD')?.value);
+        const profileDate = this.formatEvidenceDate(conflict.candidates.find((c) => c.source_type === 'MEMBER_PROFILE')?.value);
+        this.baptismDuplicateWarning = `An official Baptism register entry already exists in this parish`
+          + (registerDate ? ` (${registerDate})` : '')
+          + (profileDate && registerDate && profileDate !== registerDate
+            ? `. The member profile date (${profileDate}) differs from the register. Open the register record to review; do not create a second entry.`
+            : '. Open the existing register record instead of creating a duplicate.');
+      } else {
+        this.baptismDuplicateWarning = `An official Baptism register entry already exists for this person in this parish`
+          + (dateLabel ? ` (${dateLabel}` : '')
+          + (place && dateLabel ? `, ${place}` : '')
+          + (dateLabel ? ')' : '')
+          + '. Open the existing record instead of creating a duplicate.';
+      }
+      return;
+    }
+
+    if (block?.record_status === 'FOUND' && (block.evidence_tier === 'MEMBER_PROFILE' || registerStatus === 'NOT_FOUND')) {
+      this.baptismEligibilityKind = 'profile';
+      this.baptismRegisterBlocksCreate = false;
+      this.existingRegisterId = null;
+      this.baptismDuplicateWarning = `Existing Baptism information was found in this person's profile`
+        + (dateLabel ? ` (${dateLabel})` : '')
+        + '. No matching register entry was found in this parish. The existing details have been prefilled for review. Verify the information and complete any missing fields before creating this parish register entry. Saving this form does not update the member profile.';
+      this.prefillBaptismFormFromProfile(block.evidence);
+      return;
+    }
+
+    this.baptismEligibilityKind = 'none';
+    this.baptismRegisterBlocksCreate = false;
+    this.existingRegisterId = null;
+    this.baptismDuplicateWarning = 'No matching Baptism information was found in the records available to this parish.';
+  }
+
+  private prefillBaptismFormFromProfile(evidence?: SacramentEvidenceSummary | null): void {
+    if (!evidence) {
+      return;
+    }
+
+    const date = this.dateOnlyValue(evidence.date?.value);
+    const locationType = String(evidence.baptism_location_type || '').trim();
+    const churchName = String(evidence.baptism_church_name || '').trim();
+    const place = churchName
+      || this.evidenceText(evidence.place)
+      || String(evidence.baptism_church_address || '').trim();
+    const skipHomeParishDefault = locationType === 'other' || !!churchName;
+
+    if (date) {
+      this.setAutoFilled('date_administered', date);
+    }
+    const currentPlace = String(this.formData['place_administered'] ?? '');
+    if (place && (skipHomeParishDefault || !this.isHomeParishDefaultPlace(currentPlace))) {
+      this.setAutoFilled('place_administered', place);
+    } else if (skipHomeParishDefault && this.isHomeParishDefaultPlace(currentPlace)) {
+      this.formData['place_administered'] = place || '';
+      this.autoFilledFields['place_administered'] = this.formData['place_administered'] || undefined;
+    }
+    this.setAutoFilled('godparent1_name', String(evidence.baptism_godparent_primary || '').trim());
+    this.setAutoFilled('godparent2_name', String(evidence.baptism_godparent_secondary || '').trim());
+  }
+
+  private setAutoFilled(
+    field: 'date_administered' | 'place_administered' | 'godparent1_name' | 'godparent2_name',
+    value: string,
+  ): void {
+    if (!value) {
+      return;
+    }
+    const current = String(this.formData[field] || '').trim();
+    const previousAuto = this.autoFilledFields[field];
+    if (!current || current === previousAuto || (field === 'place_administered' && this.isHomeParishDefaultPlace(current))) {
+      this.formData[field] = value;
+      this.autoFilledFields[field] = value;
+    }
+  }
+
+  private clearAutoFilledPersonFields(): void {
+    (Object.keys(this.autoFilledFields) as Array<keyof typeof this.autoFilledFields>).forEach((field) => {
+      const autoValue = this.autoFilledFields[field];
+      if (autoValue && String(this.formData[field] || '') === autoValue) {
+        this.formData[field] = field === 'place_administered' ? (this.homeParishDisplayName || '') : '';
+      }
+    });
+    this.autoFilledFields = {};
+  }
+
+  private isHomeParishDefaultPlace(value: string | undefined): boolean {
+    const current = String(value || '').trim();
+    return !!this.homeParishDisplayName && current === this.homeParishDisplayName;
+  }
+
+  private dateOnlyValue(value: unknown): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+    const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : '';
+  }
+
+  private evidenceText(field: { value?: string | null } | string | null | undefined): string {
+    if (!field) {
+      return '';
+    }
+    if (typeof field === 'string') {
+      return field.trim();
+    }
+    return String(field.value || '').trim();
+  }
+
+  private formatEvidenceDate(value: unknown): string {
+    const dateOnly = this.dateOnlyValue(value);
+    return dateOnly ? (cfFormatDate(dateOnly) || dateOnly) : '';
+  }
+
+  private asRegisterId(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string' && /^\d+$/.test(value)) {
+      return Number(value);
+    }
+    return null;
+  }
+
+  private clearRecipientEligibility(options?: { keepQuery?: boolean }): void {
+    this.recipientContext = null;
+    this.recipientContextLoading = false;
+    this.recipientContextError = null;
+    this.baptismDuplicateWarning = null;
+    this.baptismEligibilityKind = null;
+    this.baptismRegisterBlocksCreate = false;
+    this.existingRegisterId = null;
+    this.clearAutoFilledPersonFields();
+    if (!options?.keepQuery) {
+      this.lastRecipientContextQuery = null;
+      this.recipientContextRequestId += 1;
+    }
   }
 
   onBrideAffiliationChange(value: ChurchAffiliationValue): void {
@@ -2151,7 +2423,13 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
             return;
           }
           this.homeParishDisplayName = name;
-          if (!this.formData['place_administered']) {
+          const currentPlace = String(this.formData['place_administered'] || '').trim();
+          const otherChurchPlace = this.autoFilledFields['place_administered'];
+          if (otherChurchPlace && currentPlace === otherChurchPlace) {
+            this.cdr.markForCheck();
+            return;
+          }
+          if (!currentPlace) {
             this.formData['place_administered'] = name;
           }
           this.cdr.markForCheck();
@@ -2291,6 +2569,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
     this.resolvedPerson = null;
     this.personLocked = false;
     if (!this.selectedRecipientMemberId) {
+      this.clearRecipientEligibility();
       return;
     }
     const member = this.familyMembers.find((m) => m.id === this.selectedRecipientMemberId);
@@ -2320,7 +2599,11 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
     this.personDraft.mother_name = motherName;
     this.personLocked = true;
     if (member.id) {
-      this.loadRecipientContext(member.id);
+      this.loadRecipientContext({ family_member_id: member.id, person_id: member.person_id || undefined });
+    } else if (member.person_id) {
+      this.loadRecipientContext({ person_id: member.person_id });
+    } else {
+      this.clearRecipientEligibility();
     }
     if (member.person_id) {
       this.personService.get(member.person_id).pipe(takeUntil(this.destroy$)).subscribe({
@@ -2388,6 +2671,9 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
       address_line_1: person.address_line_1 || '',
       city: person.city || '',
     };
+    if (person.id) {
+      this.loadRecipientContext({ person_id: person.id });
+    }
     this.cdr.detectChanges();
   }
 
@@ -2495,8 +2781,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
     if (mode === 'new_person') {
       this.selectedRecipientMemberId = null;
       this.personLocked = false;
-      this.recipientContext = null;
-      this.baptismDuplicateWarning = null;
+      this.clearRecipientEligibility();
     }
     this.cdr.detectChanges();
   }

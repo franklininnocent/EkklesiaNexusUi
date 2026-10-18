@@ -617,6 +617,7 @@ export class FamilyFormComponent implements OnInit, OnChanges, AfterViewInit {
     
     const memberForm = this.fb.group({
       id: [memberId],
+      person_id: [member?.person_id || member?.person?.id || null],
       first_name: [member?.first_name || '', Validators.required],
       middle_name: [member?.middle_name || ''],
       last_name: [member?.last_name || '', Validators.required],
