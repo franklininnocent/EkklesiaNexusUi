@@ -503,10 +503,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
     if (!this.guardWrite('update church profile')) {
       return;
     }
-    console.log('💾 saveGeneralAndContact called');
-    console.log('Form valid:', this.profileForm.valid);
-    console.log('Form value:', this.profileForm.value);
-    console.log('Form raw value:', this.profileForm.getRawValue());
     
     // Check if form exists
     if (!this.profileForm) {
@@ -574,7 +570,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       }
     }
     
-    console.log('📤 Submitting form data:', formData);
 
     this.churchProfileService.updateProfile(formData)
       .pipe(
@@ -842,17 +837,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
         this.authService.hasTenantPermission('bishops.view_own_requests'));
     
     // Comprehensive debug logging
-    console.log('🔍 Church Profile Edit Permission Check:', {
-      canEdit: this.canEdit,
-      hasChurchSettingsEdit,
-      isPrimaryAdmin,
-      isTenantAdmin,
-      hasParishContext,
-      userType: currentUser?.user_type,
-      tenantId: currentUser?.tenant_id,
-      userId: currentUser?.id,
-      userName: currentUser?.name
-    });
   }
 
   /**
@@ -1164,7 +1148,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       .subscribe({
       next: (result) => {
         if (result.success) {
-          console.log(`✅ Phone code updated to ${result.phoneCode} for country: ${result.countryName}`);
           // Force change detection to update the phone code display
         } else {
           console.warn('Failed to update phone code:', result.error);
@@ -1194,12 +1177,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
 
           // Debug: Log patron image data
           if (this.extendedProfile) {
-            console.log('Patron image data loaded:', {
-              patron_name: this.extendedProfile.patron_name,
-              patron_image_path: this.extendedProfile.patron_image_path,
-              patron_image_url: this.extendedProfile.patron_image_url,
-              constructedUrl: this.getPatronImageUrl('300x300')
-            });
           }
           
           this.populateProfileForm(response.data);
@@ -1897,11 +1874,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
     const countryId = this.profileForm.get('country_id')?.value;
     const stateId = this.getTenantStateId(); // Get from tenant's official address
 
-    console.log('🔍 Filtering archdioceses with:', {
-      denomination_id: denominationId,
-      country_id: countryId,
-      state_id: stateId
-    });
 
     // Build filter object
     const filters: {
@@ -1922,7 +1894,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
 
     // If no filters are selected, show all archdioceses
     if (Object.keys(filters).length === 0) {
-      console.log('No filters selected, showing all archdioceses');
       this.filteredArchdioceses = this.archdioceses || [];
       this.syncGeneralSelectValues();
       this.cdr.markForCheck();
@@ -1933,7 +1904,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
     // Call API with filters
     this.archdioceseService.getArchdioceses(filters).subscribe({
       next: (response) => {
-        console.log('✅ Archdioceses API response:', response);
         const savedArchdioceseId = this.showGeneralModal
           ? this.modalArchdioceseId
           : this.coerceOptionalId(this.profileForm.get('archdiocese_id')?.value);
@@ -1951,7 +1921,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
             } else if (this.showGeneralModal) {
               this.resolveModalArchdioceseSelection();
             }
-            console.log(`✅ Loaded ${response.data.length} filtered archdioceses`);
           } else {
             // Filter returned 0 results - show empty list
             console.warn('⚠️ No archdioceses found with current filters');
@@ -1992,7 +1961,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       : denominationId;
     const id = this.coerceOptionalId(raw);
     
-    console.log('📝 Denomination changed to:', id);
     
     // Enable/disable archdiocese control based on denomination
     const archdioceseControl = this.profileForm.get('archdiocese_id');
@@ -2015,12 +1983,10 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
   private ensureArchdiocesesLoaded(onLoaded?: () => void): void {
     // If archdioceses haven't been loaded yet, load them first, then filter
     if (this.archdioceses.length === 0) {
-      console.log('📥 Loading archdioceses...');
       this.archdioceseService.getArchdioceses()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('✅ Archdioceses loaded, total:', response.data?.length || 0);
           if (response.success && response.data) {
             this.archdioceses = response.data;
             
@@ -2044,7 +2010,6 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       });
     } else {
       // Archdioceses already loaded, just apply unified filtering
-      console.log('✅ Archdioceses already loaded, applying filters');
       this.filterArchdioceses(onLoaded);
     }
   }

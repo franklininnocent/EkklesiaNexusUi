@@ -536,6 +536,10 @@ export interface UsageRow {
   unit: string | null;
   usage: number;
   limit: number | null;
+  plan_limit?: number | null;
+  plan_unlimited?: boolean;
+  effective_source?: string | null;
+  has_tenant_allowance_exception?: boolean;
   unlimited: boolean;
   remaining: number | null;
   percent_used: number | null;

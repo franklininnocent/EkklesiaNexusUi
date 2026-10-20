@@ -213,8 +213,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (section.route) {
       const navigationExtras = section.queryParams ? { queryParams: section.queryParams } : {};
       this.router.navigate([section.route], navigationExtras);
-    } else {
-      console.log(`Configure ${section.title} - Coming soon!`);
     }
   }
 

@@ -410,7 +410,6 @@ export class TenantService {
   private buildFormData(request: CreateTenantRequest | UpdateTenantRequest): FormData {
     const formData = new FormData();
 
-    console.log('Building FormData from request:', request);
 
     Object.keys(request).forEach(key => {
       const value = (request as any)[key];
@@ -423,7 +422,6 @@ export class TenantService {
       }
 
       if (key === 'tenant_logo' && value instanceof File) {
-        console.log('Appending logo file:', value.name);
         formData.append('tenant_logo', value);
       } else if (key === 'tenant_official_address' || key === 'primary_user_address' || key === 'secondary_user_address') {
         // Handle address objects - send as nested FormData keys for Laravel validation
@@ -432,30 +430,24 @@ export class TenantService {
             const nestedValue = value[nestedKey];
             if (nestedValue !== null && nestedValue !== undefined && nestedValue !== '') {
               const formKey = `${key}[${nestedKey}]`;
-              console.log(`Appending ${formKey}:`, nestedValue);
               formData.append(formKey, String(nestedValue));
             }
           });
         }
       } else if (typeof value === 'object' && !(value instanceof File)) {
         // Handle other nested objects as JSON
-        console.log(`Appending ${key} as JSON:`, value);
         formData.append(key, JSON.stringify(value));
       } else if (Array.isArray(value)) {
         // Handle arrays
-        console.log(`Appending ${key} as JSON array:`, value);
         formData.append(key, JSON.stringify(value));
       } else {
         // Handle primitive values
-        console.log(`Appending ${key}:`, value);
         formData.append(key, String(value));
       }
     });
 
     // Log all FormData entries for debugging
-    console.log('FormData entries:');
     formData.forEach((value, key) => {
-      console.log(`  ${key}:`, value);
     });
 
     return formData;
