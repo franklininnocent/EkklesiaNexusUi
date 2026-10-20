@@ -295,6 +295,29 @@ export class TenantPlanPanelComponent implements OnChanges, OnDestroy {
       return;
     }
 
+    const usageRow = this.usageForFeature(g.feature_code);
+    const proposed = this.proposedLimitLabel(g);
+    const message = usageRow
+      ? `Plan default: ${this.planLimitLabel(usageRow)}. Current effective: ${this.effectiveLimitLabel(usageRow)} (usage ${usageRow.usage.toLocaleString()}). After this change: ${proposed}.`
+      : `Apply exception: ${proposed}.`;
+
+    this.confirm
+      .confirm({
+        title: 'Confirm tenant entitlement exception',
+        message,
+        confirmText: 'Save exception',
+        variant: 'primary',
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result) => {
+        if (!result.confirmed) {
+          return;
+        }
+        this.persistGrant(g, until, reason);
+      });
+  }
+
+  private persistGrant(g: GrantForm, until: string | null, reason: string): void {
     this.grantSaving = true;
     this.cdr.markForCheck();
     this.api
@@ -320,6 +343,37 @@ export class TenantPlanPanelComponent implements OnChanges, OnDestroy {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  private usageForFeature(code: string): UsageRow | undefined {
+    return this.data?.usage?.find((row) => row.code === code);
+  }
+
+  private planLimitLabel(row: UsageRow): string {
+    if (row.plan_unlimited || row.plan_limit === null || row.plan_limit === undefined) {
+      return 'no limit';
+    }
+
+    return row.plan_limit.toLocaleString();
+  }
+
+  private effectiveLimitLabel(row: UsageRow): string {
+    if (row.unlimited || row.limit === null) {
+      return 'no limit';
+    }
+
+    return row.limit.toLocaleString();
+  }
+
+  private proposedLimitLabel(g: GrantForm): string {
+    if (g.mode === 'UNLIMITED') {
+      return 'no limit';
+    }
+    if (g.mode === 'SET_LIMIT') {
+      return Number(g.numeric_value).toLocaleString();
+    }
+
+    return MODE_LABELS[g.mode] ?? g.mode;
   }
 
   revoke(o: EntitlementOverride): void {

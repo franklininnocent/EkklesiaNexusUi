@@ -35,5 +35,6 @@ describe('subscriptionAdminCapabilities', () => {
     expect(can.publish).toBe(false);
     expect(can.features).toBe(false);
     expect(can.policies).toBe(false);
+    expect(can.overrides).toBe(false);
   });
 });

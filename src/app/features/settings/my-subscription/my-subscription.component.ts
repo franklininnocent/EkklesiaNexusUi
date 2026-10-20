@@ -285,9 +285,27 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
 
   usageText(row: UsageRow): string {
     if (row.unlimited || row.limit === null) {
-      return `${row.usage.toLocaleString()} used · no limit`;
+      const remaining = row.remaining !== null ? ` · ${row.remaining.toLocaleString()} remaining` : '';
+      return `${row.usage.toLocaleString()} used · no limit${remaining}`;
     }
-    return `${row.usage.toLocaleString()} of ${row.limit.toLocaleString()} used`;
+    const remaining = row.remaining !== null ? ` · ${row.remaining.toLocaleString()} remaining` : '';
+    return `${row.usage.toLocaleString()} of ${row.limit.toLocaleString()} used${remaining}`;
+  }
+
+  planLimitLabel(row: UsageRow): string {
+    if (row.plan_unlimited || row.plan_limit === null || row.plan_limit === undefined) {
+      return 'no limit';
+    }
+
+    return row.plan_limit.toLocaleString();
+  }
+
+  effectiveLimitLabel(row: UsageRow): string {
+    if (row.unlimited || row.limit === null) {
+      return 'no limit';
+    }
+
+    return row.limit.toLocaleString();
   }
 
   usagePercent(row: UsageRow): number {

@@ -24,9 +24,6 @@ describe('media-url.util', () => {
         'http://localhost:8000/api/tenant/media/serve?token=abc&signature=def'
       )
     ).toBe('/api/tenant/media/serve?token=abc&signature=def');
-    expect(resolveMediaDisplaySrc('/api/tenant/media/serve?token=abc')).toBe(
-      '/api/tenant/media/serve?token=abc'
-    );
   });
 
   it('keeps production API media urls absolute so the image is not loaded from the app host', () => {

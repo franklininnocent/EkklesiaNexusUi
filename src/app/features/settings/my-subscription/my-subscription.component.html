@@ -140,6 +140,9 @@
             </div>
             <span *ngIf="row.unlimited || row.limit === null" class="my-sub-usage__bar my-sub-usage__bar--none" aria-hidden="true"></span>
             <span class="my-sub-usage__count">{{ usageText(row) }}</span>
+            <span class="my-sub-usage__exception" *ngIf="row.has_tenant_allowance_exception">
+              Plan includes {{ planLimitLabel(row) }}; your approved allowance is {{ effectiveLimitLabel(row) }}
+            </span>
             <span class="my-sub-usage__level">{{ usageLevelLabel(row.level) }}</span>
           </li>
         </ul>

@@ -8,7 +8,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
-import { tap, catchError, map, shareReplay } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '@environments/environment';
 
 /**
@@ -124,11 +124,6 @@ export class GeographyService {
     const states$ = this.http.get<GeographyResponse<State>>(
       `${this.apiUrl}/countries/${countryId}/states`
     ).pipe(
-      tap(response => {
-        if (response.success) {
-          console.log(`✅ Loaded ${response.count} states for country ${countryId}`);
-        }
-      }),
       shareReplay(1), // Share the result with all subscribers
       catchError(error => {
         console.error(`❌ Error loading states for country ${countryId}:`, error);
@@ -191,7 +186,6 @@ export class GeographyService {
     this.countriesCache$ = null;
     this.statesCache.clear();
     this.countriesSubject.next([]);
-    console.log('🗑️ Geography cache cleared');
   }
 
   /**
