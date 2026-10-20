@@ -32,18 +32,8 @@ export class ToastContainerComponent implements OnInit {
   toasts$!: Observable<Toast[]>;
   private readonly toastService = inject(ToastService);
 
-  constructor() {
-    console.log('Toast container component created');
-  }
-
   ngOnInit(): void {
-    console.log('Toast container component initialized');
     this.toasts$ = this.toastService.toasts$;
-    
-    // Subscribe to see when toasts change
-    this.toasts$.subscribe(toasts => {
-      console.log('Toast container - toasts changed:', toasts);
-    });
   }
 
   /**

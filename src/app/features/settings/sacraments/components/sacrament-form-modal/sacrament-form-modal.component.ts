@@ -785,7 +785,6 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
             this.cdr.detectChanges();
           }
         } else {
-          console.log('No church leaders found or API response was unsuccessful');
         }
       },
       error: (error) => {

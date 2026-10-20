@@ -50,15 +50,6 @@ export class EcclesiasticalComponent implements OnInit {
       ekklesiaRoles.includes(user.role?.name || '') ||
       this.authService.isEkklesiaAdmin() ||
       this.authService.isSuperAdmin();
-    
-    // Debug log
-    console.log('Ekklesia role check:', {
-      hasEkklesiaRole: this.hasEkklesiaRole,
-      roleName: user.role_name,
-      has_ekklesia_role: user.has_ekklesia_role,
-      userId: user.id
-    });
-    
     this.cdr.detectChanges();
   }
 }

@@ -209,7 +209,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     if (this.callingCode === '+1') {
       this.phoneCodeService.initializeFromApiOnce().subscribe({
         next: (res) => {
-          console.log('📞 Family Member Modal - Phone code hydrated from API:', res);
           // Force change detection if needed
           if (res.success && res.phoneCode !== '+1') {
             // Phone code updated successfully
@@ -226,7 +225,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
   private initializePhoneCode(): void {
     try {
       const user = this.authService.currentUserValue as any;
-      console.log('🔍 Family Member Modal - Initializing phone code, user:', user);
 
       // Try to get country code from user's tenant
       let iso2: string | undefined = user?.tenant?.country_code || user?.tenant?.country?.iso2;
@@ -235,7 +233,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
       if (!iso2) {
         try {
           iso2 = localStorage.getItem('tenant_country_code') || undefined;
-          console.log('📦 Family Member Modal - Using cached tenant_country_code from localStorage:', iso2);
         } catch {}
       }
 
@@ -245,7 +242,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
           const code = getCountryCallingCode(upper as CountryCode);
           if (code) {
             const phoneCode = `+${code}`;
-            console.log(`✅ Family Member Modal - Setting phone code to ${phoneCode} for country ${upper}`);
             this.phoneCodeService.setPhoneCode(phoneCode);
             // Cache for other parts of app
             try { localStorage.setItem('tenant_country_code', upper); } catch {}
@@ -258,7 +254,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
       } else {
         console.warn('⚠️ Family Member Modal - No country code found. User tenant:', user?.tenant);
         // Log current phone code to debug
-        console.log('📞 Family Member Modal - Current phone code from service:', this.phoneCodeService.getPhoneCodeSync());
       }
     } catch (error) {
       console.error('❌ Family Member Modal - Error initializing phone code:', error);
@@ -274,8 +269,7 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
       // If still +1, try to hydrate from API
       if (this.callingCode === '+1') {
         this.phoneCodeService.initializeFromApiOnce().subscribe({
-          next: (res) => console.log('📞 Family Member Modal - Phone code re-hydrated on member change:', res),
-          error: (e) => console.warn('⚠️ Family Member Modal - Phone code re-hydrate error', e)
+          error: (e) => console.warn('Family Member Modal - Phone code re-hydrate error', e)
         });
       }
     }
@@ -382,10 +376,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     
     // Log relationship normalization only if it changed
     if (member?.relationship_to_head && memberData.relationship_to_head !== String(member.relationship_to_head).toLowerCase().trim()) {
-      console.log('🔍 Relationship normalization:', {
-        original: member?.relationship_to_head,
-        normalized: memberData.relationship_to_head
-      });
     }
     
     // Ensure dates are in YYYY-MM-DD format for date inputs
@@ -484,11 +474,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     }
     
     // Reduced logging - only log key fields
-    console.log('✅ Form patched with member:', {
-      id: this.form.get('id')?.value,
-      name: `${this.form.get('first_name')?.value} ${this.form.get('last_name')?.value}`,
-      relationship: this.form.get('relationship_to_head')?.value
-    });
   }
 
   /**
@@ -682,11 +667,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     let currentStatus = statusControl?.value || 'active';
     
     // Debug: Log before normalization
-    console.log('Status before processing:', {
-      rawValue: statusControl?.value,
-      currentStatus: currentStatus,
-      formValueStatus: this.form.value.status
-    });
     
     // Normalize status immediately
     currentStatus = String(currentStatus).toLowerCase().trim();
@@ -699,7 +679,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     const formId = this.form.get('id')?.value;
     if (formId !== null && formId !== undefined && formId !== '') {
       formValue.id = String(formId).trim();
-      console.log('✅ Member form ID preserved:', formValue.id);
     } else {
       console.warn('⚠️ No ID in form when saving member');
     }
@@ -718,7 +697,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     // CRITICAL: If isHeadOnly mode, force relationship to 'self'
     if (this.isHeadOnly) {
       formValue.relationship_to_head = 'self';
-      console.log('✅ Head-only mode: Relationship locked to "self"');
     }
     
     // Normalize other enum-like fields
@@ -764,11 +742,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     delete formValue.mother;
     
     // Debug log to verify the status value being sent
-    console.log('Form submission - Final values:', {
-      status: formValue.status,
-      statusControlValue: statusControl?.value,
-      fullFormValue: formValue
-    });
     
     // Phone stays as local digits; parent/API layer applies country code when posting
     const value = formValue as FamilyMemberFormValue;

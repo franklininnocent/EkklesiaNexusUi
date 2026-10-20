@@ -402,10 +402,8 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
 
   onRoleSaved(role: Role): void {
     if (this.showCreateRoleModal) {
-      console.log(`✅ Role "${role.name}" created successfully!`);
       this.toastService.success(`Role "${role.name}" created successfully!`, 'Success');
     } else if (this.showEditRoleModal) {
-      console.log(`✅ Role "${role.name}" updated successfully!`);
       this.toastService.success(`Role "${role.name}" updated successfully!`, 'Success');
     }
     this.loadRoles();
@@ -450,7 +448,6 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
       next: () => {
-        console.log(`✅ Role "${role.name}" deleted successfully`);
         this.toastService.success(`Role "${role.name}" deleted successfully!`, 'Role Deleted');
         this.cancelDeleteRole();
         this.loadRoles();
@@ -659,7 +656,6 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
       .subscribe({
       next: () => {
         role.active = newStatus;
-        console.log(`✅ Role "${role.name}" ${statusText} successfully`);
         this.cancelToggleRoleStatus();
         this.cdr.markForCheck();
         this.toastService.success(
@@ -843,7 +839,6 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
     ).subscribe(() => {
     this.permissionsService.deletePermission(permission.id).subscribe({
       next: () => {
-        console.log(`✅ Permission "${permission.display_name}" deleted successfully`);
         this.toastService.success(
           `Permission "${permission.display_name}" deleted successfully!`,
           'Permission Deleted'
