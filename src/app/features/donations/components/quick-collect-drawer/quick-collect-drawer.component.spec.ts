@@ -10,7 +10,7 @@ import { ToastService } from '@core/services/toast.service';
 describe('QuickCollectDrawerComponent', () => {
   let component: QuickCollectDrawerComponent;
   let quickCollectService: QuickCollectService;
-  let donationsService: jest.Mocked<Pick<DonationsService, 'createPayment' | 'getFunds' | 'getPayments' | 'getFamilyFinancialProfile' | 'getCollectContext' | 'getReceiptPreview' | 'getUpiIntent'>>;
+  let donationsService: jest.Mocked<Pick<DonationsService, 'createPayment' | 'getFunds' | 'getPayments' | 'getFamilyFinancialProfile' | 'getFamilyCollectDues' | 'getCollectContext' | 'getReceiptPreview' | 'getUpiIntent'>>;
 
   beforeEach(async () => {
     donationsService = {
@@ -18,6 +18,15 @@ describe('QuickCollectDrawerComponent', () => {
       getFunds: jest.fn().mockReturnValue(of({ success: true, data: [{ id: 'fund-1', name: 'Monthly Dues', code: 'DUES' }] })),
       getPayments: jest.fn().mockReturnValue(of({ success: true, data: { data: [] } })),
       getFamilyFinancialProfile: jest.fn().mockReturnValue(of({ success: true, data: null })),
+      getFamilyCollectDues: jest.fn().mockReturnValue(of({
+        success: true,
+        data: {
+          family_id: 'f1',
+          as_of_date: '2026-10-01',
+          summary: { collectible_due: 0, overdue_amount: 0, pending_mandatory_due: 0, pending_project_due: 0, total_paid: 0 },
+          projects: []
+        }
+      })),
       getCollectContext: jest.fn().mockReturnValue(of({
         success: true,
         data: {
@@ -138,10 +147,13 @@ describe('QuickCollectDrawerComponent', () => {
 
     component.submit();
 
-    expect(donationsService.createPayment).toHaveBeenCalledWith(expect.objectContaining({
-      method: 'online_placeholder',
-      allocations: [{ allocatable_type: 'fund', allocatable_id: 'fund-1', amount: 500 }]
-    }));
+    expect(donationsService.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'online_placeholder',
+        allocations: [{ allocatable_type: 'fund', allocatable_id: 'fund-1', amount: 500 }]
+      }),
+      expect.objectContaining({ idempotencyKey: expect.any(String) })
+    );
     expect(component.phase).toBe('success');
   });
 
@@ -211,9 +223,53 @@ describe('QuickCollectDrawerComponent', () => {
 
     component.submit();
 
-    expect(donationsService.createPayment).toHaveBeenCalledWith(expect.objectContaining({
-      allocations: [{ allocatable_type: 'due', allocatable_id: 'due-1', amount: 100 }]
+    expect(donationsService.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allocations: [{ allocatable_type: 'due', allocatable_id: 'due-1', amount: 100 }]
+      }),
+      expect.objectContaining({ idempotencyKey: expect.any(String) })
+    );
+  });
+
+  it('reuses the same idempotency key when submit is retried after failure', () => {
+    component.collectionMode = 'general';
+    component.selectedFamily = { id: 'f1', family_name: 'Smith Family', family_code: 'FAM001' } as any;
+    component.payerName = 'John Smith';
+    component.amount = 500;
+    component.fundId = 'fund-1';
+
+    donationsService.createPayment.mockReturnValue(throwError(() => ({ status: 0, message: 'network' })));
+    component.submit();
+    const firstKey = donationsService.createPayment.mock.calls[0]?.[1]?.idempotencyKey;
+
+    donationsService.createPayment.mockReturnValue(of({
+      success: true,
+      message: 'Payment recorded.',
+      data: { id: 'pay-1' } as any
     }));
+    donationsService.getReceiptPreview.mockReturnValue(of({ success: true, data: {} as any }));
+    component.submit();
+
+    const secondKey = donationsService.createPayment.mock.calls[1]?.[1]?.idempotencyKey;
+    expect(firstKey).toBeTruthy();
+    expect(secondKey).toBe(firstKey);
+  });
+
+  it('shows uncertain-outcome copy when payment status is zero', () => {
+    component.selectedFamily = { id: 'f1', family_name: 'Smith Family', family_code: 'FAM001' } as any;
+    component.payerName = 'John Smith';
+    component.amount = 500;
+    component.fundId = 'fund-1';
+
+    donationsService.createPayment.mockReturnValue(throwError(() => ({
+      status: 0,
+      message: 'Unable to reach the server right now. Please check your internet connection and try again.'
+    })));
+
+    component.submit();
+
+    expect(component.error).toContain('could not be confirmed');
+    expect(component.error).toContain('payment register');
   });
 
   it('prefills family, due, and collectible amount from authoritative collect-context', () => {
@@ -256,6 +312,68 @@ describe('QuickCollectDrawerComponent', () => {
     expect(component.amount).toBe(5000);
     expect(component.paymentDate).toBe('2026-10-01');
     expect(component.contextHint).toContain('change family, amount, category, date, or method');
+  });
+
+  it('submits mandatory dues multi-select through review with strict collection_mode', () => {
+    component.selectedFamily = { id: 'f1', family_name: 'Smith Family', family_code: 'FAM001' } as any;
+    component.payerName = 'John Smith';
+    component.fundId = 'fund-1';
+    component.collectionMode = 'mandatory_dues';
+    component.familyProfile = {
+      family_id: 'f1',
+      totals: { pending_due: 250, total_paid: 0 },
+      mandatory_contributions: {
+        outstanding_dues: [
+          {
+            id: 'due-1',
+            period_label: '2026-08',
+            due_date: '2026-08-01',
+            amount_due: 100,
+            amount_paid: 0,
+            outstanding_amount: 100,
+            plan: { name: 'Monthly Contribution' }
+          },
+          {
+            id: 'due-2',
+            period_label: '2026-09',
+            due_date: '2026-09-01',
+            amount_due: 150,
+            amount_paid: 0,
+            outstanding_amount: 150,
+            plan: { name: 'Monthly Contribution' }
+          }
+        ]
+      }
+    } as any;
+
+    component.toggleMandatoryDue(component.mandatoryCollectableDues[0]);
+    component.toggleMandatoryDue(component.mandatoryCollectableDues[1]);
+    expect(component.canContinueToReview).toBe(true);
+
+    component.goToReview();
+    expect(component.phase).toBe('review');
+
+    donationsService.createPayment.mockReturnValue(of({
+      success: true,
+      message: 'Payment recorded.',
+      data: { id: 'pay-mandatory' } as any
+    }));
+    donationsService.getReceiptPreview.mockReturnValue(of({ success: true, data: {} as any }));
+
+    component.submit();
+
+    expect(donationsService.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 250,
+        collection_mode: 'mandatory_dues',
+        allocations: [
+          { allocatable_type: 'due', allocatable_id: 'due-1', amount: 100 },
+          { allocatable_type: 'due', allocatable_id: 'due-2', amount: 150 }
+        ]
+      }),
+      expect.objectContaining({ idempotencyKey: expect.any(String) })
+    );
+    expect(component.phase).toBe('success');
   });
 
   it('lets the user change family after row prefill and drops the original due', () => {

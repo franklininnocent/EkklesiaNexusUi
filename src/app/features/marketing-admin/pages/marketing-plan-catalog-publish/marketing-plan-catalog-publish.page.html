@@ -1,24 +1,25 @@
 <section class="marketing-website cf-page mkt-plans">
   <app-page-header
-    title="Website Subscription Plans"
-    subtitle="Choose how subscription plans appear on the public marketing website. Church access is never changed here."
+    title="Marketing Website Plans"
+    subtitle="Manage the subscription plans and pricing shown on the public marketing website. Church subscriptions and entitlements are edited under Settings → Subscription."
     backLink="/settings"
     backLabel="Settings"
     [statusLabel]="headerStatusLabel"
     [statusTone]="headerStatusTone">
-    <a routerLink="/settings/subscription/plans" class="cf-btn">Edit catalog</a>
-    <a routerLink="/settings/marketing-website" class="cf-btn">Content &amp; SEO</a>
-    <button type="button" class="cf-btn" [disabled]="loading || working" (click)="reload()">Refresh</button>
+    <a routerLink="/settings/subscription/plans" class="cf-btn cf-btn-sm">Edit subscription catalog</a>
+    <a routerLink="/settings/marketing-website" class="cf-btn cf-btn-sm">Content &amp; SEO</a>
+    <button type="button" class="cf-btn cf-btn-sm" [disabled]="loading || working" (click)="reload()">Refresh</button>
   </app-page-header>
 
-  <nav class="cf-panel marketing-website__section-tabs" aria-label="Web Management sections">
+  <nav class="cf-panel marketing-website__section-tabs" aria-label="Web Management sections" *ngIf="!loading">
     <a routerLink="/settings/marketing-website" class="cf-btn cf-btn-sm">Content &amp; SEO</a>
     <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-sm cf-btn-primary" aria-current="page">Website plans</a>
+    <a routerLink="/settings/marketing-website/seo-monitoring" class="cf-btn cf-btn-sm">SEO monitoring</a>
     <a routerLink="/settings/billing" class="cf-btn cf-btn-sm">Billing &amp; payments</a>
   </nav>
 
   <div class="cf-loading-block cf-panel" *ngIf="loading" role="status" aria-busy="true">
-    <app-loading-skeleton label="Loading website subscription plans…" type="card" [rows]="5"></app-loading-skeleton>
+    <app-loading-skeleton label="Loading marketing website plans…" type="card" [rows]="5"></app-loading-skeleton>
   </div>
 
   <div class="cf-inline-alert cf-panel" *ngIf="!loading && error" role="alert">
@@ -32,18 +33,17 @@
   </div>
 
   <ng-container *ngIf="!loading && status">
-    <div class="cf-decision-strip mkt-plans__actions" role="region" aria-label="Draft actions">
+    <div class="cf-decision-strip mkt-plans__workflow" role="region" aria-label="Draft workflow">
       <div class="cf-decision-strip__copy">
-        <strong>{{ visibilityDirty ? 'Unsaved draft changes' : (status.draft ? 'Draft is ready to review' : 'No website draft yet') }}</strong>
+        <strong>{{ visibilityDirty ? 'Unsaved draft changes' : (status.draft ? 'Draft ready for review' : 'No website draft yet') }}</strong>
         <span>
-          Create a draft from Subscription, hide features per plan if needed, preview, then publish.
-          Visitors only see an approved revision.
+          Snapshot the subscription catalog, adjust website visibility, preview, then publish. Visitors only see an approved revision.
         </span>
       </div>
       <div class="mkt-plans__action-buttons">
         <button
           type="button"
-          class="cf-btn"
+          class="cf-btn cf-btn-sm"
           [disabled]="!!generateDisabledReason"
           [attr.title]="generateDisabledReason || null"
           (click)="generatePreview()">
@@ -51,15 +51,15 @@
         </button>
         <button
           type="button"
-          class="cf-btn"
+          class="cf-btn cf-btn-sm"
           [disabled]="!visibilityDirty || savingVisibility || !editor?.editable"
           (click)="saveVisibility()">
-          Save draft
+          {{ savingVisibility ? 'Saving…' : 'Save draft' }}
         </button>
-        <button type="button" class="cf-btn" [disabled]="!status.draft" (click)="goToPreview()">Preview</button>
+        <button type="button" class="cf-btn cf-btn-sm" [disabled]="!status.draft" (click)="goToPreview()">Preview</button>
         <button
           type="button"
-          class="cf-btn cf-btn-primary"
+          class="cf-btn cf-btn-sm cf-btn-primary"
           [disabled]="!!publishDisabledReason"
           [attr.title]="publishDisabledReason || null"
           (click)="goToPublish()">
@@ -72,166 +72,269 @@
       [tabs]="workspaceTabs"
       [activeId]="workspaceTab"
       density="compact"
-      ariaLabel="Website subscription plan sections"
+      ariaLabel="Marketing website plan sections"
       (tabChange)="onWorkspaceTabChange($event)">
     </app-tab-strip>
 
-    <div class="mkt-plans__workspace" id="panel-workspace" role="tabpanel" [attr.aria-labelledby]="'tab-' + workspaceTab">
+    <div class="mkt-plans__workspace marketing-website__tabpanel" id="panel-workspace" role="tabpanel" [attr.aria-labelledby]="'tab-' + workspaceTab">
       <ng-container *ngIf="workspaceTab === 'overview'">
-        <div class="mkt-plans__overview">
-          <section class="cf-panel">
-            <h2 class="marketing-website__panel-title">Live website</h2>
-            <ng-container *ngIf="status.published; else noLive">
-              <dl class="marketing-website__meta">
-                <div>
-                  <dt>Revision</dt>
-                  <dd>#{{ status.published.revision_number }}</dd>
+        <div class="marketing-website__layout mkt-plans__overview-layout">
+          <aside class="marketing-website__aside" aria-label="Publication status">
+            <section class="cf-panel marketing-website__status-card">
+              <div class="marketing-website__panel-head">
+                <h2 class="marketing-website__panel-title">Live on website</h2>
+                <app-status-badge *ngIf="status.published" label="Published" tone="success"></app-status-badge>
+              </div>
+              <ng-container *ngIf="status.published; else noLive">
+                <dl class="marketing-website__meta">
+                  <div>
+                    <dt>Revision</dt>
+                    <dd>#{{ status.published.revision_number }}</dd>
+                  </div>
+                  <div *ngIf="status.published.published_at">
+                    <dt>Published</dt>
+                    <dd>{{ status.published.published_at | cfDate: 'datetime' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Plans shown</dt>
+                    <dd>{{ status.published.plan_codes?.join(', ') }}</dd>
+                  </div>
+                </dl>
+                <p class="cf-meta">
+                  <a [href]="publicPricingUrl" target="_blank" rel="noopener noreferrer">Open public pricing page</a>
+                </p>
+              </ng-container>
+              <ng-template #noLive>
+                <app-cf-empty-state
+                  title="Nothing live yet"
+                  description="The marketing pricing section stays empty until you publish an approved draft.">
+                </app-cf-empty-state>
+              </ng-template>
+            </section>
+
+            <section class="cf-panel marketing-website__status-card">
+              <div class="marketing-website__panel-head">
+                <h2 class="marketing-website__panel-title">Working draft</h2>
+                <app-status-badge
+                  *ngIf="status.draft"
+                  [label]="visibilityDirty ? 'Unsaved changes' : 'Draft'"
+                  [tone]="visibilityDirty ? 'warning' : 'info'"></app-status-badge>
+              </div>
+              <ng-container *ngIf="status.draft as draft; else noDraft">
+                <dl class="marketing-website__meta">
+                  <div>
+                    <dt>Revision</dt>
+                    <dd>#{{ draft.revision_number }}</dd>
+                  </div>
+                  <div *ngIf="draft.generated_at">
+                    <dt>Created</dt>
+                    <dd>{{ draft.generated_at | cfDate: 'datetime' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Plans</dt>
+                    <dd>{{ draft.plan_count }} · {{ draft.plan_codes?.join(', ') }}</dd>
+                  </div>
+                  <div>
+                    <dt>Hidden features</dt>
+                    <dd>{{ draft.hidden_feature_count ?? 0 }}</dd>
+                  </div>
+                </dl>
+                <div class="mkt-plans__inline-actions">
+                  <button type="button" class="cf-btn cf-btn-sm" (click)="onWorkspaceTabChange('plans')">Edit plans</button>
+                  <button type="button" class="cf-btn cf-btn-sm" [disabled]="!status.draft" (click)="goToPreview()">Preview</button>
                 </div>
-                <div *ngIf="status.published.published_at">
-                  <dt>Published</dt>
-                  <dd>{{ status.published.published_at | cfDate: 'datetime' }}</dd>
-                </div>
-                <div>
-                  <dt>Plans</dt>
-                  <dd>{{ status.published.plan_codes?.join(', ') }}</dd>
-                </div>
-              </dl>
-              <p class="cf-meta">
-                <a [href]="publicPricingUrl" target="_blank" rel="noopener noreferrer">Open public pricing</a>
+              </ng-container>
+              <ng-template #noDraft>
+                <p class="cf-meta">Create a draft to snapshot the current public subscription catalog for the website.</p>
+                <button
+                  type="button"
+                  class="cf-btn cf-btn-sm cf-btn-primary"
+                  [disabled]="!!generateDisabledReason"
+                  [attr.title]="generateDisabledReason || null"
+                  (click)="generatePreview()">
+                  Create draft
+                </button>
+              </ng-template>
+            </section>
+          </aside>
+
+          <div class="mkt-plans__overview-main">
+            <section class="cf-panel">
+              <h2 class="marketing-website__panel-title">Subscription catalog source</h2>
+              <p class="cf-meta mkt-plans__section-lead">
+                {{ status.readiness?.live_plan_count ?? 0 }} public plan(s) available to snapshot:
+                <strong>{{ status.readiness?.plan_codes?.join(', ') || 'None' }}</strong>
               </p>
-            </ng-container>
-            <ng-template #noLive>
-              <app-cf-empty-state
-                title="Nothing live yet"
-                description="The marketing pricing section stays empty until you publish an approved draft.">
-              </app-cf-empty-state>
-            </ng-template>
-          </section>
+              <p class="cf-meta">
+                Prices, limits, and entitlements come from
+                <a routerLink="/settings/subscription/plans">Settings → Subscription</a>.
+                This page controls website visibility and publication only.
+              </p>
+            </section>
 
-          <section class="cf-panel">
-            <h2 class="marketing-website__panel-title">Current draft</h2>
-            <ng-container *ngIf="status.draft as draft; else noDraft">
-              <dl class="marketing-website__meta">
-                <div>
-                  <dt>Revision</dt>
-                  <dd>#{{ draft.revision_number }}</dd>
-                </div>
-                <div *ngIf="draft.generated_at">
-                  <dt>Created</dt>
-                  <dd>{{ draft.generated_at | cfDate: 'datetime' }}</dd>
-                </div>
-                <div>
-                  <dt>Plans</dt>
-                  <dd>{{ draft.plan_count }} · {{ draft.plan_codes?.join(', ') }}</dd>
-                </div>
-                <div>
-                  <dt>Hidden features</dt>
-                  <dd>{{ draft.hidden_feature_count ?? 0 }}</dd>
-                </div>
-              </dl>
-            </ng-container>
-            <ng-template #noDraft>
-              <p class="cf-meta">Create a draft to snapshot the current public subscription catalog.</p>
-            </ng-template>
-          </section>
+            <div class="cf-panel mkt-plans__alert-panel" *ngIf="status.readiness?.blocking_errors?.length" role="alert">
+              <h2 class="marketing-website__panel-title">Fix before creating a draft</h2>
+              <ul class="mkt-plans__list">
+                <li *ngFor="let err of status.readiness.blocking_errors">{{ err }}</li>
+              </ul>
+            </div>
 
-          <section class="cf-panel">
-            <h2 class="marketing-website__panel-title">Subscription catalog</h2>
-            <p class="cf-meta">{{ status.readiness?.live_plan_count ?? 0 }} public plan(s) available to snapshot.</p>
-            <p class="cf-meta">{{ status.readiness?.plan_codes?.join(', ') || 'None' }}</p>
-            <p class="cf-meta">
-              Prices, limits and entitlements are edited in
-              <a routerLink="/settings/subscription/plans">Settings → Subscription</a>.
-            </p>
-          </section>
+            <div class="cf-panel" *ngIf="status.readiness?.warnings?.length">
+              <h2 class="marketing-website__panel-title">Warnings</h2>
+              <ul class="mkt-plans__list mkt-plans__list--plain">
+                <li *ngFor="let warn of status.readiness.warnings">{{ warn }}</li>
+              </ul>
+            </div>
+
+            <div class="cf-panel marketing-admin-callout marketing-admin-callout--warn" *ngIf="status.drift_from_published || status.drift_from_draft">
+              <h2 class="marketing-website__panel-title">Subscription catalog changed</h2>
+              <p class="cf-meta" *ngIf="status.drift_from_published">The catalog changed since the live website revision was published.</p>
+              <p class="cf-meta" *ngIf="status.drift_from_draft">The catalog changed since this draft was created. Refresh the draft to resnapshot.</p>
+            </div>
+          </div>
         </div>
 
-        <div class="cf-panel" *ngIf="status.readiness?.blocking_errors?.length" role="alert">
-          <h2 class="marketing-website__panel-title">Fix before creating a draft</h2>
-          <ul class="mkt-plans__list">
-            <li *ngFor="let err of status.readiness.blocking_errors">{{ err }}</li>
-          </ul>
-        </div>
-        <div class="cf-panel" *ngIf="status.readiness?.warnings?.length">
-          <h2 class="marketing-website__panel-title">Warnings</h2>
-          <ul class="mkt-plans__list">
-            <li *ngFor="let warn of status.readiness.warnings">{{ warn }}</li>
-          </ul>
-        </div>
-        <div class="cf-panel" *ngIf="status.drift_from_published || status.drift_from_draft">
-          <h2 class="marketing-website__panel-title">Catalog changed</h2>
-          <p class="cf-meta" *ngIf="status.drift_from_published">The subscription catalog changed since the live website revision.</p>
-          <p class="cf-meta" *ngIf="status.drift_from_draft">The subscription catalog changed since this draft was created. Refresh the draft to resnapshot.</p>
-        </div>
+        <section class="cf-panel mkt-plans__history" *ngIf="revisions.length" aria-labelledby="revision-history-heading">
+          <div class="marketing-website__panel-head">
+            <div>
+              <h2 id="revision-history-heading" class="marketing-website__panel-title">Revision history</h2>
+              <p class="cf-meta">Past drafts and published snapshots. Open a preview without changing the live site.</p>
+            </div>
+          </div>
+          <div class="mkt-plans__table-wrap">
+            <table class="cf-table mkt-plans__history-table">
+              <caption class="visually-hidden">Marketing website plan catalog revisions</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Revision</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Plans</th>
+                  <th scope="col">Created</th>
+                  <th scope="col">Published</th>
+                  <th scope="col" class="cf-table__actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of revisions">
+                  <th scope="row">#{{ row.revision_number }}</th>
+                  <td>
+                    <app-status-badge [label]="revisionStatusLabel(row.status)" [tone]="revisionTone(row.status)"></app-status-badge>
+                    <span class="cf-meta mkt-plans__row-tag" *ngIf="isLiveRevision(row.id)">Live</span>
+                    <span class="cf-meta mkt-plans__row-tag" *ngIf="isCurrentDraftRevision(row.id)">Current draft</span>
+                  </td>
+                  <td>{{ row.plan_count }}</td>
+                  <td>{{ row.generated_at ? (row.generated_at | cfDate: 'datetime') : '—' }}</td>
+                  <td>{{ row.published_at ? (row.published_at | cfDate: 'datetime') : '—' }}</td>
+                  <td class="cf-table__actions-cell">
+                    <div class="mkt-plans__table-actions">
+                      <button
+                        type="button"
+                        class="cf-btn cf-btn-sm"
+                        [disabled]="previewLoading"
+                        (click)="openPreviewInNewTab(row.id)">
+                        Preview site
+                      </button>
+                      <button
+                        type="button"
+                        class="cf-btn cf-btn-sm"
+                        *ngIf="isCurrentDraftRevision(row.id)"
+                        (click)="onWorkspaceTabChange('publish')">
+                        Publish
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </ng-container>
 
       <ng-container *ngIf="workspaceTab === 'plans'">
-        <p class="cf-meta mkt-plans__lead">
-          Choose which plans appear on the marketing homepage and confirm regional prices below. Homepage plan feature lists use fixed website copy for now; only plan names and prices come from this published catalog.
-        </p>
+        <section class="cf-panel mkt-plans__plans-intro">
+          <h2 class="marketing-website__panel-title">Plans on the marketing website</h2>
+          <p class="cf-meta">
+            Choose which plans appear on the homepage and confirm regional prices. Homepage feature lists use fixed website copy for now; plan names and prices come from this published catalog.
+          </p>
+        </section>
+
         <app-cf-empty-state
           *ngIf="!status.draft"
           title="No draft yet"
           description="Create a draft from Overview to review how each plan will appear on the website.">
         </app-cf-empty-state>
+
         <div class="mkt-plans__plan-grid" *ngIf="workingPlans.length">
-          <article class="cf-panel mkt-plans__plan" *ngFor="let plan of workingPlans">
+          <article class="cf-panel mkt-plans__plan" [class.mkt-plans__plan--hidden]="!plan.listed" *ngFor="let plan of workingPlans">
             <div class="mkt-plans__plan-head">
-              <div>
+              <div class="mkt-plans__plan-title">
                 <h3>{{ plan.name }}</h3>
                 <p class="cf-meta">{{ plan.code }}</p>
               </div>
-              <app-status-badge
-                *ngIf="publicPlan(plan.code)?.badge_label as badge"
-                [label]="badge"
-                tone="info"></app-status-badge>
+              <div class="mkt-plans__plan-badges">
+                <app-status-badge
+                  [label]="plan.listed ? 'On website' : 'Hidden'"
+                  [tone]="plan.listed ? 'success' : 'neutral'"></app-status-badge>
+                <app-status-badge
+                  *ngIf="publicPlan(plan.code)?.badge_label as badge"
+                  [label]="badge"
+                  tone="info"></app-status-badge>
+              </div>
             </div>
-            <p *ngIf="publicPlan(plan.code)?.short_description">{{ publicPlan(plan.code)?.short_description }}</p>
-            <dl class="marketing-website__meta">
-              <div>
-                <dt>Pricing</dt>
-                <dd *ngIf="publicPlan(plan.code)?.pricing_type === 'CUSTOM'">Custom pricing</dd>
-                <dd *ngIf="publicPlan(plan.code)?.pricing_type === 'FREE'">Free</dd>
-                <dd *ngIf="publicPlan(plan.code)?.pricing_type === 'FIXED'">
-                  <ng-container *ngIf="publicPlan(plan.code)?.monthly_price as monthly">
-                    {{ monthly | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / month
-                  </ng-container>
-                  <ng-container *ngIf="publicPlan(plan.code)?.annual_price as annual">
-                    · {{ annual | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / year
-                  </ng-container>
-                  <span class="cf-meta">Default list terms (subscription catalog).</span>
-                </dd>
-              </div>
-              <div *ngIf="regionalPriceRows(publicPlan(plan.code)).length">
-                <dt>Website regional pricing</dt>
-                <dd>
-                  <ul class="mkt-plans__regional-list">
-                    <li *ngFor="let row of regionalPriceRows(publicPlan(plan.code))">
-                      <span class="mkt-plans__regional-label">{{ row.label }}</span>
-                      <ng-container *ngIf="row.monthly as monthly">
-                        {{ monthly | cfCurrency: row.currency }} / month
-                      </ng-container>
-                      <ng-container *ngIf="row.annual as annual">
-                        · {{ annual | cfCurrency: row.currency }} / year
-                      </ng-container>
-                    </li>
-                  </ul>
-                </dd>
-              </div>
-              <div *ngIf="publicPlan(plan.code)?.billing_intervals?.length">
-                <dt>Billing</dt>
-                <dd>{{ publicPlan(plan.code)?.billing_intervals?.join(', ') }}</dd>
-              </div>
-            </dl>
-            <label class="mkt-plans__list-toggle">
-              <input
-                type="checkbox"
-                [checked]="plan.listed"
-                [disabled]="!editor?.editable"
-                (change)="setPlanListed(plan.code, $any($event.target).checked)" />
-              <span>Show this plan on the website</span>
-            </label>
-            <p class="cf-meta" *ngIf="!plan.listed">Hidden from the website until you check this and publish.</p>
+
+            <p class="mkt-plans__plan-desc" *ngIf="publicPlan(plan.code)?.short_description">{{ publicPlan(plan.code)?.short_description }}</p>
+
+            <div class="mkt-plans__price-block" *ngIf="publicPlan(plan.code) as pub">
+              <h4 class="mkt-plans__subheading">Pricing</h4>
+              <p class="mkt-plans__price-line" *ngIf="pub.pricing_type === 'CUSTOM'">Custom pricing</p>
+              <p class="mkt-plans__price-line" *ngIf="pub.pricing_type === 'FREE'">Free</p>
+              <ng-container *ngIf="pub.pricing_type === 'FIXED'">
+                <p class="mkt-plans__price-line" *ngIf="pub.monthly_price as monthly">
+                  <span class="mkt-plans__price-amount">{{ monthly | cfCurrency: $safeNavigationMigration(pub.currency_code) }}</span>
+                  <span class="cf-meta">/ month</span>
+                </p>
+                <p class="mkt-plans__price-line" *ngIf="pub.annual_price as annual">
+                  <span class="mkt-plans__price-amount">{{ annual | cfCurrency: $safeNavigationMigration(pub.currency_code) }}</span>
+                  <span class="cf-meta">/ year</span>
+                </p>
+                <p class="cf-meta">Default list terms from the subscription catalog.</p>
+              </ng-container>
+
+              <ul class="mkt-plans__regional-list" *ngIf="regionalPriceRows(pub).length">
+                <li *ngFor="let row of regionalPriceRows(pub)" class="mkt-plans__regional-row">
+                  <span class="mkt-plans__regional-label">{{ row.label }}</span>
+                  <span class="mkt-plans__regional-prices">
+                    <ng-container *ngIf="row.monthly as monthly">{{ monthly | cfCurrency: row.currency }} / mo</ng-container>
+                    <ng-container *ngIf="row.annual as annual">
+                      <span *ngIf="row.monthly"> · </span>{{ annual | cfCurrency: row.currency }} / yr
+                    </ng-container>
+                  </span>
+                </li>
+              </ul>
+
+              <p class="cf-meta" *ngIf="pub.billing_intervals?.length">
+                Billing intervals: {{ pub.billing_intervals?.join(', ') }}
+              </p>
+            </div>
+
+            <div class="mkt-plans__limits-block" *ngIf="publicPlan(plan.code)?.limits?.length">
+              <h4 class="mkt-plans__subheading">Limits</h4>
+              <ul class="mkt-plans__limits">
+                <li *ngFor="let limit of publicPlan(plan.code)!.limits">{{ limitLabel(limit) }}</li>
+              </ul>
+            </div>
+
+            <div class="mkt-plans__plan-footer">
+              <label class="mkt-plans__list-toggle">
+                <input
+                  type="checkbox"
+                  [checked]="plan.listed"
+                  [disabled]="!editor?.editable"
+                  (change)="setPlanListed(plan.code, $any($event.target).checked)" />
+                <span>Show this plan on the website</span>
+              </label>
+              <button type="button" class="cf-btn cf-btn-sm" (click)="selectPlan(plan.code)">Manage features</button>
+            </div>
           </article>
         </div>
       </ng-container>
@@ -242,19 +345,20 @@
           title="No draft features"
           description="Create a draft first, then choose which eligible features each plan shows on the website.">
         </app-cf-empty-state>
+
         <section class="cf-panel mkt-plans__features" *ngIf="selectedPlan && editor" aria-labelledby="visibility-heading">
           <div class="marketing-website__panel-head">
             <div>
               <h2 id="visibility-heading" class="marketing-website__panel-title">Feature visibility — {{ selectedPlan.name }}</h2>
-              <p class="cf-meta">Hiding a feature here only hides it on the marketing website for this plan.</p>
-              <p class="cf-meta" *ngIf="!selectedPlan.listed">This plan is unchecked on Plans, so it will not appear on the website.</p>
+              <p class="cf-meta">Hiding a feature here only affects the marketing website for this plan.</p>
+              <p class="cf-meta" *ngIf="!selectedPlan.listed">This plan is hidden on the Plans tab and will not appear on the website.</p>
             </div>
             <app-status-badge
               [label]="visibilityDirty ? 'Unsaved changes' : 'Saved on draft'"
               [tone]="visibilityDirty ? 'warning' : 'success'"></app-status-badge>
           </div>
 
-          <div class="cf-inline-alert" *ngIf="hiddenFromAll.length" role="status">
+          <div class="marketing-admin-callout" *ngIf="hiddenFromAll.length" role="status">
             Hidden from every plan (comparison row omitted): {{ hiddenFromAll.join(', ') }}
           </div>
 
@@ -272,19 +376,21 @@
                 <span class="cf-meta">{{ plan.visible_count }}/{{ plan.features.length }}</span>
               </button>
             </div>
-            <label class="mkt-plans__search">
-              <span class="visually-hidden">Search features</span>
-              <input
-                type="search"
-                class="mkt-plans__search-input"
-                [ngModel]="featureQuery"
-                (ngModelChange)="onFeatureQueryChange($event)"
-                placeholder="Search features" />
-            </label>
-            <div class="mkt-plans__filters" role="group" aria-label="Feature filter">
-              <button type="button" class="cf-btn cf-btn-sm" [class.cf-btn-primary]="featureFilter === 'all'" (click)="setFeatureFilter('all')">All</button>
-              <button type="button" class="cf-btn cf-btn-sm" [class.cf-btn-primary]="featureFilter === 'visible'" (click)="setFeatureFilter('visible')">Visible</button>
-              <button type="button" class="cf-btn cf-btn-sm" [class.cf-btn-primary]="featureFilter === 'hidden'" (click)="setFeatureFilter('hidden')">Hidden</button>
+            <div class="mkt-plans__feature-toolbar-row">
+              <label class="mkt-plans__search">
+                <span class="mkt-plans__search-label">Search</span>
+                <input
+                  type="search"
+                  class="cf-input mkt-plans__search-input"
+                  [ngModel]="featureQuery"
+                  (ngModelChange)="onFeatureQueryChange($event)"
+                  placeholder="Feature name or code" />
+              </label>
+              <div class="mkt-plans__filters" role="group" aria-label="Feature filter">
+                <button type="button" class="cf-btn cf-btn-sm" [class.cf-btn-primary]="featureFilter === 'all'" (click)="setFeatureFilter('all')">All</button>
+                <button type="button" class="cf-btn cf-btn-sm" [class.cf-btn-primary]="featureFilter === 'visible'" (click)="setFeatureFilter('visible')">Visible</button>
+                <button type="button" class="cf-btn cf-btn-sm" [class.cf-btn-primary]="featureFilter === 'hidden'" (click)="setFeatureFilter('hidden')">Hidden</button>
+              </div>
             </div>
           </div>
 
@@ -293,7 +399,7 @@
               *ngFor="let feature of filteredFeatures(selectedPlan)"
               class="mkt-plans__feature"
               [class.mkt-plans__feature--hidden]="!feature.visible">
-              <div>
+              <div class="mkt-plans__feature-copy">
                 <strong>{{ feature.name }}</strong>
                 <span class="cf-meta">{{ feature.category }}</span>
                 <p class="cf-meta" *ngIf="feature.description">{{ feature.description }}</p>
@@ -304,7 +410,7 @@
                   [checked]="feature.visible"
                   [attr.aria-label]="(feature.visible ? 'Hide on website: ' : 'Show on website: ') + feature.name"
                   (change)="setFeatureVisible(selectedPlan.code, feature.code, $any($event.target).checked)" />
-                <span>{{ feature.visible ? 'Show on website' : 'Hide on website' }}</span>
+                <span>{{ feature.visible ? 'Visible on website' : 'Hidden on website' }}</span>
               </label>
               <button
                 type="button"
@@ -323,34 +429,39 @@
         <section class="cf-panel">
           <div class="marketing-website__panel-head">
             <div>
-              <h2 class="marketing-website__panel-title">PREVIEW — NOT PUBLISHED</h2>
-              <p class="cf-meta">This is the draft visitors will see only after you publish. Unsaved visibility changes appear here immediately.</p>
+              <h2 class="marketing-website__panel-title">Draft preview</h2>
+              <p class="cf-meta">Not published — visitors see this only after you publish. Unsaved visibility changes appear here immediately.</p>
             </div>
             <div class="mkt-plans__viewport" *ngIf="status.draft as draft">
               <button type="button" class="cf-btn cf-btn-sm" [disabled]="previewLoading" (click)="openPreviewInNewTab(draft.id)">Open site preview</button>
-              <button type="button" class="cf-btn cf-btn-sm" [disabled]="previewLoading" (click)="openPreview(draft.id)">Show site frame</button>
+              <button type="button" class="cf-btn cf-btn-sm cf-btn-primary" [disabled]="previewLoading" (click)="openPreview(draft.id)">Show site frame</button>
             </div>
           </div>
+
           <app-cf-empty-state
             *ngIf="!previewCards.length"
             title="Nothing to preview"
-            description="Create a draft to preview website pricing cards and the comparison table.">
+            description="Create a draft and ensure at least one plan is shown on the website.">
           </app-cf-empty-state>
+
           <div class="mkt-plans__card-grid" *ngIf="previewCards.length">
             <article class="mkt-plans__preview-card" *ngFor="let plan of previewCards">
               <h3>{{ plan.name }}</h3>
               <p class="cf-meta" *ngIf="publicPlan(plan.code)?.pricing_type === 'CUSTOM'">Custom pricing</p>
-              <p class="cf-meta" *ngIf="publicPlan(plan.code)?.pricing_type === 'FIXED' && publicPlan(plan.code)?.monthly_price">
-                {{ $safeNavigationMigration(publicPlan(plan.code)?.monthly_price) | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }} / month
+              <p class="mkt-plans__price-line" *ngIf="publicPlan(plan.code)?.pricing_type === 'FIXED' && publicPlan(plan.code)?.monthly_price">
+                <span class="mkt-plans__price-amount">{{ $safeNavigationMigration(publicPlan(plan.code)?.monthly_price) | cfCurrency: $safeNavigationMigration(publicPlan(plan.code)?.currency_code) }}</span>
+                <span class="cf-meta">/ month</span>
               </p>
-              <ul>
+              <ul class="mkt-plans__preview-features">
                 <li *ngFor="let feature of cardFeatures(plan)">{{ feature.name }}</li>
                 <li *ngIf="cardFeatures(plan).length === 0" class="cf-meta">No features shown</li>
               </ul>
             </article>
           </div>
+
           <div class="mkt-plans__compare-wrap" *ngIf="previewComparisonRows.length">
-            <table class="mkt-plans__compare">
+            <h3 class="mkt-plans__subheading">Comparison table (draft)</h3>
+            <table class="cf-table mkt-plans__compare">
               <caption class="visually-hidden">Draft plan comparison</caption>
               <thead>
                 <tr>
@@ -390,16 +501,20 @@
       </ng-container>
 
       <ng-container *ngIf="workspaceTab === 'publish'">
-        <section class="cf-panel">
+        <section class="cf-panel mkt-plans__publish">
           <h2 class="marketing-website__panel-title">Review and publish</h2>
-          <p class="cf-meta">Publishing replaces the live marketing catalog. A failed publish leaves the current website unchanged.</p>
+          <p class="cf-meta mkt-plans__section-lead">
+            Publishing replaces the live marketing catalog. A failed publish leaves the current website unchanged.
+          </p>
+
           <app-cf-empty-state
             *ngIf="!status.draft"
             title="No draft to publish"
             description="Create and review a draft before publishing.">
           </app-cf-empty-state>
+
           <ng-container *ngIf="status.draft as draft">
-            <dl class="marketing-website__meta">
+            <dl class="marketing-website__meta mkt-plans__publish-meta">
               <div>
                 <dt>Draft revision</dt>
                 <dd>#{{ draft.revision_number }}</dd>
@@ -408,34 +523,42 @@
                 <dt>Currently live</dt>
                 <dd>#{{ status.published.revision_number }}</dd>
               </div>
+              <div>
+                <dt>Plans in draft</dt>
+                <dd>{{ draft.plan_count }}</dd>
+              </div>
             </dl>
-            <div *ngIf="publishDiff as diff">
+
+            <div class="mkt-plans__diff" *ngIf="publishDiff as diff">
+              <h3 class="mkt-plans__subheading">Changes versus live website</h3>
               <p class="cf-meta" *ngIf="!diff.added.length && !diff.removed.length && !diff.changed.length && !diff.visibility?.hidden?.length && !diff.visibility?.restored?.length && !diff.visibility?.plans?.hidden?.length && !diff.visibility?.plans?.restored?.length">
                 No catalog differences versus the live website, except any unpublished visibility already saved on this draft.
               </p>
-              <ul class="mkt-plans__list">
-                <li *ngIf="diff.added.length">Added plans: {{ diff.added.join(', ') }}</li>
-                <li *ngIf="diff.removed.length">Removed plans: {{ diff.removed.join(', ') }}</li>
-                <li *ngIf="diff.changed.length">Changed plans: {{ diff.changed.join(', ') }}</li>
-                <li *ngIf="diff.visibility?.plans?.hidden?.length">Hidden from website: {{ (diff.visibility?.plans?.hidden ?? []).join(', ') }}</li>
-                <li *ngIf="diff.visibility?.plans?.restored?.length">Restored on website: {{ (diff.visibility?.plans?.restored ?? []).join(', ') }}</li>
-                <li *ngFor="let row of diff.visibility?.hidden ?? []">Hidden: {{ row.name }} on {{ row.plan_code }}</li>
-                <li *ngFor="let row of diff.visibility?.restored ?? []">Restored: {{ row.name }} on {{ row.plan_code }}</li>
-                <li *ngIf="(diff.hidden_from_all?.length ?? 0) > 0">Hidden from every plan: {{ (diff.hidden_from_all ?? []).join(', ') }}</li>
+              <ul class="mkt-plans__diff-list" *ngIf="diff.added.length || diff.removed.length || diff.changed.length || diff.visibility?.hidden?.length || diff.visibility?.restored?.length || diff.visibility?.plans?.hidden?.length || diff.visibility?.plans?.restored?.length || (diff.hidden_from_all?.length ?? 0) > 0">
+                <li *ngIf="diff.added.length"><strong>Added plans:</strong> {{ diff.added.join(', ') }}</li>
+                <li *ngIf="diff.removed.length"><strong>Removed plans:</strong> {{ diff.removed.join(', ') }}</li>
+                <li *ngIf="diff.changed.length"><strong>Changed plans:</strong> {{ diff.changed.join(', ') }}</li>
+                <li *ngIf="diff.visibility?.plans?.hidden?.length"><strong>Hidden from website:</strong> {{ (diff.visibility?.plans?.hidden ?? []).join(', ') }}</li>
+                <li *ngIf="diff.visibility?.plans?.restored?.length"><strong>Restored on website:</strong> {{ (diff.visibility?.plans?.restored ?? []).join(', ') }}</li>
+                <li *ngFor="let row of diff.visibility?.hidden ?? []"><strong>Hidden:</strong> {{ row.name }} ({{ row.plan_code }})</li>
+                <li *ngFor="let row of diff.visibility?.restored ?? []"><strong>Restored:</strong> {{ row.name }} ({{ row.plan_code }})</li>
+                <li *ngIf="(diff.hidden_from_all?.length ?? 0) > 0"><strong>Hidden from every plan:</strong> {{ (diff.hidden_from_all ?? []).join(', ') }}</li>
               </ul>
             </div>
-            <div class="mkt-plans__action-buttons">
-              <button type="button" class="cf-btn" (click)="goToPreview()">Back to preview</button>
+
+            <div class="mkt-plans__publish-actions">
+              <button type="button" class="cf-btn cf-btn-sm" (click)="goToPreview()">Back to preview</button>
               <button
                 type="button"
-                class="cf-btn cf-btn-primary"
+                class="cf-btn cf-btn-sm cf-btn-primary"
                 [disabled]="!!publishDisabledReason || working"
                 [attr.title]="publishDisabledReason || null"
                 (click)="approvePublish(draft)">
                 Publish to website
               </button>
             </div>
-            <p class="cf-meta" *ngIf="status.revalidate_status === 'failed'">
+
+            <p class="cf-meta mkt-plans__revalidate" *ngIf="status.revalidate_status === 'failed'">
               Cache refresh failed after the last publish.
               <button type="button" class="cf-btn cf-btn-sm" (click)="retryRevalidate()">Retry refresh</button>
             </p>

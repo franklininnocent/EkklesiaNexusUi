@@ -38,6 +38,7 @@ describe('WebSettingsPage', () => {
                   from_name_configured: true,
                   queue_connection: 'sync',
                   smtp_host_configured: true,
+                  smtp_host: 'smtppro.zoho.in',
                   smtp_port: 587,
                   smtp_username_configured: false,
                   smtp_password_configured: false,

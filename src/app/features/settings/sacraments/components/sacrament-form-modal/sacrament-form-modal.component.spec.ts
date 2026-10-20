@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { Router } from '@angular/router';
 import { SacramentFormModalComponent } from './sacrament-form-modal.component';
 import { SacramentService } from '../../services/sacrament.service';
 import { ToastService } from '@core/services/toast.service';
+import { AuthService } from '@core/services/auth.service';
 import { TenantService } from '@core/services/tenant.service';
 import { BCCService } from '@core/services/bcc.service';
 import { FamilyService } from '@core/services/family.service';
@@ -136,6 +138,8 @@ describe('SacramentFormModalComponent', () => {
         { provide: ParishPersonService, useValue: personStub },
         { provide: SacramentDefinitionService, useValue: definitionStub },
         { provide: SacramentPersonContextService, useValue: contextStub },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
+        { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } },
         provideMockStore({ initialState: {} })
       ],
       schemas: [NO_ERRORS_SCHEMA]
@@ -422,5 +426,183 @@ describe('SacramentFormModalComponent', () => {
     component.personDraft.first_name = 'Grace';
     component.personDraft.last_name = 'Thomas';
     expect(component.validateForm()).toBe(true);
+  });
+
+  function baptismFormReady(): void {
+    component.formData = {
+      sacrament_type_id: 1,
+      recipient_name: 'John',
+      date_administered: '2025-01-01',
+      minister_name: 'Fr. Thomas',
+      place_administered: 'St. Mary',
+      recipient_birth_date: '2015-01-01',
+      recipient_birth_place: 'Parish City',
+      recipient_gender: 'male',
+      father_name: 'Joseph',
+      mother_name: 'Mary'
+    } as any;
+    component.ministerDraft = {
+      role: 'minister',
+      source: 'external',
+      external_full_name: 'Fr. Thomas',
+    } as any;
+  }
+
+  it('prefills profile-only baptism details and does not treat them as a register duplicate', () => {
+    (contextStub.getContext as jasmine.Spy).and.returnValue(of({
+      subject: { family_member_id: 'm1', display_name: 'John Connor' },
+      sacraments: {
+        baptism: {
+          record_status: 'FOUND',
+          register_record_status: 'NOT_FOUND',
+          evidence_tier: 'MEMBER_PROFILE',
+          candidates: [],
+          evidence: {
+            sacrament_id: null,
+            date: { value: '2011-12-25' },
+            baptism_location_type: 'other',
+            baptism_church_name: 'Sacred Heart of Jesus Church Demo',
+            baptism_godparent_primary: 'Felix A. Romo',
+            baptism_godparent_secondary: 'Kristi D. Carr',
+          }
+        }
+      },
+      conflicts: [],
+      record_status: { baptism: 'FOUND', baptism_register: 'NOT_FOUND' },
+    }));
+    component.formData['sacrament_type_id'] = 1;
+    component.formData['place_administered'] = 'St. Mary Parish';
+    component.homeParishDisplayName = 'St. Mary Parish';
+    component.applyMemberAsRecipient({
+      id: 'm1',
+      first_name: 'John',
+      last_name: 'Connor',
+      baptism_date: '2011-12-25',
+    } as any);
+
+    expect(component.formData['date_administered']).toBe('2011-12-25');
+    expect(component.formData['place_administered']).toBe('Sacred Heart of Jesus Church Demo');
+    expect(component.formData['godparent1_name']).toBe('Felix A. Romo');
+    expect(component.formData['godparent2_name']).toBe('Kristi D. Carr');
+    expect(component.baptismRegisterBlocksCreate).toBe(false);
+    expect(component.baptismEligibilityKind).toBe('profile');
+    baptismFormReady();
+    component.formData['date_administered'] = '2011-12-25';
+    component.formData['place_administered'] = 'Sacred Heart of Jesus Church Demo';
+    expect(component.validateForm()).toBe(true);
+  });
+
+  it('blocks create when a current-parish baptism register entry exists', () => {
+    (contextStub.getContext as jasmine.Spy).and.returnValue(of({
+      sacraments: {
+        baptism: {
+          record_status: 'FOUND',
+          register_record_status: 'FOUND',
+          evidence_tier: 'BAPTISM_RECORD',
+          candidates: [],
+          evidence: { sacrament_id: 44, date: { value: '2000-06-12' }, place: { value: 'St Mary' } }
+        }
+      },
+      conflicts: [],
+      record_status: { baptism: 'FOUND', baptism_register: 'FOUND' },
+    }));
+    component.formData['sacrament_type_id'] = 1;
+    component.applyMemberAsRecipient({ id: 'm1', first_name: 'John', last_name: 'Connor' } as any);
+    expect(component.baptismRegisterBlocksCreate).toBe(true);
+    expect(component.existingRegisterId).toBe(44);
+    baptismFormReady();
+    expect(component.validateForm()).toBe(false);
+    expect(component.fieldErrors['baptism_duplicate']).toBeTruthy();
+  });
+
+  it('does not silently pick a register when multiple candidates exist', () => {
+    (contextStub.getContext as jasmine.Spy).and.returnValue(of({
+      sacraments: {
+        baptism: {
+          record_status: 'MULTIPLE_CANDIDATES',
+          register_record_status: 'MULTIPLE_CANDIDATES',
+          candidates: [
+            { sacrament_id: 1, date: { value: '2000-01-01' } },
+            { sacrament_id: 2, date: { value: '2001-01-01' } },
+          ],
+          evidence: null
+        }
+      },
+      conflicts: [],
+      record_status: { baptism: 'MULTIPLE_CANDIDATES', baptism_register: 'MULTIPLE_CANDIDATES' },
+    }));
+    component.formData['sacrament_type_id'] = 1;
+    component.applyMemberAsRecipient({ id: 'm1', first_name: 'John', last_name: 'Connor' } as any);
+    expect(component.existingRegisterId).toBeNull();
+    expect(component.baptismEligibilityKind).toBe('multiple');
+    expect(component.baptismRegisterBlocksCreate).toBe(true);
+  });
+
+  it('blocks save and offers retry when context lookup fails', () => {
+    (contextStub.getContext as jasmine.Spy).and.returnValue(throwError(() => new Error('network')));
+    component.formData['sacrament_type_id'] = 1;
+    component.applyMemberAsRecipient({ id: 'm1', first_name: 'John', last_name: 'Connor' } as any);
+    expect(component.baptismEligibilityKind).toBe('lookup_failed');
+    baptismFormReady();
+    expect(component.validateForm()).toBe(false);
+  });
+
+  it('loads context when a resolved person is selected', () => {
+    const spy = contextStub.getContext as unknown as jest.Mock;
+    spy.mockClear();
+    component.formData['sacrament_type_id'] = 1;
+    component.selectResolvedPerson({
+      id: 'person-1',
+      first_name: 'Jane',
+      last_name: 'Doe',
+      date_of_birth: '2011-12-25',
+    } as any);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ person_id: 'person-1', workflow: 'BAPTISM' }));
+  });
+
+  it('ignores a stale context response after the selected person changes', () => {
+    const first$ = new Subject<any>();
+    const second$ = new Subject<any>();
+    const spy = contextStub.getContext as unknown as jest.Mock;
+    spy.mockReset();
+    spy.mockReturnValueOnce(first$.asObservable()).mockReturnValueOnce(second$.asObservable());
+    component.formData['sacrament_type_id'] = 1;
+    component.applyMemberAsRecipient({ id: 'm-old', first_name: 'Old', last_name: 'Person' } as any);
+    component.applyMemberAsRecipient({ id: 'm-new', first_name: 'New', last_name: 'Person' } as any);
+
+    first$.next({
+      sacraments: {
+        baptism: {
+          record_status: 'FOUND',
+          register_record_status: 'FOUND',
+          evidence_tier: 'BAPTISM_RECORD',
+          candidates: [],
+          evidence: { sacrament_id: 99, date: { value: '1999-01-01' } }
+        }
+      },
+      conflicts: [],
+      record_status: { baptism: 'FOUND', baptism_register: 'FOUND' },
+    });
+    first$.complete();
+
+    expect(component.existingRegisterId).toBeNull();
+
+    second$.next({
+      sacraments: {
+        baptism: {
+          record_status: 'NOT_FOUND',
+          register_record_status: 'NOT_FOUND',
+          evidence_tier: null,
+          candidates: [],
+          evidence: null
+        }
+      },
+      conflicts: [],
+      record_status: { baptism: 'NOT_FOUND', baptism_register: 'NOT_FOUND' },
+    });
+    second$.complete();
+
+    expect(component.baptismEligibilityKind).toBe('none');
+    expect(component.baptismRegisterBlocksCreate).toBe(false);
   });
 });

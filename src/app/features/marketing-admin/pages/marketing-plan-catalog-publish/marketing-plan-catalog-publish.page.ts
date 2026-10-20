@@ -690,4 +690,37 @@ export class MarketingPlanCatalogPublishPage implements OnInit {
     this.previewViewport = mode;
     this.cdr.markForCheck();
   }
+
+  revisionStatusLabel(status: string): string {
+    const normalized = (status ?? '').toUpperCase();
+    switch (normalized) {
+      case 'DRAFT':
+        return 'Draft';
+      case 'PUBLISHED':
+        return 'Published';
+      case 'ARCHIVED':
+        return 'Archived';
+      default:
+        return status || 'Unknown';
+    }
+  }
+
+  revisionTone(status: string): 'success' | 'warning' | 'info' | 'neutral' {
+    const normalized = (status ?? '').toUpperCase();
+    if (normalized === 'PUBLISHED') {
+      return 'success';
+    }
+    if (normalized === 'DRAFT') {
+      return 'info';
+    }
+    return 'neutral';
+  }
+
+  isCurrentDraftRevision(revisionId: number): boolean {
+    return this.status?.draft?.id === revisionId;
+  }
+
+  isLiveRevision(revisionId: number): boolean {
+    return this.status?.published?.id === revisionId;
+  }
 }

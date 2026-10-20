@@ -29,6 +29,7 @@ import {
   DonationFamilyFinancialProfile,
   DonationFamilySummary,
   CollectPaymentContext,
+  FamilyCollectDuesPayload,
   FinancialAiResponse,
   ReceiptOcrResult,
   UpiPaymentIntent,
@@ -93,8 +94,8 @@ export class DonationsService {
     return params;
   }
 
-  private financialPostOptions(): { headers: HttpHeaders } {
-    return { headers: new HttpHeaders({ 'Idempotency-Key': newIdempotencyKey() }) };
+  private financialPostOptions(idempotencyKey?: string): { headers: HttpHeaders } {
+    return { headers: new HttpHeaders({ 'Idempotency-Key': idempotencyKey ?? newIdempotencyKey() }) };
   }
 
   getDashboardSummary(
@@ -308,6 +309,28 @@ export class DonationsService {
   getFamilyFinancialProfile(familyId: string): Observable<{ success: boolean; data: DonationFamilyFinancialProfile }> {
     return this.http.get<{ success: boolean; data: DonationFamilyFinancialProfile }>(
       `${this.baseUrl}/families/${familyId}/financial-profile`
+    );
+  }
+
+  getFamilyCollectDues(
+    familyId: string,
+    params: {
+      project_id?: string;
+      page?: number;
+      per_page?: number;
+      scope?: 'all' | 'outstanding' | 'overdue';
+      bulk_select?: boolean;
+    } = {}
+  ): Observable<{ success: boolean; data: FamilyCollectDuesPayload }> {
+    let httpParams = new HttpParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        httpParams = httpParams.set(key, key === 'bulk_select' ? (value ? '1' : '0') : String(value));
+      }
+    });
+    return this.http.get<{ success: boolean; data: FamilyCollectDuesPayload }>(
+      `${this.baseUrl}/families/${familyId}/collect-dues`,
+      { params: httpParams }
     );
   }
 
@@ -540,11 +563,14 @@ export class DonationsService {
     );
   }
 
-  createPayment(payload: Record<string, unknown>): Observable<{ success: boolean; message: string; data?: DonationPayment }> {
+  createPayment(
+    payload: Record<string, unknown>,
+    options?: { idempotencyKey?: string }
+  ): Observable<{ success: boolean; message: string; data?: DonationPayment }> {
     return this.http.post<{ success: boolean; message: string; data?: DonationPayment }>(
       `${this.baseUrl}/payments`,
       payload,
-      this.financialPostOptions()
+      this.financialPostOptions(options?.idempotencyKey)
     ).pipe(tap(() => this.notifyLedgerMutated()));
   }
 

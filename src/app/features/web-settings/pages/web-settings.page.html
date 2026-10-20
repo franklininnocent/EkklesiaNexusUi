@@ -39,7 +39,7 @@
         <div><dt>From address</dt><dd>{{ diagnostics.from_address_configured ? 'Configured' : 'Missing' }}</dd></div>
         <div><dt>From name</dt><dd>{{ diagnostics.from_name_configured ? 'Configured' : 'Missing' }}</dd></div>
         <div><dt>Queue</dt><dd>{{ diagnostics.queue_connection }}</dd></div>
-        <div><dt>SMTP host</dt><dd>{{ diagnostics.smtp_host_configured ? 'Configured' : 'Not required / missing' }}</dd></div>
+        <div><dt>SMTP host</dt><dd>{{ diagnostics.smtp_host || (diagnostics.smtp_host_configured ? 'Configured' : 'Not required / missing') }}</dd></div>
         <div><dt>SMTP username</dt><dd>{{ diagnostics.smtp_username_configured ? 'Set' : 'Not set' }}</dd></div>
         <div><dt>SMTP password</dt><dd>{{ diagnostics.smtp_password_configured ? 'Set' : 'Not set' }}</dd></div>
       </dl>

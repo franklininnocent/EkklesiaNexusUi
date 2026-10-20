@@ -16,6 +16,16 @@ function baseValue(overrides: Partial<FamilyMemberFormValue> = {}): FamilyMember
   };
 }
 
+describe('prepareFamilyMemberPayload person identity', () => {
+  it('retains canonical person_id on unrelated field edits', () => {
+    const payload = prepareFamilyMemberPayload(baseValue({
+      person_id: 'person-uuid-1',
+      occupation: 'Teacher',
+    }), '+1');
+    expect(payload['person_id']).toBe('person-uuid-1');
+  });
+});
+
 describe('prepareFamilyMemberPayload marriage date', () => {
   it('includes marriage_date when marital status is married', () => {
     const payload = prepareFamilyMemberPayload(baseValue(), '+1');

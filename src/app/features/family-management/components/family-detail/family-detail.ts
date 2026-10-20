@@ -14,6 +14,7 @@ import { FamilyService } from '../../../../core/services/family.service';
 import { Family, FamilyMember } from '../../../../core/models/family.model';
 import { FamilyFormComponent } from '../family-form/family-form';
 import { FamilyMemberFormModalComponent, FamilyMemberFormValue } from '../family-member-form-modal/family-member-form-modal.component';
+import { mapFamilyMemberToFormValue } from '../../utils/map-family-member-to-form-value.util';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { CountryCode, getCountryCallingCode, parsePhoneNumber } from 'libphonenumber-js';
@@ -1635,22 +1636,8 @@ export class FamilyDetail implements OnInit, OnDestroy {
         // Head exists but not in members array - create form value from head data
         this.memberToEditIndex = null; // Will be treated as new member
         this.memberToEdit = {
-          id: head.id,
-          first_name: head.first_name || '',
-          middle_name: head.middle_name || '',
-          last_name: head.last_name || '',
-          date_of_birth: head.date_of_birth || '',
-          gender: head.gender || '',
-          relationship_to_head: 'self', // Always 'self' for head
-          marital_status: head.marital_status || 'single',
-          phone: head.phone || '',
-          email: head.email || '',
-          occupation: head.occupation || '',
-          education: head.education || '',
-          baptism_date: head.baptism_date || '',
-          first_communion_date: head.first_communion_date || '',
-          confirmation_date: head.confirmation_date || '',
-          status: head.status || 'active'
+          ...mapFamilyMemberToFormValue(head),
+          relationship_to_head: 'self',
         };
       }
     } else {
@@ -1712,31 +1699,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
     if (!this.family || !this.family.members || !this.family.members[index]) {
       return null;
     }
-    const m = this.family.members[index];
-    return {
-      // CRITICAL: Keep ID as string (UUID), don't convert to Number
-      id: m.id ? String(m.id).trim() : null,
-      person_id: m.person_id ? String(m.person_id).trim() : (m.person?.id ? String(m.person.id).trim() : null),
-      first_name: m.first_name || '',
-      middle_name: m.middle_name || '',
-      last_name: m.last_name || '',
-      date_of_birth: m.date_of_birth || '',
-      gender: m.gender || '',
-      relationship_to_head: m.relationship_to_head || 'other',
-      marital_status: m.marital_status || 'single',
-      phone: m.phone || '',
-      email: m.email || '',
-      occupation: m.occupation || '',
-      education: m.education || '',
-      father_person_id: m.person?.father_person_id ?? m.father_person_id ?? null,
-      father_name: m.display_father_name ?? m.father_name ?? m.person?.father_name ?? null,
-      mother_person_id: m.person?.mother_person_id ?? m.mother_person_id ?? null,
-      mother_name: m.display_mother_name ?? m.mother_name ?? m.person?.mother_name ?? null,
-      baptism_date: m.baptism_date || '',
-      first_communion_date: m.first_communion_date || '',
-      confirmation_date: m.confirmation_date || '',
-      status: m.status || 'active'
-    };
+    return mapFamilyMemberToFormValue(this.family.members[index]);
   }
 
   onMemberModalSave(value: FamilyMemberFormValue): void {

@@ -21,6 +21,7 @@ export interface WebSettingsDiagnostics {
   from_name_configured: boolean;
   queue_connection: string;
   smtp_host_configured: boolean;
+  smtp_host: string | null;
   smtp_port: number | null;
   smtp_username_configured: boolean;
   smtp_password_configured: boolean;
