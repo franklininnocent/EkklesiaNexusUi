@@ -8,8 +8,10 @@
       <strong>Public marketing website</strong>
       <span>Activating a plan here does not change pricing on the website. Preview and publish from Website Subscription Plans.</span>
     </div>
-    <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-primary">Website Subscription Plans</a>
-    <a routerLink="/settings/billing" class="cf-btn">Billing &amp; payments</a>
+    <div class="cf-decision-strip__actions">
+      <a routerLink="/settings/marketing-website/plans" class="cf-btn cf-btn-primary">Website Subscription Plans</a>
+      <a routerLink="/settings/billing" class="cf-btn">Billing &amp; payments</a>
+    </div>
   </div>
 
   <div class="sa-toolbar">
@@ -81,80 +83,78 @@
         <li *ngFor="let row of plan.active_version!.limit_summary!">{{ limitLabel(row) }}</li>
       </ul>
 
-      <div class="sa-plan-card__meta">
-        <app-status-badge [label]="statusLabel(plan).label" [tone]="statusLabel(plan).tone"></app-status-badge>
-        <span>{{ plan.tenant_count }} {{ plan.tenant_count === 1 ? 'church' : 'churches' }}</span>
-        <span *ngIf="plan.active_version as v">Version {{ v.version_number }}</span>
-        <span *ngIf="plan.active_version?.trial_days">{{ plan.active_version?.trial_days }}-day trial</span>
-      </div>
-
-      <div class="sa-plan-card__discover">
-        <button type="button" class="cf-btn cf-btn-secondary cf-btn--sm" (click)="openFeatures(plan)" [disabled]="!plan.active_version">
-          View features
-        </button>
-      </div>
-
-      <div class="sa-plan-card__actions">
-        <a
-          *ngIf="can.manage && !plan.is_legacy"
-          class="cf-btn-icon cf-btn--sm"
-          [routerLink]="['/settings/subscription/plans', plan.id]"
-          [queryParams]="{ tab: 'details' }"
-          title="Edit Plan"
-          aria-label="Edit Plan">
-          <app-action-bar-icon icon="edit"></app-action-bar-icon>
-        </a>
-        <a
-          *ngIf="!(can.manage && !plan.is_legacy)"
-          class="cf-btn-icon cf-btn--sm"
-          [routerLink]="['/settings/subscription/plans', plan.id]"
-          title="View"
-          aria-label="View">
-          <app-action-bar-icon icon="view"></app-action-bar-icon>
-        </a>
-        <button
-          *ngIf="can.manage && !plan.is_legacy"
-          type="button"
-          class="cf-btn-icon cf-btn--sm"
-          (click)="openDuplicate(plan)"
-          title="Duplicate"
-          aria-label="Duplicate">
-          <app-action-bar-icon icon="duplicate"></app-action-bar-icon>
-        </button>
-        <button
-          *ngIf="can.publish && plan.status !== 'ARCHIVED' && !plan.is_default"
-          type="button"
-          class="cf-btn-icon cf-btn--sm"
-          (click)="archive(plan)"
-          title="Archive"
-          aria-label="Archive">
-          <app-action-bar-icon icon="archive"></app-action-bar-icon>
-        </button>
-        <button
-          *ngIf="can.publish && plan.status === 'ARCHIVED'"
-          type="button"
-          class="cf-btn-icon cf-btn--sm"
-          (click)="restore(plan)"
-          title="Restore"
-          aria-label="Restore">
-          <app-action-bar-icon icon="restore"></app-action-bar-icon>
-        </button>
-        <button
-          *ngIf="can.delete && plan.can_delete"
-          type="button"
-          class="cf-btn-icon cf-btn--sm"
-          (click)="deletePlan(plan)"
-          title="Delete"
-          aria-label="Delete">
-          <app-action-bar-icon icon="delete"></app-action-bar-icon>
-        </button>
-      </div>
+      <footer class="sa-plan-card__footer">
+        <div class="sa-plan-card__meta">
+          <app-status-badge [label]="statusLabel(plan).label" [tone]="statusLabel(plan).tone"></app-status-badge>
+          <span>{{ plan.tenant_count }} {{ plan.tenant_count === 1 ? 'church' : 'churches' }}</span>
+          <span *ngIf="plan.active_version as v">Version {{ v.version_number }}</span>
+          <span *ngIf="plan.active_version?.trial_days">{{ plan.active_version?.trial_days }}-day trial</span>
+        </div>
+        <div class="sa-plan-card__actions">
+          <button type="button" class="cf-btn cf-btn--sm" (click)="openFeatures(plan)" [disabled]="!plan.active_version">
+            View features
+          </button>
+          <a
+            *ngIf="can.manage && !plan.is_legacy"
+            class="cf-btn-icon cf-btn--sm"
+            [routerLink]="['/settings/subscription/plans', plan.id]"
+            [queryParams]="{ tab: 'details' }"
+            title="Edit Plan"
+            aria-label="Edit Plan">
+            <app-action-bar-icon icon="edit"></app-action-bar-icon>
+          </a>
+          <a
+            *ngIf="!(can.manage && !plan.is_legacy)"
+            class="cf-btn-icon cf-btn--sm"
+            [routerLink]="['/settings/subscription/plans', plan.id]"
+            title="View"
+            aria-label="View">
+            <app-action-bar-icon icon="view"></app-action-bar-icon>
+          </a>
+          <button
+            *ngIf="can.manage && !plan.is_legacy"
+            type="button"
+            class="cf-btn-icon cf-btn--sm"
+            (click)="openDuplicate(plan)"
+            title="Duplicate"
+            aria-label="Duplicate">
+            <app-action-bar-icon icon="duplicate"></app-action-bar-icon>
+          </button>
+          <button
+            *ngIf="can.publish && plan.status !== 'ARCHIVED' && !plan.is_default"
+            type="button"
+            class="cf-btn-icon cf-btn--sm"
+            (click)="archive(plan)"
+            title="Archive"
+            aria-label="Archive">
+            <app-action-bar-icon icon="archive"></app-action-bar-icon>
+          </button>
+          <button
+            *ngIf="can.publish && plan.status === 'ARCHIVED'"
+            type="button"
+            class="cf-btn-icon cf-btn--sm"
+            (click)="restore(plan)"
+            title="Restore"
+            aria-label="Restore">
+            <app-action-bar-icon icon="restore"></app-action-bar-icon>
+          </button>
+          <button
+            *ngIf="can.delete && plan.can_delete"
+            type="button"
+            class="cf-btn-icon cf-btn--sm"
+            (click)="deletePlan(plan)"
+            title="Delete"
+            aria-label="Delete">
+            <app-action-bar-icon icon="delete"></app-action-bar-icon>
+          </button>
+        </div>
+      </footer>
       <p
         *ngIf="can.manage && !plan.is_editable && plan.edit_restriction"
-        class="sa-muted">
+        class="sa-muted sa-plan-card__note">
         {{ plan.edit_restriction.message }}
       </p>
-      <p *ngIf="can.delete && !plan.can_delete && plan.delete_restriction" class="sa-muted">
+      <p *ngIf="can.delete && !plan.can_delete && plan.delete_restriction" class="sa-muted sa-plan-card__note">
         {{ plan.delete_restriction.message }}
       </p>
     </article>
