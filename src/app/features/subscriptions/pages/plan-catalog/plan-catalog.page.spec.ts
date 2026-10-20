@@ -156,6 +156,20 @@ describe('PlanCatalogPage', () => {
     expect(standard.querySelectorAll('.sa-plan-card__actions svg[aria-hidden="true"]').length).toBeGreaterThan(0);
   });
 
+  it('keeps status, churches, version and View features in one card footer', async () => {
+    const fixture = await setup(true, []);
+    const cards: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.sa-plan-card'));
+    const standard = cards.find((c) => c.textContent?.includes('Standard'))!;
+    const footer = standard.querySelector('.sa-plan-card__footer') as HTMLElement;
+
+    expect(footer).toBeTruthy();
+    expect(footer.querySelector('.sa-plan-card__meta')?.textContent).toContain('Published');
+    expect(footer.querySelector('.sa-plan-card__meta')?.textContent).toContain('0 churches');
+    expect(footer.querySelector('.sa-plan-card__meta')?.textContent).toContain('Version 1');
+    expect(footer.querySelector('.sa-plan-card__actions button')?.textContent?.trim()).toBe('View features');
+    expect(standard.querySelector('.sa-plan-card__discover')).toBeFalsy();
+  });
+
   it('uses neutral icon buttons for Archive and Delete on the Standard plan card', async () => {
     const fixture = await setup(true, []);
     const cards: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.sa-plan-card'));
