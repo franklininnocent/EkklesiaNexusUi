@@ -1802,13 +1802,6 @@ export class FamilyDetail implements OnInit, OnDestroy {
       return;
     }
     
-    console.log('Updating family member:', {
-      familyId,
-      memberId,
-      memberName: `${member.first_name} ${member.last_name}`,
-      payloadKeys: Object.keys(payload),
-      payloadStatus: payload['status']
-    });
     
     this.familyService.updateFamilyMember(familyId, memberId, payload)
       .pipe(takeUntil(this.destroy$))
@@ -2116,16 +2109,12 @@ export class FamilyDetail implements OnInit, OnDestroy {
    * Trigger head profile image input click
    */
   triggerHeadProfileImageInput(): void {
-    console.log('triggerHeadProfileImageInput called');
     const input = document.getElementById('headProfileImageInput') as HTMLInputElement;
     if (input) {
-      console.log('Found headProfileImageInput, clicking...');
       input.click();
     } else {
-      console.log('headProfileImageInput not found, trying derived...');
       const derivedInput = document.getElementById('headProfileImageInputDerived') as HTMLInputElement;
       if (derivedInput) {
-        console.log('Found headProfileImageInputDerived, clicking...');
         derivedInput.click();
       } else {
         console.error('Neither head profile image input found!');

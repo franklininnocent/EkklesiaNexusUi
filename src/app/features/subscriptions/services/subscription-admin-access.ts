@@ -43,7 +43,7 @@ export function subscriptionAdminCapabilities(auth: AuthService): SubscriptionAd
     delete: superAdmin,
     features: can(p.featuresManage),
     tenants: can(p.tenantsManage),
-    overrides: can(p.overridesManage),
+    overrides: superAdmin,
     usage: can(p.usageView),
     revenue: can(p.revenueView),
     requests: can(p.requestsReview),

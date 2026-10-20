@@ -102,19 +102,16 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (responses) => {
-          console.log('Statistics responses received:', responses);
           
           let hasError = false;
           const errorMessages: string[] = [];
 
           // Handle diocese statistics
           const dioceseResponse = responses.dioceseStats;
-          console.log('Diocese response:', dioceseResponse);
           
           if (dioceseResponse) {
             if (dioceseResponse.success === true && dioceseResponse.data) {
               this.dioceseStats = dioceseResponse.data;
-              console.log('Diocese stats loaded:', this.dioceseStats);
             } else if (dioceseResponse.success === false) {
               this.dioceseStats = null;
               hasError = true;
@@ -123,7 +120,6 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
             } else {
               // Try direct assignment if response structure is different
               this.dioceseStats = dioceseResponse.data || dioceseResponse as any;
-              console.log('Diocese stats loaded (alternative format):', this.dioceseStats);
             }
           } else {
             this.dioceseStats = null;
@@ -132,12 +128,10 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
 
           // Handle bishop statistics
           const bishopResponse = responses.bishopStats;
-          console.log('Bishop response:', bishopResponse);
           
           if (bishopResponse) {
             if (bishopResponse.success === true && bishopResponse.data) {
               this.bishopStats = bishopResponse.data;
-              console.log('Bishop stats loaded:', this.bishopStats);
             } else if (bishopResponse.success === false) {
               this.bishopStats = null;
               hasError = true;
@@ -146,7 +140,6 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
             } else {
               // Try direct assignment if response structure is different
               this.bishopStats = bishopResponse.data || bishopResponse as any;
-              console.log('Bishop stats loaded (alternative format):', this.bishopStats);
             }
           } else {
             this.bishopStats = null;
@@ -163,7 +156,6 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
             this.toastService.warning('Some statistics could not be loaded');
             console.warn('Partial statistics loaded with errors');
           } else {
-            console.log('Statistics loaded successfully');
           }
 
           // Set loading to false FIRST
@@ -173,10 +165,6 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
           
           // Log final state after change detection
-          console.log('Final state - DioceseStats:', this.dioceseStats);
-          console.log('Final state - BishopStats:', this.bishopStats);
-          console.log('Final state - Loading:', this.loading);
-          console.log('Final state - Error:', this.error);
         },
         error: (err) => {
           console.error('Error loading statistics:', err);
