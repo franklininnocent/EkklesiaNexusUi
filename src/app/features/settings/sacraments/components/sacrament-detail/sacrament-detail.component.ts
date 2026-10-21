@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -51,7 +52,7 @@ const SACRAMENT_VIEW_TYPE_CODES = new Set([
 @Component({
   selector: 'app-sacrament-detail',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     FormsModule,
     PageHeaderComponent,

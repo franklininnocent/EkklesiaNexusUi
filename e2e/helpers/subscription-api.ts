@@ -10,6 +10,28 @@ export interface SubscriptionAccessSnapshot {
   view_only_locked_enforcement?: boolean;
 }
 
+/** Parish has full stewardship configure access (matches SubscriptionAccessService full mode). */
+export function skipUnlessActiveSubscriptionAccess(
+  snapshot: SubscriptionAccessSnapshot,
+): string | false {
+  if (snapshot.status === 'EXPIRED') {
+    return 'Tenant subscription is EXPIRED';
+  }
+  if (snapshot.is_locked || snapshot.access_mode === 'locked') {
+    return 'Tenant subscription is locked';
+  }
+  if (snapshot.is_view_only || snapshot.access_mode === 'view_only') {
+    return 'Tenant subscription is view-only';
+  }
+  if (snapshot.is_read_only || snapshot.access_mode === 'read_only') {
+    return 'Tenant subscription is read-only';
+  }
+  if (snapshot.access_mode && snapshot.access_mode !== 'full') {
+    return `Tenant subscription access_mode is ${snapshot.access_mode}`;
+  }
+  return false;
+}
+
 export async function fetchSubscriptionAccess(page: Page): Promise<SubscriptionAccessSnapshot> {
   const response = await page.request.get('/api/tenant/subscription-access');
   expect(response.ok()).toBeTruthy();

@@ -78,7 +78,7 @@
         <option value="cheque">Cheque</option>
         <option value="online_placeholder">Online</option>
       </select>
-      <input formControlName="payment_date" type="date" />
+      <app-cf-date-field formControlName="payment_date" />
       <select formControlName="donor_id">
         <option value="">New / walk-in donor</option>
         <option *ngFor="let donor of donors" [value]="donor.id">{{ donor.name }}</option>

@@ -218,9 +218,8 @@
 
                 <div class="pope-mgmt__field pope-mgmt__field--full">
                   <label for="pope_effective_from" class="pope-mgmt__label">Effective From</label>
-                  <input
-                    type="date"
-                    id="pope_effective_from"
+                  <app-cf-date-field
+                    inputId="pope_effective_from"
                     formControlName="pope_effective_from"
                     class="pope-mgmt__input"
                     [disabled]="saving"

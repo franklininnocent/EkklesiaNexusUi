@@ -73,7 +73,7 @@
     <ng-container *ngIf="step === 3">
       <label class="bcc-transfer-modal__block">
         <span>Effective date <abbr title="required">*</abbr></span>
-        <input type="date" formControlName="effective_date" [max]="todayIsoDate" />
+        <app-cf-date-field formControlName="effective_date" [max]="todayIsoDate" />
       </label>
 
       <label class="bcc-transfer-modal__block">

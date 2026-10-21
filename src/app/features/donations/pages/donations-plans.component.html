@@ -92,44 +92,56 @@
               </div>
 
               <div class="plan-field">
-                <label for="plan-fund">Collection purpose <span class="req" aria-hidden="true">*</span></label>
+                <label for="plan-fund">
+                  Collection purpose <span class="req" aria-hidden="true">*</span>
+                </label>
                 <p class="plan-field__hint" *ngIf="!fundsLoaded">Loading collection purposes…</p>
                 <p class="plan-field__hint plan-field__hint--error" *ngIf="fundsLoaded && fundsLoadError">{{ fundsLoadError }}</p>
-                <select
-                  *ngIf="fundsLoaded && funds.length"
-                  id="plan-fund"
-                  formControlName="fund_id"
-                  [class.is-invalid]="isFieldInvalid('fund_id')"
-                  aria-required="true"
-                >
-                  <option value="">Choose purpose</option>
-                  <option *ngFor="let fund of funds" [value]="fund.id">{{ fund.name }}</option>
-                </select>
-                <span class="plan-field__error" *ngIf="fundsLoaded && funds.length && isFieldInvalid('fund_id')">{{ fieldError('fund_id') }}</span>
 
-                <div class="plan-purpose-empty" *ngIf="fundsLoaded && !fundsLoadError && !funds.length" role="status">
-                  <p class="plan-purpose-empty__title">No collection purposes yet.</p>
-                  <p class="plan-purpose-empty__hint">Add one to continue — e.g. Building fund, Mission fund.</p>
-                  <div class="plan-purpose-create">
-                    <input
-                      [(ngModel)]="newPurposeName"
-                      [ngModelOptions]="{ standalone: true }"
-                      placeholder="Building fund"
-                      aria-label="New collection purpose"
-                      (keydown.enter)="$event.preventDefault(); createPurpose()"
+                <ng-select
+                  *ngIf="fundsLoaded && !fundsLoadError"
+                  #fundSelect
+                  id="plan-fund"
+                  class="plan-fund-select"
+                  panelClass="cf-select-create-panel"
+                  formControlName="fund_id"
+                  labelForId="plan-fund"
+                  [items]="funds"
+                  bindLabel="name"
+                  bindValue="id"
+                  placeholder="Select option"
+                  [searchable]="true"
+                  [clearable]="false"
+                  notFoundText="No collection purposes yet"
+                  [class.ng-select-error]="isFieldInvalid('fund_id')"
+                  [disabled]="creatingPurpose"
+                  (open)="onFundSelectOpen()"
+                  (close)="onFundSelectClose()"
+                  (search)="onFundPurposeSearch($event)"
+                  (change)="onFundPurposeChange($event)"
+                  (keydown)="onFundSelectKeydown($event)"
+                >
+                  <ng-template ng-footer-tmp>
+                    <app-cf-select-create-footer
+                      *ngIf="canCreatePurpose"
+                      ariaLabel="Add new collection purpose"
+                      [disabled]="creatingPurpose"
+                      [suppressPointerActivation]="true"
                     />
-                    <button
-                      type="button"
-                      class="cf-btn cf-btn-icon cf-btn-primary"
-                      (click)="createPurpose()"
-                      [disabled]="creatingPurpose || !newPurposeName.trim()"
-                      [attr.aria-label]="creatingPurpose ? 'Adding purpose…' : 'Add purpose'"
-                      [attr.title]="creatingPurpose ? 'Adding purpose…' : 'Add purpose'"
-                    >
-                      <app-cf-action-icon name="plus" />
-                    </button>
-                  </div>
-                </div>
+                  </ng-template>
+                </ng-select>
+                <span
+                  class="plan-field__error"
+                  *ngIf="fundsLoaded && !fundsLoadError && isFieldInvalid('fund_id')"
+                >{{ fieldError('fund_id') }}</span>
+
+                <p
+                  class="plan-field__hint"
+                  *ngIf="fundsLoaded && !fundsLoadError && !funds.length && !canManage"
+                  role="status"
+                >
+                  No collection purposes are set up for this parish. Ask an administrator to add one.
+                </p>
               </div>
             </section>
 
@@ -191,10 +203,9 @@
               <div class="plan-grid plan-grid--2">
                 <div class="plan-field">
                   <label for="plan-start">Starts on <span class="req" aria-hidden="true">*</span></label>
-                  <input
-                    id="plan-start"
+                  <app-cf-date-field
+                    inputId="plan-start"
                     formControlName="start_date"
-                    type="date"
                     [class.is-invalid]="isFieldInvalid('start_date')"
                     (change)="onStartDateChange()"
                     aria-required="true"
@@ -203,7 +214,7 @@
                 </div>
                 <div class="plan-field">
                   <label for="plan-end">Ends on <span class="plan-optional">optional</span></label>
-                  <input id="plan-end" formControlName="end_date" type="date" [class.is-invalid]="isFieldInvalid('end_date')" />
+                  <app-cf-date-field inputId="plan-end" formControlName="end_date" [class.is-invalid]="isFieldInvalid('end_date')" />
                   <span class="plan-field__error" *ngIf="isFieldInvalid('end_date')">{{ fieldError('end_date') }}</span>
                 </div>
               </div>
@@ -237,7 +248,7 @@
                   <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
                 </select>
                 <input [(ngModel)]="assignmentAmount" [ngModelOptions]="{standalone: true}" type="number" min="0.01" step="0.01" placeholder="Amount" aria-label="Amount" />
-                <input [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" type="date" aria-label="Effective from" />
+                <app-cf-date-field [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" aria-label="Effective from" />
                 <button type="button" class="cf-btn cf-btn-icon" (click)="addAssignment()" aria-label="Add" title="Add"><app-cf-action-icon name="plus" /></button>
               </div>
               <table *ngIf="draftAssignments.length" class="cf-table plan-assign-table">
@@ -275,6 +286,66 @@
               <button type="button" class="cf-btn cf-btn-icon" (click)="closeForm()" [disabled]="saving" aria-label="Cancel" title="Cancel"><app-cf-action-icon name="x" /></button>
             </div>
           </form>
+
+          <app-modal-shell
+            *ngIf="showPurposeModal"
+            title="Add collection purpose"
+            size="sm"
+            headerVariant="compact"
+            closeAriaLabel="Close add collection purpose"
+            [isSubmitting]="creatingPurpose"
+            (closeRequested)="closePurposeModal()"
+          >
+            <div class="plan-purpose-modal">
+              <label class="plan-purpose-modal__label" for="plan-purpose-modal-name">
+                Purpose name <span class="req" aria-hidden="true">*</span>
+              </label>
+              <input
+                #purposeNameInput
+                id="plan-purpose-modal-name"
+                type="text"
+                class="plan-purpose-modal__input"
+                [(ngModel)]="purposeModalName"
+                [ngModelOptions]="{ standalone: true }"
+                maxlength="150"
+                autocomplete="off"
+                placeholder="e.g. Mission fund"
+                aria-required="true"
+                [attr.aria-describedby]="'plan-purpose-modal-hint' + (purposeModalError ? ' plan-purpose-modal-error' : '') + (purposeDuplicateNameWarning ? ' plan-purpose-modal-warn' : '')"
+                [class.is-invalid]="purposeModalAttempted && (!purposeModalName.trim() || purposeModalError)"
+                [disabled]="creatingPurpose"
+                (keydown)="onPurposeModalNameKeydown($event)"
+              />
+              <p id="plan-purpose-modal-hint" class="plan-purpose-modal__helper">
+                This name is what people see when they choose a collection purpose.
+              </p>
+              <p
+                id="plan-purpose-modal-warn"
+                class="plan-purpose-modal__warn"
+                *ngIf="purposeDuplicateNameWarning"
+                role="status"
+              >
+                A collection purpose with this name already exists. Save only if you need another one.
+              </p>
+              <p
+                id="plan-purpose-modal-error"
+                class="plan-purpose-modal__error"
+                *ngIf="purposeModalError"
+                role="alert"
+              >
+                {{ purposeModalError }}
+              </p>
+            </div>
+
+            <ng-container modalFooter>
+              <button type="button" class="cf-btn cf-btn-ghost" (click)="closePurposeModal()" [disabled]="creatingPurpose">
+                Cancel
+              </button>
+              <button type="button" class="cf-btn cf-btn-primary" (click)="submitPurposeModal()" [disabled]="creatingPurpose">
+                {{ creatingPurpose ? 'Adding…' : 'Add purpose' }}
+              </button>
+            </ng-container>
+          </app-modal-shell>
         </article>
       </aside>
 

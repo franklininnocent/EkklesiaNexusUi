@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -27,7 +28,7 @@ type SuccessorMode = 'new' | 'existing';
 @Component({
   selector: 'app-appoint-successor-modal',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CfDatePipe,CommonModule, ReactiveFormsModule, NgSelectModule, ModalShellComponent],
   templateUrl: './appoint-successor-modal.component.html',
   styleUrl: './appoint-successor-modal.component.scss',

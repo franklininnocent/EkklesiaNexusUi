@@ -46,7 +46,7 @@
     <div class="enroll-from-family-modal__grid">
       <label>
         <span>Joined date <abbr title="required">*</abbr></span>
-        <input type="date" formControlName="joined_date" />
+        <app-cf-date-field formControlName="joined_date" />
         <small *ngIf="submitted && form.controls.joined_date.invalid">
           Joined date is required.
         </small>

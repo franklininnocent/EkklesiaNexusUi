@@ -1,0 +1,36 @@
+<div class="cf-date-calendar" role="dialog" aria-label="Choose date">
+  <div class="cf-date-calendar__header">
+    <button type="button" class="cf-date-calendar__nav" (click)="prevMonth()" aria-label="Previous month">‹</button>
+    <span class="cf-date-calendar__title">{{ monthLabel() }}</span>
+    <button type="button" class="cf-date-calendar__nav" (click)="nextMonth()" aria-label="Next month">›</button>
+  </div>
+  <div class="cf-date-calendar__grid" role="grid">
+    <div class="cf-date-calendar__row cf-date-calendar__row--head" role="row">
+      @for (wd of weekdayHeaders; track wd) {
+        <span class="cf-date-calendar__cell cf-date-calendar__cell--head" role="columnheader">{{ wd }}</span>
+      }
+    </div>
+    @for (week of weeks(); track $index) {
+      <div class="cf-date-calendar__row" role="row">
+        @for (cell of week; track cell.iso || $index) {
+          @if (cell.outside) {
+            <span class="cf-date-calendar__cell cf-date-calendar__cell--outside" role="gridcell" aria-hidden="true"></span>
+          } @else {
+            <button
+              type="button"
+              class="cf-date-calendar__cell cf-date-calendar__cell--day"
+              role="gridcell"
+              [class.cf-date-calendar__cell--selected]="cell.selected"
+              [disabled]="cell.disabled"
+              [attr.aria-label]="weekdayLabelForCell(cell.iso, cell.day)"
+              [attr.aria-selected]="cell.selected"
+              (click)="pick(cell.iso)"
+            >
+              {{ cell.day }}
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,19 @@
+<div class="cf-month-picker" role="dialog" aria-label="Choose month">
+  <div class="cf-month-picker__header">
+    <button type="button" class="cf-month-picker__nav" (click)="prevYear()" aria-label="Previous year">‹</button>
+    <span class="cf-month-picker__title">{{ viewYear() }}</span>
+    <button type="button" class="cf-month-picker__nav" (click)="nextYear()" aria-label="Next year">›</button>
+  </div>
+  <div class="cf-month-picker__grid">
+    @for (m of months; track m) {
+      <button
+        type="button"
+        class="cf-month-picker__month"
+        [class.cf-month-picker__month--selected]="isSelected(m)"
+        (click)="pick(m)"
+      >
+        {{ monthLabel(m) }}
+      </button>
+    }
+  </div>
+</div>

@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -24,7 +25,7 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
 @Component({
   selector: 'app-participant-source-control',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CfDateFieldComponent, CommonModule, FormsModule],
   templateUrl: './participant-source-control.component.html',
   styleUrl: './participant-source-control.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

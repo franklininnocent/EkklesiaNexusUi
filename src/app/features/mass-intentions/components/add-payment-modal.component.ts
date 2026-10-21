@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -7,7 +8,7 @@ import { MassIntentionsApiService } from '../services/mass-intentions-api.servic
 @Component({
   selector: 'app-add-mass-payment-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent],
   template: `
     <app-modal-shell
       *ngIf="open && requestId"
@@ -34,7 +35,7 @@ import { MassIntentionsApiService } from '../services/mass-intentions-api.servic
           </label>
           <label class="cf-split-field">
             <span class="cf-split-field__label">Date</span>
-            <input class="cf-control" type="date" formControlName="received_on" />
+            <app-cf-date-field formControlName="received_on" />
           </label>
         </div>
         <div class="cf-split-form-actions">

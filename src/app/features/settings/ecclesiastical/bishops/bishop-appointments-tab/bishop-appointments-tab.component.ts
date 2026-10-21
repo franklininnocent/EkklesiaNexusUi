@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   inject,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { BishopService } from '@core/services/ecclesiastical';
 import { BishopAppointment } from '@core/models/ecclesiastical';
 import { ToastService } from '@core/services';
@@ -16,13 +17,23 @@ import {
   formatAppointmentDate,
   resolveAppointmentEffectiveDate,
 } from '@core/utils/appointment-date.util';
+import { localDateOnly } from '@features/donations/utils/local-date-only';
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
+import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 
 @Component({
   selector: 'app-bishop-appointments-tab',
   standalone: true,
-  imports: [CommonModule, CfEmptyStateComponent, LoadingSkeletonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CfDateFieldComponent,
+    CfEmptyStateComponent,
+    LoadingSkeletonComponent,
+    ModalShellComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="bishop-appointments-tab">
@@ -54,7 +65,7 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
             </td>
             <td *ngIf="canManage" class="actions">
               <button *ngIf="!row.is_current && !row.ended_date" type="button" class="cf-btn" (click)="activate(row)">Activate</button>
-              <button *ngIf="row.is_current" type="button" class="cf-btn" (click)="end(row)">End</button>
+              <button *ngIf="row.is_current" type="button" class="cf-btn" (click)="openEndModal(row)">End</button>
             </td>
           </tr>
         </tbody>
@@ -67,12 +78,33 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
         description="Episcopal appointments for this bishop will appear here."
       ></app-cf-empty-state>
     </section>
+
+    <app-modal-shell
+      *ngIf="endModalOpen"
+      title="End appointment"
+      (closeRequested)="closeEndModal()"
+    >
+      <p class="bishop-end-modal__lead">Choose the date this appointment ended.</p>
+      <label for="bishop-end-date">End date</label>
+      <app-cf-date-field
+        inputId="bishop-end-date"
+        [(ngModel)]="endDateDraft"
+        ariaLabel="End date"
+      />
+      <ng-container modalFooter>
+        <button type="button" class="cf-btn" (click)="closeEndModal()">Cancel</button>
+        <button type="button" class="cf-btn cf-btn-primary" [disabled]="!endDateDraft || endSaving" (click)="confirmEnd()">
+          {{ endSaving ? 'Saving…' : 'End appointment' }}
+        </button>
+      </ng-container>
+    </app-modal-shell>
   `,
   styles: [`
     .bishop-appointments-tab { display: flex; flex-direction: column; gap: 1rem; }
     .status-pill { padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--cf-surface-muted, #f3f4f6); font-size: 0.85rem; }
     .status-pill.current { background: #dcfce7; color: #166534; }
     .actions { display: flex; gap: 0.5rem; }
+    .bishop-end-modal__lead { margin-bottom: 0.75rem; }
   `],
 })
 export class BishopAppointmentsTabComponent implements OnChanges {
@@ -86,6 +118,10 @@ export class BishopAppointmentsTabComponent implements OnChanges {
   appointments: BishopAppointment[] = [];
   loading = false;
   canManage = false;
+  endModalOpen = false;
+  endDateDraft = '';
+  endSaving = false;
+  private endTarget: BishopAppointment | null = null;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['bishopId'] && this.bishopId) {
@@ -120,15 +156,40 @@ export class BishopAppointmentsTabComponent implements OnChanges {
     });
   }
 
-  end(row: BishopAppointment): void {
-    const endedDate = prompt('End date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
-    if (!endedDate) return;
-    this.bishopService.endAppointment(row.id, { ended_date: endedDate, end_reason: 'appointment_ended' }).subscribe({
+  openEndModal(row: BishopAppointment): void {
+    this.endTarget = row;
+    this.endDateDraft = localDateOnly();
+    this.endModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closeEndModal(): void {
+    this.endModalOpen = false;
+    this.endTarget = null;
+    this.endDateDraft = '';
+    this.cdr.markForCheck();
+  }
+
+  confirmEnd(): void {
+    if (!this.endTarget || !this.endDateDraft) {
+      return;
+    }
+    this.endSaving = true;
+    this.bishopService.endAppointment(this.endTarget.id, {
+      ended_date: this.endDateDraft,
+      end_reason: 'appointment_ended',
+    }).subscribe({
       next: () => {
         this.toast.success('Appointment ended');
+        this.endSaving = false;
+        this.closeEndModal();
         this.load();
       },
-      error: () => this.toast.error('Failed to end appointment'),
+      error: () => {
+        this.toast.error('Failed to end appointment');
+        this.endSaving = false;
+        this.cdr.markForCheck();
+      },
     });
   }
 

@@ -71,9 +71,8 @@
             <span class="cf-split-req" *ngIf="!isEditMode" aria-hidden="true">*</span>
             <span class="cf-split-optional" *ngIf="isEditMode">optional</span>
           </label>
-          <input
-            type="date"
-            id="member_dob"
+          <app-cf-date-field
+            inputId="member_dob"
             formControlName="date_of_birth"
             [attr.aria-required]="!isEditMode ? true : null"
             [class.cf-split-field__control--invalid]="isFieldInvalid('date_of_birth')"
@@ -125,9 +124,8 @@
         </div>
         <div class="cf-split-field" *ngIf="showMarriageDate">
           <label for="member_marriage_date">Marriage date <span class="cf-split-optional">optional</span></label>
-          <input
-            type="date"
-            id="member_marriage_date"
+          <app-cf-date-field
+            inputId="member_marriage_date"
             formControlName="marriage_date"
             [attr.max]="todayIsoDate"
             [class.cf-split-field__control--invalid]="isFieldInvalid('marriage_date')"
@@ -213,15 +211,15 @@
       <div class="cf-split-grid">
         <div class="cf-split-field">
           <label for="member_baptism_date">Baptism date <span class="cf-split-optional">optional</span></label>
-          <input type="date" id="member_baptism_date" formControlName="baptism_date" />
+          <app-cf-date-field inputId="member_baptism_date" formControlName="baptism_date" />
         </div>
         <div class="cf-split-field">
           <label for="member_first_communion_date">First communion <span class="cf-split-optional">optional</span></label>
-          <input type="date" id="member_first_communion_date" formControlName="first_communion_date" />
+          <app-cf-date-field inputId="member_first_communion_date" formControlName="first_communion_date" />
         </div>
         <div class="cf-split-field">
           <label for="member_confirmation_date">Confirmation <span class="cf-split-optional">optional</span></label>
-          <input type="date" id="member_confirmation_date" formControlName="confirmation_date" />
+          <app-cf-date-field inputId="member_confirmation_date" formControlName="confirmation_date" />
         </div>
       </div>
     </section>

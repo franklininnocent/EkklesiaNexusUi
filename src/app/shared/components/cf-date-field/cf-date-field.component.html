@@ -1,0 +1,45 @@
+<div
+  class="cf-date-field"
+  [class.cf-date-field--invalid]="invalid || inputInvalid"
+  [class.cf-date-field--disabled]="disabled || readOnly"
+>
+  <div class="cf-date-field__input-wrap">
+    <input
+      #textInput
+      type="text"
+      class="cf-date-field__control cf-control"
+      [id]="inputId || null"
+      [value]="displayText"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [readOnly]="readOnly"
+      [attr.readonly]="readOnly ? true : null"
+      [attr.aria-label]="ariaLabel"
+      [attr.aria-invalid]="invalid || inputInvalid"
+      inputmode="numeric"
+      autocomplete="off"
+      (input)="onTextInput($event)"
+      (blur)="onBlur()"
+    />
+    <button
+      type="button"
+      class="cf-date-field__calendar-btn"
+      (click)="toggleCalendar($event)"
+      [disabled]="disabled || readOnly"
+      [attr.aria-expanded]="calendarOpen"
+      aria-haspopup="dialog"
+      aria-label="Open calendar"
+    >
+      📅
+    </button>
+  </div>
+  <button
+    type="button"
+    class="cf-date-field__clear"
+    *ngIf="displayText && !disabled && !readOnly"
+    (click)="clear($event)"
+    aria-label="Clear date"
+  >
+    Clear
+  </button>
+</div>

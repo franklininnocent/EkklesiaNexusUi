@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { CfDateTimeFieldComponent } from './cf-datetime-field.component';
 
 describe('CfDateTimeFieldComponent', () => {
@@ -8,7 +9,7 @@ describe('CfDateTimeFieldComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CfDateTimeFieldComponent, ReactiveFormsModule],
+      imports: [CfDateTimeFieldComponent, ReactiveFormsModule, OverlayModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CfDateTimeFieldComponent);
@@ -26,12 +27,11 @@ describe('CfDateTimeFieldComponent', () => {
     component.registerOnChange((value) => control.setValue(value));
 
     component.writeValue('2026-09-10T10:00');
-    expect(component.dateValue).toBe('2026-09-10');
+    expect(component.dateIso).toBe('2026-09-10');
+    expect(component.dateDisplay).toBe('10/09/2026');
     expect(component.timeValue).toBe('10:00');
 
-    component.dateValue = '2026-09-10';
-    component.timeValue = '12:30';
-    component.onDateInput({ target: { value: '2026-09-10' } } as unknown as Event);
+    component.onDateTextInput({ target: { value: '10/09/2026' } } as unknown as Event);
     component.onTimeInput({ target: { value: '12:30' } } as unknown as Event);
 
     expect(control.value).toBe('2026-09-10T12:30');
@@ -44,13 +44,13 @@ describe('CfDateTimeFieldComponent', () => {
 
     component.clear();
 
-    expect(component.dateValue).toBe('');
+    expect(component.dateIso).toBe('');
     expect(component.timeValue).toBe('');
     expect(changes.at(-1)).toBe('');
   });
 
-  it('renders date and time inputs', () => {
-    const dateInput = fixture.nativeElement.querySelector('input[type="date"]');
+  it('renders date text and time inputs', () => {
+    const dateInput = fixture.nativeElement.querySelector('.cf-datetime-field__date input[type="text"]');
     const timeInput = fixture.nativeElement.querySelector('input[type="time"]');
     expect(dateInput).toBeTruthy();
     expect(timeInput).toBeTruthy();
@@ -58,7 +58,7 @@ describe('CfDateTimeFieldComponent', () => {
 
   it('applies min date and time constraints', () => {
     component.minDateTime = '2026-09-10T10:00';
-    component.dateValue = '2026-09-10';
+    component.dateIso = '2026-09-10';
     component.ngOnChanges({
       minDateTime: {
         currentValue: '2026-09-10T10:00',

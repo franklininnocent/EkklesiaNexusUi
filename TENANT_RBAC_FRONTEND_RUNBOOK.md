@@ -138,7 +138,10 @@ RBAC_PLATFORM_ADMIN_STORAGE_STATE=.auth/platform-admin.json \
 RBAC_TENANT_ADMIN_STORAGE_STATE=.auth/tenant-admin.json \
 RBAC_TENANT_MEMBER_STORAGE_STATE=.auth/tenant-member.json \
 npm run e2e:rbac
+npm run e2e:donations-plans
 ```
+
+`e2e:donations-plans` runs in CI with the same RBAC storage state; it skips automatically when the parish subscription is not in full access mode.
 
 ## 12) Sacrament E2E suite
 

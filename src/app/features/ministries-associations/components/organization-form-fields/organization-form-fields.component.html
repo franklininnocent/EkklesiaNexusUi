@@ -84,9 +84,8 @@
         fieldId="org-field-established-date"
         [errorText]="error('established_date', { futureDate: 'Established date cannot be in the future.' })"
       >
-        <input
-          id="org-field-established-date"
-          type="date"
+        <app-cf-date-field
+          inputId="org-field-established-date"
           formControlName="established_date"
           [attr.max]="maxEstablishedDate"
         />

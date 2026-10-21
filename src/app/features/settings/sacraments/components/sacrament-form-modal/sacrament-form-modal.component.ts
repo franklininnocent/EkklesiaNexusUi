@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -74,7 +75,7 @@ import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-br
 @Component({
   selector: 'app-sacrament-form-modal',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     FormsModule,
     NgSelectModule,

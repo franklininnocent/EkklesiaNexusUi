@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -30,7 +31,7 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
 @Component({
   selector: 'app-re-enroll-member-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent, FormFieldComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent, FormFieldComponent],
   templateUrl: './re-enroll-member-modal.component.html',
   styleUrl: './re-enroll-member-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

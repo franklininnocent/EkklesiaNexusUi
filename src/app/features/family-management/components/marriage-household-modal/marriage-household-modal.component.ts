@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -30,7 +31,7 @@ type MarriageOutcome = 'new_household' | 'join_existing';
 @Component({
   selector: 'app-marriage-household-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent, CfBrandLoaderComponent, CfFamilyPickerLabelPipe],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent, CfBrandLoaderComponent, CfFamilyPickerLabelPipe],
   templateUrl: './marriage-household-modal.component.html',
   styleUrl: './marriage-household-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -31,7 +32,7 @@ import { ParishionerLookupTypeaheadComponent } from '../parishioner-lookup-typea
 @Component({
   selector: 'app-enroll-member-modal',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     ReactiveFormsModule,
     ParishionerLookupTypeaheadComponent,
