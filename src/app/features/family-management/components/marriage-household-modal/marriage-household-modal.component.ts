@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -374,7 +375,7 @@ export class MarriageHouseholdModalComponent implements OnInit {
   }
 
   private normalizeError(error: unknown): { code?: string; message?: string } {
-    const payload = error instanceof HttpErrorResponse
+    const payload = (error instanceof HttpErrorResponse || error instanceof ApiError)
       ? error.error
       : error && typeof error === 'object'
         ? error

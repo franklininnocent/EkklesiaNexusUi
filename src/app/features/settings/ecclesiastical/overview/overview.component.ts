@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DioceseService, BishopService } from '@core/services/ecclesiastical';
@@ -83,7 +84,7 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
           return of({ 
             success: false, 
             data: null, 
-            message: error?.error?.message || 'Failed to load diocese statistics' 
+            message: apiErrorMessage(error, 'Failed to load diocese statistics') 
           } as any);
         })
       ),
@@ -94,7 +95,7 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
           return of({ 
             success: false, 
             data: null, 
-            message: error?.error?.message || 'Failed to load bishop statistics' 
+            message: apiErrorMessage(error, 'Failed to load bishop statistics') 
           } as any);
         })
       )
@@ -168,7 +169,7 @@ export class EcclesiasticalOverviewComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error loading statistics:', err);
-          this.error = err?.error?.message || 'Failed to load statistics. Please try again.';
+          this.error = apiErrorMessage(err, 'Failed to load statistics. Please try again.');
           this.loading = false;
           this.cdr.detectChanges();
           this.toastService.error('Failed to load statistics');

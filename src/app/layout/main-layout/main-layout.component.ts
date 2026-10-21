@@ -21,6 +21,7 @@ import { User, Tenant } from '@core/models';
 import { selectCurrentUser } from '@core/store/auth/auth.selectors';
 import { selectCurrentTenant } from '@core/store/tenant/tenant.selectors';
 import * as AuthActions from '@core/store/auth/auth.actions';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { ApplicationContextService } from '@core/services/application-context.service';
 import { NavMenuService, NavMenuId } from '@core/services/nav-menu.service';
@@ -83,6 +84,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private globalFamilySearch = inject(GlobalFamilySearchService);
   readonly notificationInbox = inject(NotificationInboxService);
   private supportSessions = inject(SupportSessionService);
+  private actions = inject(ActionAuthorizationService);
   private subscriptionAccess = inject(SubscriptionAccessService);
   private entitlements = inject(EntitlementService);
 
@@ -149,6 +151,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     });
 
     this.supportSessions.session$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.refreshVisibleSidebar();
       this.cdr.markForCheck();
     });
 
@@ -288,7 +291,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     const filtered = filterSidebarSections(
       this.sidebarSections,
       (menuId) => this.navMenu.isVisible(menuId as NavMenuId, this.currentUser),
-      (route) => this.navMenu.isRouteAllowed(route)
+      (route) => this.navMenu.isRouteAllowed(route),
+      (actionId) => this.actions.allows(actionId)
     );
     const starter =
       this.entitlements.appliesToCurrentUser() &&
@@ -415,6 +419,10 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   canViewDonations(user: User | null): boolean {
     return this.isVisible('donations', user);
+  }
+
+  canCollectPayments(): boolean {
+    return this.actions.allows('donations.collect');
   }
 
   canAccessBcc(user: User | null): boolean {

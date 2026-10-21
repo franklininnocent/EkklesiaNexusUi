@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { EditIconButtonComponent } from '@shared/components/edit-icon-button/edit-icon-button.component';
 import { FamilySummaryViewModel } from '../../models/family-navigator.model';
 
 @Component({
   selector: 'app-family-summary-card',
   standalone: true,
-  imports: [CommonModule, EditIconButtonComponent],
+  imports: [CommonModule, CanActionDirective, EditIconButtonComponent],
   templateUrl: './family-summary-card.component.html',
   styleUrls: ['./family-summary-card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -46,6 +48,7 @@ type DonorSortColumn = 'name' | 'donor_type' | 'contact';
   styleUrls: ['./donations-donors.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsDonorsComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   donors: Donor[] = [];
   donorsLoaded = false;
   donorsLoadError: string | null = null;
@@ -78,7 +81,7 @@ export class DonationsDonorsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
     this.initSearchFields();
     this.load();
     this.routerSub = this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => {
@@ -198,12 +201,12 @@ export class DonationsDonorsComponent implements OnInit, OnDestroy {
         this.donorsLoaded = true;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadDonorsSeq) {
           return;
         }
         this.donorsLoaded = true;
-        this.donorsLoadError = 'Unable to load donors. Please try again.';
+        this.donorsLoadError = apiErrorMessage(err, 'Unable to load donors. Please try again.');
         this.cdr.detectChanges();
       },
     });

@@ -178,12 +178,13 @@ export function adjustSidebarForStarterPlan(
 export function filterSidebarSections(
   sections: SidebarNavSection[],
   isVisible: (menuId: string) => boolean,
-  isRouteAllowed: (route: string) => boolean = () => true
+  isRouteAllowed: (route: string) => boolean = () => true,
+  isActionAllowed: (actionId: string) => boolean = () => true
 ): SidebarNavSection[] {
   return sections
     .map((section) => ({
       ...section,
-      items: filterSidebarNodes(section.items, isVisible, isRouteAllowed),
+      items: filterSidebarNodes(section.items, isVisible, isRouteAllowed, isActionAllowed),
     }))
     .filter((section) => section.items.length > 0);
 }
@@ -191,15 +192,17 @@ export function filterSidebarSections(
 function filterSidebarNodes(
   nodes: SidebarNavNode[],
   isVisible: (menuId: string) => boolean,
-  isRouteAllowed: (route: string) => boolean
+  isRouteAllowed: (route: string) => boolean,
+  isActionAllowed: (actionId: string) => boolean
 ): SidebarNavNode[] {
   return nodes
     .filter((node) => !node.menuId || isVisible(node.menuId))
     .filter((node) => !node.route || isRouteAllowed(node.route))
+    .filter((node) => !node.permissionAction || isActionAllowed(node.permissionAction))
     .map((node) => ({
       ...node,
       children: node.children
-        ? filterSidebarNodes(node.children, isVisible, isRouteAllowed)
+        ? filterSidebarNodes(node.children, isVisible, isRouteAllowed, isActionAllowed)
         : undefined,
     }))
     .filter((node) => node.route || (node.children?.length ?? 0) > 0);

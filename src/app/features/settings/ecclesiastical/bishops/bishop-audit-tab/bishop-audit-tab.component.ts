@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -113,8 +114,8 @@ export class BishopAuditTabComponent implements OnChanges {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.toast.error('Failed to load audit history');
+      error: (err) => {
+        this.toast.error(apiErrorMessage(err, 'Failed to load audit history'));
         this.loading = false;
         this.cdr.markForCheck();
       },

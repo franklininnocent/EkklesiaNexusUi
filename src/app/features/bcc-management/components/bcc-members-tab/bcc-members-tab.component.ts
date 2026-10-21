@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
@@ -504,7 +505,7 @@ export class BccMembersTabComponent implements OnChanges {
             );
             this.transfer = true;
           } else {
-            this.toast.error(err?.error?.message || 'Could not assign family.');
+            this.toast.error(apiErrorMessage(err, 'Could not assign family.'));
           }
           this.cdr.markForCheck();
         },
@@ -530,7 +531,7 @@ export class BccMembersTabComponent implements OnChanges {
         this.toast.success('Family removed from this BCC.');
         this.load();
       },
-      error: (err) => this.toast.error(err?.error?.message || 'Could not remove family.'),
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Could not remove family.')),
     });
   }
 

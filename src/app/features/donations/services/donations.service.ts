@@ -9,6 +9,7 @@ import {
   ContributionDue,
   ContributionPlan,
   ContributionPlanAssignment,
+  PlanGenerationPreview,
   DonationCategory,
   CollectionForecast,
   DioceseRollupDashboard,
@@ -353,8 +354,15 @@ export class DonationsService {
     );
   }
 
-  getFunds(): Observable<{ success: boolean; data: Array<{ id: string; name: string; code: string }> }> {
-    return this.http.get<{ success: boolean; data: Array<{ id: string; name: string; code: string }> }>(`${this.baseUrl}/funds`);
+  getFunds(filters: { status?: string } = {}): Observable<{ success: boolean; data: Array<{ id: string; name: string; code: string }> }> {
+    let params = new HttpParams();
+    if (filters.status) {
+      params = params.set('status', filters.status);
+    }
+    return this.http.get<{ success: boolean; data: Array<{ id: string; name: string; code: string }> }>(
+      `${this.baseUrl}/funds`,
+      { params }
+    );
   }
 
   createFund(payload: { name: string; code?: string; status?: string }): Observable<{ success: boolean; message: string; data: { id: string; name: string; code: string } }> {
@@ -401,8 +409,8 @@ export class DonationsService {
     );
   }
 
-  previewPlanGeneration(planId: string): Observable<{ success: boolean; data: { period_count: number; family_count: number; estimated_new_ops: number; periods: Array<{ period_label: string; period_start: string; period_end: string; due_date: string }> } }> {
-    return this.http.get<{ success: boolean; data: { period_count: number; family_count: number; estimated_new_ops: number; periods: Array<{ period_label: string; period_start: string; period_end: string; due_date: string }> } }>(
+  previewPlanGeneration(planId: string): Observable<{ success: boolean; data: PlanGenerationPreview }> {
+    return this.http.get<{ success: boolean; data: PlanGenerationPreview }>(
       `${this.baseUrl}/plans/${planId}/generation-preview`
     );
   }
@@ -763,11 +771,14 @@ export class DonationsService {
     return this.http.put<{ success: boolean; message: string; data: Donor }>(`${this.baseUrl}/donors/${donorId}`, payload);
   }
 
-  collectVoluntaryDonation(payload: Record<string, unknown>): Observable<{ success: boolean; message: string; data: { donation: DonationEntry; payment: DonationPayment } }> {
+  collectVoluntaryDonation(
+    payload: Record<string, unknown>,
+    options?: { idempotencyKey?: string }
+  ): Observable<{ success: boolean; message: string; data: { donation: DonationEntry; payment: DonationPayment } }> {
     return this.http.post<{ success: boolean; message: string; data: { donation: DonationEntry; payment: DonationPayment } }>(
       `${this.baseUrl}/entries/collect`,
       payload,
-      this.financialPostOptions()
+      this.financialPostOptions(options?.idempotencyKey)
     ).pipe(tap(() => this.notifyLedgerMutated()));
   }
 

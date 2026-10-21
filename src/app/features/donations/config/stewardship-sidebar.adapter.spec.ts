@@ -45,5 +45,12 @@ describe('stewardship-sidebar.adapter', () => {
     expect(routes).toContain('/donations/plans');
     expect(routes).toContain('/donations/categories');
     expect(routes).toContain('/donations/settings');
+    const gift = configure?.children?.find((child) => child.label === 'Record a gift');
+    expect(gift?.route).toBe('/donations/register');
+    expect(gift?.query).toEqual({ record: '1' });
+    const collectRoutes = tree.children?.find((c) => c.id === 'donations-collect')?.children?.map((c) => c.route) ?? [];
+    expect(collectRoutes.filter((route) => route === '/donations/register').length).toBe(1);
+    expect(collectRoutes).toContain('/donations/today-collections');
+    expect(collectRoutes).toContain('/donations/payments');
   });
 });

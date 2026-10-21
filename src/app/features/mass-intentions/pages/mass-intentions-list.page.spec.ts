@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { ParishPersonService } from '@features/settings/sacraments/services/person.service';
@@ -34,6 +35,10 @@ describe('MassIntentionsListPageComponent', () => {
             hasTenantPermission,
             hasPermission: jest.fn(() => false),
           },
+        },
+        {
+          provide: ActionAuthorizationService,
+          useValue: { allows: (id: string) => hasTenantPermission(id) },
         },
         {
           provide: ToastService,

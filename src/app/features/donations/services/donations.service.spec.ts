@@ -160,6 +160,24 @@ describe('DonationsService', () => {
       req.flush({ success: true, message: 'ok', data: { id: 'pay-1' } });
     });
 
+    it('passes status when loading funds', () => {
+      service.getFunds({ status: 'active' }).subscribe();
+
+      const req = httpMock.expectOne(
+        (r) => r.url === `${environment.apiUrl}/tenant/donations/funds` && r.params.get('status') === 'active'
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({ success: true, data: [] });
+    });
+
+    it('uses a provided idempotency key when collecting a voluntary donation', () => {
+      service.collectVoluntaryDonation({ amount: 5, method: 'cash', payment_date: '2026-10-21' }, { idempotencyKey: 'collect-key-1' }).subscribe();
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/tenant/donations/entries/collect`);
+      expect(req.request.headers.get('Idempotency-Key')).toBe('collect-key-1');
+      req.flush({ success: true, message: 'ok', data: { donation: {}, payment: {} } });
+    });
+
     it('reverses a payment with an idempotency key', () => {
       service.reversePayment('pay-1', 'Entered twice').subscribe((response) => {
         expect(response.success).toBe(true);

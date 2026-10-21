@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -199,7 +200,7 @@ export class SupportTicketDetailPage implements OnInit {
         this.posting = false;
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not post your comment.';
+        this.actionError = apiErrorMessage(err, 'Could not post your comment.');
         this.posting = false;
       },
     });
@@ -457,7 +458,7 @@ export class SupportTicketDetailPage implements OnInit {
         this.lifecycleAction = null;
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not update this ticket.';
+        this.actionError = apiErrorMessage(err, 'Could not update this ticket.');
         this.acting = false;
       },
     });
@@ -478,7 +479,7 @@ export class SupportTicketDetailPage implements OnInit {
         this.lifecycleAction = null;
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not mark this ticket as resolved.';
+        this.actionError = apiErrorMessage(err, 'Could not mark this ticket as resolved.');
         this.acting = false;
       },
     });
@@ -499,7 +500,7 @@ export class SupportTicketDetailPage implements OnInit {
         this.lifecycleAction = null;
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not confirm resolution.';
+        this.actionError = apiErrorMessage(err, 'Could not confirm resolution.');
         this.acting = false;
       },
     });

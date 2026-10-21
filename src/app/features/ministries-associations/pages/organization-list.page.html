@@ -32,7 +32,7 @@
         <span>Organizations need a category and type before you can add them.</span>
       </div>
       <div class="cf-decision-strip__actions">
-        <a [routerLink]="settingsLink" class="cf-btn cf-btn-primary">Go to Settings</a>
+        <a *appCan="'ministries.configure'" [routerLink]="settingsLink" class="cf-btn cf-btn-primary">Go to Settings</a>
       </div>
     </div>
 
@@ -147,9 +147,11 @@
       >
         Add organization
       </a>
-      <a *ngIf="!hasTaxonomies" [routerLink]="settingsLink" class="cf-btn cf-btn-primary">
+      <ng-container *ngIf="!hasTaxonomies">
+      <a *appCan="'ministries.configure'" [routerLink]="settingsLink" class="cf-btn cf-btn-primary">
         Go to Settings
       </a>
+      </ng-container>
     </app-cf-empty-state>
   </ng-container>
 

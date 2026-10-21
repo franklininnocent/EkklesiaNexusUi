@@ -10,6 +10,7 @@ import {
   ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { EditIconButtonComponent } from '@shared/components/edit-icon-button/edit-icon-button.component';
 import { SectionCollapseToggleComponent } from '@shared/components/section-collapse-toggle/section-collapse-toggle.component';
 import { ImageViewerComponent } from '@shared/components/image-viewer/image-viewer.component';
@@ -40,6 +41,7 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
   standalone: true,
   imports: [
     CommonModule,
+    CanActionDirective,
     EditIconButtonComponent,
     SectionCollapseToggleComponent,
     MemberSacramentDetailComponent,

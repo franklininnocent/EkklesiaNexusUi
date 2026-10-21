@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { debounceTime, distinctUntilChanged, Subject, Subscription } from 'rxjs';
@@ -319,6 +321,7 @@ type ReceiptSortColumn = 'receipt_number' | 'issued_on' | 'family_name' | 'payer
   `]
 })
 export class DonationsReceiptsComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   receipts: DonationReceiptListItem[] = [];
   search = '';
   dateFrom = '';
@@ -353,7 +356,7 @@ export class DonationsReceiptsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.canManageReceipts = this.authService.hasPermission('donations.manage');
+    this.canManageReceipts = this.actions.allows('donations.manage');
     this.initSearchFields();
     this.searchSub = this.searchChanges$.pipe(
       debounceTime(300),
@@ -591,13 +594,13 @@ export class DonationsReceiptsComponent implements OnInit, OnDestroy {
         this.loadError = null;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadReceiptsSeq) {
           return;
         }
         this.receiptsLoaded = true;
         this.refreshing = false;
-        this.loadError = 'Failed to load receipts.';
+        this.loadError = apiErrorMessage(err, 'Failed to load receipts.');
         this.cdr.detectChanges();
       }
     });
@@ -668,7 +671,7 @@ export class DonationsReceiptsComponent implements OnInit, OnDestroy {
       },
       error: (err: { error?: { message?: string } }) => {
         this.actionSaving = false;
-        this.actionError = err?.error?.message || 'Unable to update this receipt.';
+        this.actionError = apiErrorMessage(err, 'Unable to update this receipt.');
         this.cdr.detectChanges();
       }
     });

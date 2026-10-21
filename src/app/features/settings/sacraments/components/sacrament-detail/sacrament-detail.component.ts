@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -153,7 +154,7 @@ export class SacramentDetailComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error loading sacrament:', error);
-          this.toastService.error('Failed to load sacrament details.');
+          this.toastService.error(apiErrorMessage(error, 'Failed to load sacrament details.'));
           this.loading = false;
           this.cdr.markForCheck();
           this.router.navigate(['/sacraments']);

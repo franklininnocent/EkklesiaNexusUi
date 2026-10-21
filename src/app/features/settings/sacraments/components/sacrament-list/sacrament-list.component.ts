@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef, AfterViewChecked, HostListener, inject } from '@angular/core';
+import { ApiError, apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -35,6 +36,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import { isStarterSubscriptionPlan } from '@shared/utils/subscription-plan.util';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
@@ -62,6 +65,7 @@ import { sacramentSupportsCertificate } from '../../utils/sacrament-certificate.
     ConfirmationModalComponent,
     VoidSacramentDialogComponent,
     CorrectSacramentDialogComponent,
+    CanActionDirective,
     DisableWhenReadOnlyDirective,
     CfBrandLoaderComponent,
   ],
@@ -70,6 +74,7 @@ import { sacramentSupportsCertificate } from '../../utils/sacrament-certificate.
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SacramentListComponent implements OnInit, OnDestroy, AfterViewChecked {
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly entitlements = inject(EntitlementService);
 
@@ -242,7 +247,7 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
   }
 
   hasDestructiveRowActions(sacrament: Sacrament): boolean {
-    return this.canVoidSacrament(sacrament) || this.isTenantAdmin;
+    return this.canVoidSacrament(sacrament) || this.actions.allows('sacraments.delete');
   }
 
   onRowMenuAction(
@@ -550,7 +555,7 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
       },
       error: (error) => {
         console.error('Error loading user:', error);
-        this.toastService.error('Failed to load user information.');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load user information.'));
         this.cdr.markForCheck();
       }
     });
@@ -699,7 +704,7 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
    * Show create modal
    */
   onCreateSacrament(): void {
-    if (!this.guardWrite('register sacraments')) {
+    if (!this.actions.allows('sacraments.create') || !this.guardWrite('register sacraments')) {
       return;
     }
     this.correctionReason = null;
@@ -774,7 +779,7 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
         error: (error) => {
           console.error('Error loading sacrament details:', error);
           this.loadingDetail = false;
-          this.toastService.error('Failed to load sacrament details', 'Error');
+          this.toastService.error(apiErrorMessage(error, 'Failed to load sacrament details'), 'Error');
           this.cdr.markForCheck();
         }
       });
@@ -960,7 +965,7 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
 
   private handleLifecycleConflict(error: unknown, fallback: string): void {
     const status =
-      error instanceof HttpErrorResponse
+      (error instanceof HttpErrorResponse || error instanceof ApiError)
         ? error.status
         : (error as { status?: number })?.status;
     if (status === 409) {
@@ -1007,9 +1012,8 @@ export class SacramentListComponent implements OnInit, OnDestroy, AfterViewCheck
    * Show delete confirmation
    */
   onDeleteSacrament(sacrament: Sacrament): void {
-    // Check if user is Tenant Admin
-    if (!this.isTenantAdmin) {
-      this.toastService.error('Only Tenant Administrators can delete sacrament records.', 'Permission Denied', 5000);
+    if (!this.actions.allows('sacraments.delete')) {
+      this.toastService.warning('You do not have permission to remove sacrament records.', 'Permission');
       return;
     }
     

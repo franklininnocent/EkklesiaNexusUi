@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -113,8 +114,8 @@ export class FinancialCommandCenterPageComponent implements OnInit {
         this.loadRollupIfNeeded();
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
-        this.error = 'Unable to load the financial command center.';
+      error: (err) => {
+        this.error = apiErrorMessage(err, 'Unable to load the financial command center.');
         this.loading = false;
         refreshStewardshipView(this.cdr);
       }

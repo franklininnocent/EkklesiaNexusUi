@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
@@ -89,7 +91,7 @@ function isInstallmentStatusFilter(value: string | null | undefined): value is I
     <section class="installments-page cf-page cf-financial-dashboard">
       <app-page-header
         title="Project Installments"
-        subtitle="Track who owes project installments — collect or follow up before deadlines."
+        subtitle="Family instalments on a building project. These are not campaign targets."
         [titleMetaCount]="activeFilterCount"
       >
         <app-list-toolbar
@@ -303,6 +305,7 @@ function isInstallmentStatusFilter(value: string | null | undefined): value is I
   `]
 })
 export class DonationsProjectInstallmentsComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   installments: ProjectInstallmentDue[] = [];
   projects: DonationProject[] = [];
   tableSearch = '';
@@ -343,7 +346,7 @@ export class DonationsProjectInstallmentsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
     const projectId = this.route.snapshot.queryParamMap.get('project_id');
     if (projectId) {
       this.projectFilter = projectId;
@@ -639,8 +642,8 @@ export class DonationsProjectInstallmentsComponent implements OnInit {
         this.loading = false;
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
-        this.error = 'Failed to load project installments.';
+      error: (err) => {
+        this.error = apiErrorMessage(err, 'Failed to load project installments.');
         this.loading = false;
         refreshStewardshipView(this.cdr);
       }
@@ -654,7 +657,7 @@ export class DonationsProjectInstallmentsComponent implements OnInit {
         this.loadInstallments();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to waive installment.';
+        this.error = apiErrorMessage(err, 'Failed to waive installment.');
         refreshStewardshipView(this.cdr);
       }
     });
@@ -667,7 +670,7 @@ export class DonationsProjectInstallmentsComponent implements OnInit {
         this.loadInstallments();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to cancel installment.';
+        this.error = apiErrorMessage(err, 'Failed to cancel installment.');
         refreshStewardshipView(this.cdr);
       }
     });

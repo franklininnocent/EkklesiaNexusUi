@@ -1,18 +1,35 @@
 <section class="categories-page cf-page cf-split-page cf-financial-dashboard">
   <app-page-header
     title="Offering Categories"
-    subtitle="Define gift types for voluntary collections — create and manage categories side by side.">
-    <ng-container *ngIf="canManage && categoriesLoaded && !showForm">
-      <a routerLink="/donations/register" class="cf-btn cf-btn-icon" aria-label="Today's Register" title="Today's Register">
-        <app-cf-action-icon name="book-open" />
+    subtitle="Name a gift. A category does not bill families.">
+    <ng-container *ngIf="categoriesLoaded && !showForm">
+      <a
+        *ngIf="canCollect"
+        routerLink="/donations/register"
+        [queryParams]="{ record: '1' }"
+        class="cf-btn"
+        aria-label="Record a gift"
+        title="Record a gift"
+      >
+        Record a gift
       </a>
       <button
-          aria-label="New"
-          title="New" type="button" class="cf-btn cf-btn-icon cf-btn-primary" (click)="openCreateForm()">
-          <app-cf-action-icon name="plus" />
+        *ngIf="canManage"
+        aria-label="New"
+        title="New"
+        type="button"
+        class="cf-btn cf-btn-icon cf-btn-primary"
+        (click)="openCreateForm()"
+      >
+        <app-cf-action-icon name="plus" />
       </button>
     </ng-container>
   </app-page-header>
+
+  <p class="cf-meta">
+    A category names a gift. It does not bill families.
+    <a routerLink="/donations/plans">Use a contribution plan</a> when an amount is expected from each family.
+  </p>
 
   <div class="cf-split-loading cf-split-card" *ngIf="!categoriesLoaded" role="status" aria-live="polite" aria-busy="true">
     <app-loading-skeleton label="Loading offering categories…" type="table" [rows]="5" [columns]="4"></app-loading-skeleton>
@@ -170,7 +187,7 @@
               <app-cf-empty-state
                 icon="▤"
                 title="No offering categories"
-                description="Categories help volunteers pick the right gift type during Quick Collect and register entry."
+                description="Categories name gifts. They do not bill families. Use a contribution plan when an amount is expected from each family."
                 [hasActions]="canManage"
               >
                 <a

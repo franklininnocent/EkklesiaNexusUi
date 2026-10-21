@@ -8,7 +8,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { AuthService } from '@core/services/auth.service';
 import { Subject, takeUntil } from 'rxjs';
 import {
   AdvancedSearchPanelComponent,
@@ -55,6 +56,7 @@ export class MinistriesInsightsTenantsPageComponent implements OnInit, OnDestroy
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly auth = inject(AuthService);
   private readonly destroy$ = new Subject<void>();
 
   readonly windows: MinistriesInsightsWindowDays[] = [7, 30, 90];
@@ -201,8 +203,15 @@ export class MinistriesInsightsTenantsPageComponent implements OnInit, OnDestroy
     });
   }
 
+  canExportCsv(): boolean {
+    return (
+      this.auth.isSuperAdmin() ||
+      (this.auth.isEkklesiaAdmin() && this.auth.hasPermission('ministries.platform.export'))
+    );
+  }
+
   exportCsv(): void {
-    if (this.exporting) {
+    if (!this.canExportCsv() || this.exporting) {
       return;
     }
     this.exporting = true;
@@ -335,12 +344,9 @@ export class MinistriesInsightsTenantsPageComponent implements OnInit, OnDestroy
           this.loading = false;
           this.cdr.markForCheck();
         },
-        error: (err: HttpErrorResponse) => {
+        error: (err: unknown) => {
           this.loading = false;
-          this.error =
-            err.status === 401 || err.status === 403
-              ? 'You do not have permission to view tenant adoption.'
-              : 'Unable to load tenant adoption.';
+          this.error = apiErrorMessage(err, 'Unable to load tenant adoption.');
           this.cdr.markForCheck();
         },
       });

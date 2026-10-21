@@ -8,6 +8,7 @@ import { ConfirmationDialogService } from '@core/services/confirmation-dialog.se
 import { AuthService } from '@core/services/auth.service';
 import { isProtectedRoleDefinition } from '@shared/utils/rbac-role.util';
 import { isHighRiskPermissionName } from '@shared/utils/rbac-permission.util';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { ListToolbarComponent } from '@shared/components/list-toolbar/list-toolbar.component';
 import { AdvancedSearchPanelComponent, SearchField, ActiveFilter } from '@shared/components/advanced-search-panel/advanced-search-panel.component';
@@ -878,35 +879,8 @@ export class AssignPermissionsModalComponent implements OnInit, OnChanges {
     );
   }
 
-  private getFriendlyErrorMessage(error: any, fallback: string): string {
-    const status = error?.status;
-    const apiMessage = error?.error?.message;
-
-    if (status === 0) {
-      return 'Network connection failed. Please check your internet and try again.';
-    }
-
-    if (status === 403) {
-      return apiMessage || 'You do not have permission to perform this action.';
-    }
-
-    if (status === 422) {
-      const validationErrors = error?.error?.errors;
-      if (validationErrors) {
-        const firstKey = Object.keys(validationErrors)[0];
-        const firstMessage = firstKey ? validationErrors[firstKey]?.[0] : null;
-        if (firstMessage) {
-          return firstMessage;
-        }
-      }
-      return apiMessage || 'Validation failed. Please review your selection and try again.';
-    }
-
-    if (status >= 500) {
-      return 'Server error occurred. Please try again in a moment.';
-    }
-
-    return apiMessage || fallback;
+  private getFriendlyErrorMessage(error: unknown, fallback: string): string {
+    return apiErrorMessage(error, fallback);
   }
 
   toDomId(value: string): string {

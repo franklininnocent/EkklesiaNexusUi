@@ -8,6 +8,7 @@ import { AuthService } from '@core/services/auth.service';
 import { forkJoin, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { getErrorMessage, isFieldInvalid, markFormGroupTouched } from '@core/validators/form-validation.helper';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { trapFocus, saveActiveElement, restoreActiveElement } from '@shared/utils/focus-trap.util';
 import { isHighRiskPermissionName } from '@shared/utils/rbac-permission.util';
 import { isProtectedRoleDefinition } from '@shared/utils/rbac-role.util';
@@ -366,35 +367,8 @@ export class RoleFormModalComponent implements OnInit, OnChanges, AfterViewCheck
     });
   }
 
-  private getFriendlyErrorMessage(err: any, fallback: string): string {
-    const status = err?.status;
-    const apiMessage = err?.error?.message;
-
-    if (status === 0) {
-      return 'Network connection failed. Please check your internet and try again.';
-    }
-
-    if (status === 403) {
-      return apiMessage || 'You do not have permission to perform this action.';
-    }
-
-    if (status === 422) {
-      const validationErrors = err?.error?.errors;
-      if (validationErrors) {
-        const firstKey = Object.keys(validationErrors)[0];
-        const firstMessage = firstKey ? validationErrors[firstKey]?.[0] : null;
-        if (firstMessage) {
-          return firstMessage;
-        }
-      }
-      return apiMessage || 'Validation failed. Please review your input and try again.';
-    }
-
-    if (status >= 500) {
-      return 'Server error occurred. Please try again in a moment.';
-    }
-
-    return apiMessage || fallback;
+  private getFriendlyErrorMessage(error: unknown, fallback: string): string {
+    return apiErrorMessage(error, fallback);
   }
 
   private canAssignRolePermissions(): boolean {

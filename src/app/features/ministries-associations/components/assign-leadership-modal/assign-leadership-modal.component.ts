@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -248,7 +249,7 @@ export class AssignLeadershipModalComponent implements OnInit {
   }
 
   private applyAssignError(error: unknown): void {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       this.formError = 'Could not assign leadership. Please try again.';
       return;
     }
@@ -261,7 +262,7 @@ export class AssignLeadershipModalComponent implements OnInit {
     this.formError = this.mapAssignError(error);
   }
 
-  private mapConflictMessage(error: HttpErrorResponse): string {
+  private mapConflictMessage(error: HttpErrorResponse | ApiError): string {
     const payload = error.error as {
       errors?: {
         conflict?: LeadershipConflict;
@@ -277,7 +278,7 @@ export class AssignLeadershipModalComponent implements OnInit {
     return `Cannot assign ${positionName} while ${holderName} holds this role. Terminate or hand over first.`;
   }
 
-  private mapAssignError(error: HttpErrorResponse): string {
+  private mapAssignError(error: HttpErrorResponse | ApiError): string {
     const payload = error.error as {
       message?: string;
       errors?: Record<string, string[] | LeadershipConflict>;

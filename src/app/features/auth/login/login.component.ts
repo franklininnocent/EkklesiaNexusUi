@@ -7,6 +7,7 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
@@ -139,8 +140,8 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.recoveryMessage = response.message;
           this.viewState = 'FORGOT_SUCCESS';
         },
-        error: () => {
-          this.recoveryError = 'Unable to process your request. Please try again.';
+        error: (err) => {
+          this.recoveryError = apiErrorMessage(err, 'Unable to process your request. Please try again.');
         },
       });
   }

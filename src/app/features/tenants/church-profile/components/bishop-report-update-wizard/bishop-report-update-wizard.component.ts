@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -379,7 +380,7 @@ export class BishopReportUpdateWizardComponent implements OnInit {
   }
 
   private readError(err: unknown, fallback: string): string {
-    if (err instanceof HttpErrorResponse) {
+    if ((err instanceof HttpErrorResponse || err instanceof ApiError)) {
       const apiMessage = err.error?.message;
       if (typeof apiMessage === 'string' && apiMessage.trim()) {
         return apiMessage;

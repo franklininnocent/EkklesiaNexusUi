@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { AuthService } from '@core/services/auth.service';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
@@ -33,7 +35,7 @@ import { StewardshipTablePanelComponent } from '../components/stewardship-table-
   template: `
     <section class="approvals cf-page cf-financial-dashboard">
       <app-page-header
-        title="Approvals"
+        title="Refunds"
         subtitle="Review refund requests. Approving a refund returns money on the family books."
       ></app-page-header>
 
@@ -121,6 +123,7 @@ import { StewardshipTablePanelComponent } from '../components/stewardship-table-
   `
 })
 export class DonationsApprovalsComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   approvals: DonationApproval[] = [];
   loaded = false;
   loadError: string | null = null;
@@ -137,7 +140,7 @@ export class DonationsApprovalsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.canApprove = this.authService.hasPermission('donations.approvals');
+    this.canApprove = this.actions.allows('donations.approvals');
     if (this.canApprove) {
       this.load();
     } else {
@@ -154,8 +157,8 @@ export class DonationsApprovalsComponent implements OnInit {
         this.loaded = true;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.loadError = 'Unable to load approvals.';
+      error: (err) => {
+        this.loadError = apiErrorMessage(err, 'Unable to load approvals.');
         this.loaded = true;
         this.cdr.markForCheck();
       }
@@ -194,7 +197,7 @@ export class DonationsApprovalsComponent implements OnInit {
       },
       error: (err: { error?: { message?: string } }) => {
         this.saving = false;
-        this.dialogError = err?.error?.message || 'Unable to save this decision.';
+        this.dialogError = apiErrorMessage(err, 'Unable to save this decision.');
         this.cdr.markForCheck();
       }
     });

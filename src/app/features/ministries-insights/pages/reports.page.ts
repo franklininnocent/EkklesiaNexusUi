@@ -10,6 +10,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { AuthService } from '@core/services/auth.service';
 import { Subject, takeUntil } from 'rxjs';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { DataTableComponent } from '@shared/components/data-table/data-table.component';
@@ -44,6 +46,7 @@ export class MinistriesInsightsReportsPageComponent implements OnInit, OnDestroy
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly auth = inject(AuthService);
   private readonly destroy$ = new Subject<void>();
 
   readonly windows: Array<{ days: MinistriesInsightsWindowDays; label: string }> = [
@@ -103,8 +106,15 @@ export class MinistriesInsightsReportsPageComponent implements OnInit, OnDestroy
     this.patchQuery({ type: this.selectedType, window_days: days });
   }
 
+  canExportCsv(): boolean {
+    return (
+      this.auth.isSuperAdmin() ||
+      (this.auth.isEkklesiaAdmin() && this.auth.hasPermission('ministries.platform.export'))
+    );
+  }
+
   exportCsv(): void {
-    if (!this.selectedType || this.exporting) {
+    if (!this.canExportCsv() || !this.selectedType || this.exporting) {
       return;
     }
     this.exporting = true;
@@ -199,15 +209,14 @@ export class MinistriesInsightsReportsPageComponent implements OnInit, OnDestroy
     });
   }
 
-  private handleError(err: HttpErrorResponse, catalog: boolean): void {
+  private handleError(err: unknown, catalog: boolean): void {
     if (catalog) {
       this.loadingCatalog = false;
     }
     this.loadingReport = false;
-    this.unauthorized = err.status === 403;
-    this.error = this.unauthorized
-      ? 'You do not have permission to view reports.'
-      : 'Unable to load reports.';
+    const message = apiErrorMessage(err, 'Unable to load reports.');
+    this.unauthorized = message.toLowerCase().includes('permission') || (err as { status?: number })?.status === 403;
+    this.error = message;
     this.cdr.markForCheck();
   }
 }

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { ForgotPasswordRequestsPage } from './forgot-password-requests.page';
 import { AuthService } from '@core/services/auth.service';
 import { PasswordRecoveryService } from '@core/services/password-recovery.service';
+import { ApiErrorMessages } from '@core/errors/api-error';
 
 describe('ForgotPasswordRequestsPage deep link', () => {
   const requestId = '11111111-2222-4333-8444-555555555555';
@@ -83,7 +84,7 @@ describe('ForgotPasswordRequestsPage deep link', () => {
     } as never);
     tick();
 
-    expect(fixture.componentInstance.error).toBe('Unable to load request details.');
+    expect(fixture.componentInstance.error).toBe(ApiErrorMessages.notFound);
     expect(fixture.componentInstance.detailOpen).toBe(false);
   }));
 });

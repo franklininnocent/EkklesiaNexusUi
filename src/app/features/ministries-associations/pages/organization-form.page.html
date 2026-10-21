@@ -38,7 +38,7 @@
         <span>Organizations need a category and type before you can add them.</span>
       </div>
       <div class="cf-decision-strip__actions">
-        <a routerLink="/ministries/settings" class="cf-btn cf-btn-primary">Go to Settings</a>
+        <a *appCan="'ministries.configure'" routerLink="/ministries/settings" class="cf-btn cf-btn-primary">Go to Settings</a>
       </div>
     </div>
 

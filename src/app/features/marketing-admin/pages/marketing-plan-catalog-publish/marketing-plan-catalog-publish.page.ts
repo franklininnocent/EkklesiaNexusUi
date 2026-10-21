@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -194,10 +195,10 @@ export class MarketingPlanCatalogPublishPage implements OnInit {
             }
             this.cdr.markForCheck();
           },
-          error: () => {
+          error: (err) => {
             this.loading = false;
             this.working = false;
-            this.error = 'Unable to load revision history.';
+            this.error = apiErrorMessage(err, 'Unable to load revision history.');
             this.cdr.markForCheck();
           },
         });

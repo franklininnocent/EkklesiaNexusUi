@@ -12,6 +12,7 @@
       <app-cf-action-icon name="arrow-left" />
     </a>
     <button
+          *ngIf="canRecord"
           aria-label="Record Disbursement"
           title="Record Disbursement" type="button" class="cf-btn cf-btn-icon cf-btn-primary" (click)="showForm = !showForm">
           <app-cf-action-icon name="wallet" />

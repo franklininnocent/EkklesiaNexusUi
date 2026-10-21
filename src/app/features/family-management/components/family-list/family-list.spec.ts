@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { FamilyListComponent } from './family-list';
 import { FamilyService } from '../../../../core/services/family.service';
 import { BCCService } from '../../../../core/services/bcc.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
@@ -51,8 +52,11 @@ describe('FamilyListComponent (list + stats)', () => {
             hasParishContext: jest.fn(() => true),
             isTenantAdmin: jest.fn(() => true),
             hasPermission: jest.fn(() => true),
+            currentUser$: of(null),
+            currentUserValue: null,
           },
         },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
         { provide: ToastService, useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } },
         { provide: SubscriptionAccessService, useValue: { isReadOnly: jest.fn(() => false) } },
         { provide: SupportSessionService, useValue: { session$: of(null), sessionId: null } },

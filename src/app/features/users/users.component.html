@@ -10,6 +10,7 @@
       (searchChange)="onSearchChange($event)"
     >
       <button
+        *appCan="'users.create'"
         type="button"
         class="cf-btn cf-btn-primary"
         cfDisableWhenReadOnly
@@ -106,15 +107,17 @@
             </td>
             <td class="cf-table__actions-cell">
               <div class="cf-row-actions">
-                <button
-                  *ngIf="user.can_edit !== false"
-                  type="button"
-                  class="cf-btn cf-btn--sm"
-                  (click)="openEditUserModal(user)"
-                  title="Edit user"
-                >
-                  Edit
-                </button>
+                <ng-container *appCan="'users.update'">
+                  <button
+                    *ngIf="user.can_edit !== false"
+                    type="button"
+                    class="cf-btn cf-btn--sm"
+                    (click)="openEditUserModal(user)"
+                    title="Edit user"
+                  >
+                    Edit
+                  </button>
+                </ng-container>
 
                 <button
                   *ngIf="user.can_reset_password"
@@ -127,25 +130,29 @@
                   Reset Password
                 </button>
 
-                <button
-                  *ngIf="!(user.is_primary_admin && user.active === 1)"
-                  type="button"
-                  class="cf-btn cf-btn--sm"
-                  (click)="toggleUserStatus(user)"
-                  [title]="user.active === 1 ? 'Deactivate user' : 'Activate user'"
-                >
-                  {{ user.active === 1 ? 'Deactivate' : 'Activate' }}
-                </button>
+                <ng-container *appCan="'users.update'">
+                  <button
+                    *ngIf="!(user.is_primary_admin && user.active === 1)"
+                    type="button"
+                    class="cf-btn cf-btn--sm"
+                    (click)="toggleUserStatus(user)"
+                    [title]="user.active === 1 ? 'Deactivate user' : 'Activate user'"
+                  >
+                    {{ user.active === 1 ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </ng-container>
 
-                <button
-                  *ngIf="isTenantAdmin && !user.is_primary_admin"
-                  type="button"
-                  class="cf-btn cf-btn--sm cf-btn-danger"
-                  (click)="deleteUser(user)"
-                  title="Delete user"
-                >
-                  Delete
-                </button>
+                <ng-container *appCan="'users.delete'">
+                  <button
+                    *ngIf="!user.is_primary_admin"
+                    type="button"
+                    class="cf-btn cf-btn--sm cf-btn-danger"
+                    (click)="deleteUser(user)"
+                    title="Delete user"
+                  >
+                    Delete
+                  </button>
+                </ng-container>
 
                 <span
                   *ngIf="user.can_edit === false && (user.is_primary_admin && user.active === 1) && !(isTenantAdmin && !user.is_primary_admin)"
@@ -179,14 +186,16 @@
           : 'Add your first team member to get started.'
       "
     >
-      <button
-        *ngIf="!hasActiveSearch"
-        type="button"
-        class="cf-btn cf-btn-primary"
-        (click)="openCreateUserModal()"
-      >
-        Add User
-      </button>
+      <ng-container *ngIf="!hasActiveSearch">
+        <button
+          *appCan="'users.create'"
+          type="button"
+          class="cf-btn cf-btn-primary"
+          (click)="openCreateUserModal()"
+        >
+          Add User
+        </button>
+      </ng-container>
     </app-cf-empty-state>
   </ng-container>
 

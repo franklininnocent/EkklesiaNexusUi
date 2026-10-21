@@ -6,6 +6,7 @@ import {
   Output
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { Family, FamilyMember } from '@core/models/family.model';
 import { SacramentTypeDto } from '@core/services/sacrament-type-lookup.service';
 import { getMemberDisplayName } from '../../utils/profile-completion.util';
@@ -17,7 +18,7 @@ import { Sacrament } from '@features/settings/sacraments/models/sacrament.model'
 @Component({
   selector: 'app-family-member-detail-panel',
   standalone: true,
-  imports: [CommonModule, FamilyHeadProfileBlockComponent, FamilyAffiliationsPanelComponent],
+  imports: [CommonModule, CanActionDirective, FamilyHeadProfileBlockComponent, FamilyAffiliationsPanelComponent],
   templateUrl: './family-member-detail-panel.component.html',
   styleUrls: ['./family-member-detail-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

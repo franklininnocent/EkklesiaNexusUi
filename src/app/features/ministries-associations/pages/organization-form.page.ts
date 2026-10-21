@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError } from '@core/errors/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -11,7 +12,8 @@ import {
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
-import { AuthService } from '@core/services/auth.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { ToastService } from '@core/services/toast.service';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -39,6 +41,7 @@ import {
     PageHeaderComponent,
     LoadingSkeletonComponent,
     OrganizationFormFieldsComponent,
+    CanActionDirective,
   ],
   templateUrl: './organization-form.page.html',
   styleUrl: './organization-form.page.scss',
@@ -47,7 +50,7 @@ import {
 export class OrganizationFormPageComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly api = inject(MinistriesApiService);
-  private readonly authService = inject(AuthService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
   private readonly fb = inject(FormBuilder);
@@ -67,7 +70,7 @@ export class OrganizationFormPageComponent implements OnInit, OnDestroy {
   readonly form = createOrganizationFormGroup(this.fb);
 
   ngOnInit(): void {
-    this.canAccess = this.authService.hasPermission('ministries.create');
+    this.canAccess = this.actions.allows('ministries.create');
 
     if (!this.canAccess) {
       this.loading = false;
@@ -203,7 +206,7 @@ export class OrganizationFormPageComponent implements OnInit, OnDestroy {
   }
 
   private applySubmitError(error: unknown, fallback: string): void {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       this.formError = fallback;
       return;
     }

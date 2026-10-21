@@ -3,6 +3,7 @@ import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, map, startWith } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { NavMenuService } from '@core/services/nav-menu.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import {
@@ -51,8 +52,9 @@ export type { StewardshipWorkspaceId };
             <a
               *ngFor="let link of currentWorkspaceLinks()"
               [routerLink]="link.path"
+              [queryParams]="link.query"
               routerLinkActive="cf-workspace-subnav__link--active"
-              [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+              [routerLinkActiveOptions]="{ exact: link.exact ?? false, queryParams: link.query ? 'exact' : 'ignored' }"
               class="cf-workspace-subnav__link"
               [attr.title]="link.description || link.label"
             >
@@ -79,6 +81,7 @@ export type { StewardshipWorkspaceId };
 export class StewardshipWorkspaceShellComponent {
   private readonly router = inject(Router);
   private readonly navMenu = inject(NavMenuService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly entitlements = inject(EntitlementService);
 
   readonly workspaces = STEWARDSHIP_WORKSPACES;
@@ -99,7 +102,7 @@ export class StewardshipWorkspaceShellComponent {
   currentWorkspaceLinks(): StewardshipNavLink[] {
     this.entitlements.entitlements();
     const links = this.workspaces.find((workspace) => workspace.id === this.activeWorkspace())?.links ?? [];
-    return links.filter((link) => this.navMenu.isRouteAllowed(link.path));
+    return links.filter((link) => this.linkAllowed(link));
   }
 
   activeWorkspaceLabel(): string {
@@ -110,8 +113,15 @@ export class StewardshipWorkspaceShellComponent {
     return this.workspaces.find((workspace) => workspace.id === this.activeWorkspace())?.zone ?? 'Stewardship';
   }
 
+  private linkAllowed(link: StewardshipNavLink): boolean {
+    if (!this.navMenu.isRouteAllowed(link.path)) {
+      return false;
+    }
+    return !link.actionId || this.actions.allows(link.actionId);
+  }
+
   goToWorkspace(workspace: StewardshipWorkspace): void {
-    const target = workspace.links.find((link) => this.navMenu.isRouteAllowed(link.path))?.path ?? '/donations';
+    const target = workspace.links.find((link) => this.linkAllowed(link))?.path ?? '/donations';
     if (this.router.url !== target) {
       void this.router.navigateByUrl(target);
     }

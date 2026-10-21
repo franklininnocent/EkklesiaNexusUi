@@ -202,7 +202,7 @@ function buildWorkflowGroups(data: FinancialCommandCenterPayload): HubWorkflowGr
       description: 'Plans, funding projects, and installment tracking',
       icon: 'projects',
       items: [
-        { label: 'Contribution Plans', description: 'Mandatory and voluntary plans', route: '/donations/plans' },
+        { label: 'Contribution Plans', description: 'Expected amounts for eligible families', route: '/donations/plans' },
         { label: 'Funding Projects', description: 'Active parish initiatives', route: '/donations/projects' },
         { label: 'Installments', description: 'Project installment tracking', route: '/donations/project-installments' }
       ]

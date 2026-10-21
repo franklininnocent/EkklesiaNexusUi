@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Subject, takeUntil } from 'rxjs';
 import {
   AdvancedSearchPanelComponent,
@@ -270,12 +270,9 @@ export class MinistriesInsightsOrganizationsPageComponent implements OnInit, OnD
           this.loading = false;
           this.cdr.markForCheck();
         },
-        error: (err: HttpErrorResponse) => {
+        error: (err: unknown) => {
           this.loading = false;
-          this.error =
-            err.status === 401 || err.status === 403
-              ? 'You do not have permission to view organizations.'
-              : 'Unable to load organizations.';
+          this.error = apiErrorMessage(err, 'Unable to load organizations.');
           this.cdr.markForCheck();
         },
       });

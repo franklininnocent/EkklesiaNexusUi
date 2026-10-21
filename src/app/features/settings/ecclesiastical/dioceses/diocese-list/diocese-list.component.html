@@ -25,7 +25,7 @@
         Filters
         <span *ngIf="getActiveFilterCount() > 0" class="filter-badge">{{ getActiveFilterCount() }}</span>
       </button>
-      <button class="cf-btn cf-btn-primary" (click)="onCreateDiocese()">
+      <button *appCan="'dioceses.create'" class="cf-btn cf-btn-primary" (click)="onCreateDiocese()">
         <span class="btn-icon">➕</span>
         Add Diocese
       </button>
@@ -83,9 +83,24 @@
     icon="⛪"
     [title]="searchTerm || selectedCountry || selectedDenomination ? 'No dioceses match your filters' : 'No dioceses found'"
     [description]="searchTerm || selectedCountry || selectedDenomination ? 'Try adjusting your search or filters to find what you\'re looking for.' : 'Get started by adding your first diocese to the system.'">
-    <button type="button" class="cf-btn cf-btn-primary" (click)="searchTerm || selectedCountry || selectedDenomination ? clearFilters() : onCreateDiocese()">
-      {{ searchTerm || selectedCountry || selectedDenomination ? 'Clear Filters' : 'Add First Diocese' }}
+    <button
+      *ngIf="searchTerm || selectedCountry || selectedDenomination"
+      type="button"
+      class="cf-btn cf-btn-primary"
+      (click)="clearFilters()"
+    >
+      Clear Filters
     </button>
+    <ng-container *ngIf="!(searchTerm || selectedCountry || selectedDenomination)">
+    <button
+      *appCan="'dioceses.create'"
+      type="button"
+      class="cf-btn cf-btn-primary"
+      (click)="onCreateDiocese()"
+    >
+      Add First Diocese
+    </button>
+    </ng-container>
   </app-cf-empty-state>
 
   <!-- Table -->
@@ -129,10 +144,10 @@
             <button (click)="onViewDiocese(diocese)" class="action-btn view" title="View Details">
               👁️
             </button>
-            <button (click)="onEditDiocese(diocese)" class="action-btn edit" title="Edit">
+            <button *appCan="'dioceses.update'" (click)="onEditDiocese(diocese)" class="action-btn edit" title="Edit">
               ✏️
             </button>
-            <button (click)="onDeleteDiocese(diocese)" class="action-btn delete" title="Delete">
+            <button *appCan="'dioceses.delete'" (click)="onDeleteDiocese(diocese)" class="action-btn delete" title="Delete">
               🗑️
             </button>
           </td>

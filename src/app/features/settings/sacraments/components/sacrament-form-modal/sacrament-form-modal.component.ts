@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError, apiErrorMessage } from '@core/errors/api-error';
 import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -588,7 +589,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
         },
         error: (error) => {
           console.error('Error fetching sacrament details:', error);
-          this.toastService.error('Failed to load sacrament details.');
+          this.toastService.error(apiErrorMessage(error, 'Failed to load sacrament details.'));
           // Fallback to using the provided sacrament data
           this.waitForTypesAndLoadData();
           this.loading = false;
@@ -925,7 +926,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
               || 'An official register entry already exists for this person in this parish.';
             this.toastService.error(this.baptismDuplicateWarning || 'An official register entry already exists for this person in this parish.');
           } else {
-            this.toastService.error(error?.message || error?.error?.message || 'Failed to create sacrament.');
+            this.toastService.error(error?.message || apiErrorMessage(error, 'Failed to create sacrament.'));
           }
           this.continueAfterSave = false;
           this.saving = false;
@@ -1008,7 +1009,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
 
   private handleLifecycleConflict(error: unknown, fallback: string): void {
     const status =
-      error instanceof HttpErrorResponse
+      (error instanceof HttpErrorResponse || error instanceof ApiError)
         ? error.status
         : (error as { status?: number })?.status;
     if (status === 409) {
@@ -2507,7 +2508,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
       },
       error: (error) => {
         console.error('Error loading BCCs:', error);
-        this.toastService.error('Failed to load BCCs.');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load BCCs.'));
         this.loadingBCCs = false;
         this.cdr.markForCheck();
       }
@@ -2538,7 +2539,7 @@ export class SacramentFormModalComponent implements OnInit, OnChanges, OnDestroy
         },
         error: (error) => {
           console.error('Error loading families:', error);
-          this.toastService.error('Failed to load families for selected BCC.');
+          this.toastService.error(apiErrorMessage(error, 'Failed to load families for selected BCC.'));
           this.families = [];
           this.loadingFamilies = false;
           this.cdr.markForCheck();

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -147,7 +148,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not assign this ticket.';
+        this.actionError = apiErrorMessage(err, 'Could not assign this ticket.');
         this.acting = false;
         this.cdr.markForCheck();
       },
@@ -329,7 +330,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not post your comment.';
+        this.actionError = apiErrorMessage(err, 'Could not post your comment.');
         this.posting = false;
         this.cdr.markForCheck();
       },
@@ -351,7 +352,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not save the internal note.';
+        this.actionError = apiErrorMessage(err, 'Could not save the internal note.');
         this.postingInternal = false;
         this.cdr.markForCheck();
       },
@@ -498,7 +499,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not mark this ticket as resolved.';
+        this.actionError = apiErrorMessage(err, 'Could not mark this ticket as resolved.');
         this.acting = false;
         this.cdr.markForCheck();
       },
@@ -520,7 +521,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not close this ticket.';
+        this.actionError = apiErrorMessage(err, 'Could not close this ticket.');
         this.acting = false;
         this.cdr.markForCheck();
       },
@@ -542,7 +543,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not reopen this ticket.';
+        this.actionError = apiErrorMessage(err, 'Could not reopen this ticket.');
         this.acting = false;
         this.cdr.markForCheck();
       },
@@ -559,7 +560,7 @@ export class SupportOpsTicketDetailPage implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.actionError = err?.error?.message || 'Could not update this ticket.';
+        this.actionError = apiErrorMessage(err, 'Could not update this ticket.');
         this.acting = false;
         this.cdr.markForCheck();
       },

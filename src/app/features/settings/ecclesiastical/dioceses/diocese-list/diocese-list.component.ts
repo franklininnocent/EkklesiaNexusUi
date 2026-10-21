@@ -1,4 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -30,12 +33,14 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
     AdvancedSearchPanelComponent,
     PaginationComponent,
     PageHeaderComponent,
+    CanActionDirective,
   ],
   templateUrl: './diocese-list.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './diocese-list.component.scss'
 })
 export class DioceseListComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   dioceses: Diocese[] = [];
   countries: any[] = [];
   denominations: any[] = [];
@@ -134,7 +139,7 @@ export class DioceseListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading dioceses:', error);
-        this.toastService.error('Failed to load dioceses');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load dioceses'));
         this.loading = false;
         this.dioceses = [];
         this.currentPage = 1;
@@ -411,11 +416,19 @@ export class DioceseListComponent implements OnInit {
   }
 
   onCreateDiocese(): void {
+    if (!this.actions.allows('dioceses.create')) {
+      this.toastService.warning('You do not have permission to add a diocese.', 'Permission');
+      return;
+    }
     this.selectedDiocese = null;
     this.showFormModal = true;
   }
 
   onEditDiocese(diocese: Diocese): void {
+    if (!this.actions.allows('dioceses.update')) {
+      this.toastService.warning('You do not have permission to edit dioceses.', 'Permission');
+      return;
+    }
     this.selectedDiocese = diocese;
     this.showFormModal = true;
   }
@@ -443,11 +456,19 @@ export class DioceseListComponent implements OnInit {
   }
 
   onDeleteDiocese(diocese: Diocese): void {
+    if (!this.actions.allows('dioceses.delete')) {
+      this.toastService.warning('You do not have permission to delete dioceses.', 'Permission');
+      return;
+    }
     this.dioceseToDelete = diocese;
     this.showDeleteModal = true;
   }
 
   confirmDelete(): void {
+    if (!this.actions.allows('dioceses.delete')) {
+      this.toastService.warning('You do not have permission to delete dioceses.', 'Permission');
+      return;
+    }
     if (this.dioceseToDelete) {
       this.dioceseService.deleteDiocese(this.dioceseToDelete.id).subscribe({
         next: () => {
@@ -461,7 +482,7 @@ export class DioceseListComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting diocese:', error);
-          this.toastService.error('Failed to delete diocese');
+          this.toastService.error(apiErrorMessage(error, 'Failed to delete diocese'));
         }
       });
     }

@@ -6,6 +6,7 @@
         <span class="family-summary-card__status" [ngClass]="statusClass">{{ statusLabel }}</span>
       </div>
       <app-edit-icon-button
+        *appCan="'families.edit'"
         ariaLabel="Edit family details"
         (clicked)="editFamily.emit()"
       />

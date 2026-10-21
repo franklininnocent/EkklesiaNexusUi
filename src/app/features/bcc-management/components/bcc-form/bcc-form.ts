@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -227,7 +228,7 @@ export class BCCFormComponent implements OnInit, OnDestroy, AfterViewInit {
           },
           error: (error) => {
             this.loading = false;
-            this.error = error?.error?.message || 'Failed to save BCC. Please try again.';
+            this.error = apiErrorMessage(error, 'Failed to save BCC. Please try again.');
             console.error('Error saving BCC:', error);
             this.cdr.markForCheck();
           }

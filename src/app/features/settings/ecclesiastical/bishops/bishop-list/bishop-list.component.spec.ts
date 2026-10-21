@@ -10,6 +10,9 @@ import {
   extractBishopList,
   extractBishopPagination,
 } from '@core/services/ecclesiastical';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { AuthService } from '@core/services/auth.service';
+import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { ToastService } from '@core/services';
 import { Bishop } from '@core/models/ecclesiastical';
 
@@ -90,6 +93,12 @@ describe('BishopListComponent', () => {
         { provide: ToastService, useValue: toastStub },
         { provide: Router, useValue: routerStub },
         { provide: ActivatedRoute, useValue: routeStub },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
+        { provide: AuthService, useValue: { currentUser$: of(null), currentUserValue: null } },
+        {
+          provide: SupportSessionService,
+          useValue: { session$: of(null), currentSession: null, isSessionLive: false },
+        },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();

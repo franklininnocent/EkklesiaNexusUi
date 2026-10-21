@@ -11,6 +11,7 @@
       (filtersOpened)="showAdvancedSearch = true"
     >
       <button
+        *appCan="'bcc.create'"
         type="button"
         class="cf-btn cf-btn-primary"
         cfDisableWhenReadOnly
@@ -80,7 +81,7 @@
             <th scope="col">Meeting Day</th>
             <th scope="col">Status</th>
             <th
-              *ngIf="isTenantAdmin"
+              *appCan="'bcc.delete'"
               scope="col"
               class="cf-table__actions-col"
             >
@@ -116,7 +117,7 @@
               <app-status-badge [label]="bcc.status | titlecase" [tone]="statusTone(bcc.status)"></app-status-badge>
             </td>
             <td
-              *ngIf="isTenantAdmin"
+              *appCan="'bcc.delete'"
               class="cf-table__actions-cell"
               (click)="$event.stopPropagation()"
               (keydown)="$event.stopPropagation()"
@@ -159,14 +160,16 @@
           : 'No BCCs found. Create your first BCC to start managing members.'
       "
     >
+      <ng-container *ngIf="!hasActiveFiltersOrSearch">
       <button
-        *ngIf="!hasActiveFiltersOrSearch"
+        *appCan="'bcc.create'"
         type="button"
         class="cf-btn cf-btn-primary"
         (click)="createBCC()"
       >
         Add BCC
       </button>
+      </ng-container>
       <button
         *ngIf="hasActiveFiltersOrSearch"
         type="button"

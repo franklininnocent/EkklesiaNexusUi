@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, EMPTY } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { ToastService } from '@core/services/toast.service';
@@ -100,6 +101,7 @@ describe('DonationsDuesComponent', () => {
         },
         { provide: QuickCollectService, useValue: quickCollect },
         { provide: AuthService, useValue: { hasPermission: jest.fn(() => true) } },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
         { provide: ToastService, useValue: { success: jest.fn(), warning: jest.fn(), error: jest.fn() } },
         { provide: ConfirmationDialogService, useValue: { confirm: jest.fn(() => of({ confirmed: true })) } },
         { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD' } },

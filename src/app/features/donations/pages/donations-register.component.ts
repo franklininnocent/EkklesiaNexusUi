@@ -1,8 +1,10 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { FamilyService } from '@core/services/family.service';
 import { Family } from '@core/models/family.model';
@@ -64,6 +66,7 @@ type RegisterSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'me
   styleUrls: ['./donations-register.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsRegisterComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   categories: DonationCategory[] = [];
   donors: Donor[] = [];
   families: Family[] = [];
@@ -107,12 +110,16 @@ export class DonationsRegisterComponent implements OnInit {
     private quickCollectService: QuickCollectService,
     private receiptPrintService: ReceiptPrintService,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private destroyRef: DestroyRef
   ) {}
 
   ngOnInit(): void {
-    this.canCollect = this.authService.hasPermission('donations.collect');
+    this.canCollect = this.actions.allows('donations.collect');
+    if (this.canCollect && this.route.snapshot.queryParamMap.get('record') === '1') {
+      this.showVoluntaryDonationModal = true;
+    }
     this.canExport = this.authService.hasAnyPermission(['donations.reports', 'donations.export']);
     this.initSearchFields();
     this.donationsService.getCategories().subscribe({
@@ -334,9 +341,9 @@ export class DonationsRegisterComponent implements OnInit {
         this.loadPledgedEntries();
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
+      error: (err) => {
         this.saving = false;
-        this.message = 'Failed to collect donation.';
+        this.message = apiErrorMessage(err, 'Failed to collect donation.');
         refreshStewardshipView(this.cdr);
       },
     });

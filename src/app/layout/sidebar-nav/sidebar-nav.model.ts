@@ -32,6 +32,8 @@ export interface SidebarNavNode {
   exact?: boolean;
   icon?: SidebarNavIconId;
   menuId?: NavMenuId;
+  /** Catalog action id. Hidden when the signed-in user cannot perform it. */
+  permissionAction?: string;
   query?: Record<string, string>;
   /** When URL omits a query key, treat these values as matched (e.g. default RBAC tab). */
   defaultWhenQueryMissing?: Record<string, string>;
