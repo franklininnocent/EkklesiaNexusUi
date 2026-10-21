@@ -198,44 +198,26 @@
         <h3 id="proj-section-schedule" class="cf-split-section__title">Schedule</h3>
         <div class="cf-split-grid">
           <div class="cf-split-field">
-            <label for="project-start-date">Start date</label>
-            <div class="proj-date-input">
-              <app-cf-date-field
-                inputId="project-start-date"
-                formControlName="start_date"
-                aria-label="Select project start date"
-                [class.cf-form-field__control--invalid]="isFieldInvalid('start_date')"
-              />
-              <span class="proj-date-input__icon" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-              </span>
-            </div>
+            <label for="project-start-date">Start date <span class="cf-split-optional">optional</span></label>
+            <app-cf-date-field
+              inputId="project-start-date"
+              formControlName="start_date"
+              aria-label="Select project start date"
+              [invalid]="isFieldInvalid('start_date')"
+              [class.cf-split-field__control--invalid]="isFieldInvalid('start_date')"
+            />
             <p class="cf-split-field__hint" *ngIf="isFieldInvalid('start_date')" role="alert">{{ fieldError('start_date') }}</p>
           </div>
 
           <div class="cf-split-field">
-            <label for="project-end-date">End date</label>
-            <div class="proj-date-input">
-              <app-cf-date-field
-                inputId="project-end-date"
-                formControlName="end_date"
-                aria-label="Select project end date"
-                [class.cf-form-field__control--invalid]="isFieldInvalid('end_date')"
-              />
-              <span class="proj-date-input__icon" aria-hidden="true">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-              </span>
-            </div>
+            <label for="project-end-date">End date <span class="cf-split-optional">optional</span></label>
+            <app-cf-date-field
+              inputId="project-end-date"
+              formControlName="end_date"
+              aria-label="Select project end date"
+              [invalid]="isFieldInvalid('end_date')"
+              [class.cf-split-field__control--invalid]="isFieldInvalid('end_date')"
+            />
             <p class="cf-split-field__hint" *ngIf="isFieldInvalid('end_date')" role="alert">{{ fieldError('end_date') }}</p>
           </div>
 
@@ -268,21 +250,44 @@
       <!-- Family assignments (conditional) -->
       <section class="cf-split-section" aria-labelledby="proj-section-assignments" *ngIf="needsAssignments">
         <h3 id="proj-section-assignments" class="cf-split-section__title">Family assignments & exceptions</h3>
-        <div class="cf-split-grid assignment-toolbar">
-          <div class="cf-split-field">
-            <select [(ngModel)]="selectedFamilyId" [ngModelOptions]="{standalone: true}" aria-label="Select family">
+        <div class="cf-split-grid proj-assignment-toolbar">
+          <div class="cf-split-field cf-split-field--full">
+            <label for="proj-assign-family">Family</label>
+            <select id="proj-assign-family" [(ngModel)]="selectedFamilyId" [ngModelOptions]="{standalone: true}">
               <option value="">Select family</option>
               <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
             </select>
           </div>
           <div class="cf-split-field">
-            <input [(ngModel)]="assignmentAmount" [ngModelOptions]="{standalone: true}" type="number" placeholder="Target amount" aria-label="Target amount" />
+            <label for="proj-assign-amount">Target amount</label>
+            <input
+              id="proj-assign-amount"
+              [(ngModel)]="assignmentAmount"
+              [ngModelOptions]="{standalone: true}"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
           </div>
-          <label class="checkbox"><input [(ngModel)]="assignmentExempt" [ngModelOptions]="{standalone: true}" type="checkbox" /> Exempt</label>
           <div class="cf-split-field">
-            <app-cf-date-field [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" aria-label="Effective from" />
+            <label for="proj-assign-effective">Effective from</label>
+            <app-cf-date-field
+              inputId="proj-assign-effective"
+              [(ngModel)]="assignmentEffectiveFrom"
+              [ngModelOptions]="{standalone: true}"
+              aria-label="Effective from"
+            />
           </div>
-          <button type="button" class="cf-btn cf-btn-icon" (click)="addAssignment()" aria-label="Add" title="Add"><app-cf-action-icon name="plus" /></button>
+          <div class="cf-split-field proj-assignment-toolbar__actions">
+            <label class="cf-split-toggle">
+              <input [(ngModel)]="assignmentExempt" [ngModelOptions]="{standalone: true}" type="checkbox" />
+              <span>Exempt</span>
+            </label>
+            <button type="button" class="cf-btn cf-btn-icon cf-btn-primary" (click)="addAssignment()" aria-label="Add assignment" title="Add assignment">
+              <app-cf-action-icon name="plus" />
+            </button>
+          </div>
         </div>
         <table *ngIf="draftAssignments.length" class="table cf-table">
           <thead><tr><th>Family</th><th>Target</th><th>Exempt</th><th>From</th><th></th></tr></thead>
