@@ -11,9 +11,11 @@ export function buildDonationsSidebarTree(): SidebarNavNode {
       id: `donations-${workspace.id}`,
       label: workspace.label,
       children: workspace.links.map((link) => ({
-        id: `donations-${workspace.id}-${slugFromPath(link.path)}`,
+        id: `donations-${workspace.id}-${slugFromPath(link.path)}${link.query ? '-gift' : ''}`,
         label: link.label,
         route: link.path,
+        query: link.query,
+        permissionAction: link.actionId,
         exact: link.exact,
         crossLink: !link.path.startsWith('/donations'),
         excludeFromAutoExpand: !link.path.startsWith('/donations'),

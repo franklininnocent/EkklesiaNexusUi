@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { tenantAuditGuard } from '@core/guards/tenant-audit.guard';
 import { entitlementGuard } from '@core/guards/entitlement.guard';
+import { permissionGuard } from '@core/guards/permission.guard';
 import { OrganizationBreadcrumbResolver } from './resolvers/organization-breadcrumb.resolver';
 
 export const MINISTRIES_ROUTES: Routes = [
@@ -11,9 +12,10 @@ export const MINISTRIES_ROUTES: Routes = [
   },
   {
     path: 'new',
+    canActivate: [permissionGuard],
     loadComponent: () =>
       import('./pages/organization-form.page').then(m => m.OrganizationFormPageComponent),
-    data: { breadcrumbLabel: 'Add organization' },
+    data: { breadcrumbLabel: 'Add organization', permissionAction: 'ministries.create' },
   },
   {
     path: 'guests',
@@ -23,9 +25,10 @@ export const MINISTRIES_ROUTES: Routes = [
   },
   {
     path: 'settings',
+    canActivate: [permissionGuard],
     loadComponent: () =>
       import('./pages/taxonomy-settings.page').then(m => m.TaxonomySettingsPageComponent),
-    data: { breadcrumbLabel: 'Settings' },
+    data: { breadcrumbLabel: 'Settings', permissionAction: 'ministries.configure' },
   },
   {
     path: 'audit',

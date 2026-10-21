@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { MinistriesSubNavComponent } from './ministries-sub-nav.component';
 
@@ -17,6 +18,7 @@ describe('MinistriesSubNavComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: authMock },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
       ],
     }).compileComponents();
 

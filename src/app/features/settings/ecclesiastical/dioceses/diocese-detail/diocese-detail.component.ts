@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DioceseService } from '@core/services/ecclesiastical';
@@ -82,7 +83,7 @@ export class DioceseDetailComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading diocese:', error);
-        this.toastService.error('Failed to load diocese details');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load diocese details'));
         this.loading = false;
         this.router.navigate(['/settings/ecclesiastical/dioceses']);
       }
@@ -161,7 +162,7 @@ export class DioceseDetailComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting diocese:', error);
-          this.toastService.error('Failed to delete diocese');
+          this.toastService.error(apiErrorMessage(error, 'Failed to delete diocese'));
           this.showDeleteModal = false;
         }
       });

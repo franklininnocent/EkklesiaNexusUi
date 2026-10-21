@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -168,7 +169,7 @@ export class AppointSuccessorModalComponent implements OnChanges {
       },
       error: (error) => {
         console.error('Succession failed:', error);
-        this.toastService.error(error?.error?.message || 'Failed to appoint successor');
+        this.toastService.error(apiErrorMessage(error, 'Failed to appoint successor'));
         this.isSubmitting = false;
         this.cdr.markForCheck();
       },

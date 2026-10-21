@@ -99,7 +99,11 @@ export function matchedRouteLength(node: SidebarNavNode, path: string): number {
 
   if (node.activePath) {
     const activePath = node.activePath.split('?')[0];
-    if (pathMatches(path, activePath, false)) {
+    // Trailing slash means "routes under this section" (`/families/123`), not an extra slash.
+    const covered = activePath.endsWith('/')
+      ? path.startsWith(activePath)
+      : pathMatches(path, activePath, false);
+    if (covered) {
       length = Math.max(length, activePath.length);
     }
   }

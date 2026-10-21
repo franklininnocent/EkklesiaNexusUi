@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, Routes, UrlTree } from '@angular/router';
+import { permissionGuard } from '@core/guards/permission.guard';
 import { massScheduleCanDeactivateGuard } from './guards/mass-schedule-can-deactivate.guard';
 import { massSchedulePermissionGuard } from './guards/mass-schedule-permission.guard';
 
@@ -36,7 +37,8 @@ export const MASS_INTENTIONS_ROUTES: Routes = [
       },
       {
         path: 'settings',
-        data: { breadcrumbLabel: 'Settings' },
+        canActivate: [permissionGuard],
+        data: { breadcrumbLabel: 'Settings', permissionAction: 'mass.intentions.configure' },
         loadComponent: () =>
           import('./pages/mass-intentions-settings.page').then((m) => m.MassIntentionsSettingsPageComponent),
       },

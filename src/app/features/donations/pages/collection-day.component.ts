@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -26,7 +27,7 @@ import {
   completionPercent
 } from '../utils/collection-day-metrics.util';
 import { refreshStewardshipView, setupStewardshipRouteReload } from '../utils/stewardship-view.util';
-import { localDateOnly, requiresGatewayReference } from '../utils/local-date-only';
+import { localDateOnly, newIdempotencyKey, requiresGatewayReference } from '../utils/local-date-only';
 import { formatPaymentDateTime } from '../utils/payment-datetime';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import { CfFamilyHeadNamePipe } from '@shared/pipes/cf-family-head-name.pipe';
@@ -98,7 +99,13 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
   method = 'cash';
   gatewayReference = '';
   notes = '';
+  offeringCategoryId = '';
+  generalPurposeId = '';
+  offeringCategories: Array<{ id: string; name: string }> = [];
+  collectionPurposes: Array<{ id: string; name: string }> = [];
   saving = false;
+  private pendingIdempotencyKey: string | null = null;
+  private lastIdempotencyFingerprint: string | null = null;
   error: string | null = null;
   successMessage: string | null = null;
   receiptPreview: DonationReceiptPreview | null = null;
@@ -124,10 +131,10 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
   ];
 
   readonly collectTypes: Array<{ id: CollectType; label: string; hint: string }> = [
-    { id: 'general', label: 'General', hint: 'Flexible allocation' },
-    { id: 'mandatory', label: 'Mandatory', hint: 'Plan contributions' },
+    { id: 'general', label: 'General', hint: 'Family credit until a purpose is chosen' },
+    { id: 'mandatory', label: 'Mandatory', hint: 'Open family dues only' },
     { id: 'project', label: 'Project', hint: 'Campaign / project' },
-    { id: 'offering', label: 'Offering', hint: 'Voluntary gift' }
+    { id: 'offering', label: 'Offering', hint: 'A gift under a category' }
   ];
 
   readonly keyboardShortcuts = [
@@ -154,6 +161,7 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
       && !!this.payerName.trim()
       && !!this.amount
       && this.amount > 0
+      && (this.collectType !== 'offering' || !!this.offeringCategoryId)
       && (!this.needsReference || !!this.gatewayReference.trim());
   }
 
@@ -256,19 +264,61 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
     return suggestions;
   }
 
+  get postActionLabel(): string {
+    if (this.saving) {
+      return 'Processing…';
+    }
+    if (this.collectType === 'mandatory') {
+      return 'Post to open dues';
+    }
+    if (this.collectType === 'offering') {
+      return this.offeringCategoryId ? 'Post gift' : 'Choose a gift type';
+    }
+    if (this.collectType === 'general' && this.generalPurposeId) {
+      const purpose = this.collectionPurposes.find((row) => row.id === this.generalPurposeId);
+      return purpose ? `Post to ${purpose.name}` : 'Post to collection purpose';
+    }
+    if (this.collectType === 'general') {
+      return 'Post as family credit';
+    }
+    return 'Post Collection';
+  }
+
   get allocationPreview(): AllocationRow[] {
     if (!this.amount || this.amount <= 0) {
       return [];
     }
     const rows: AllocationRow[] = [];
-    if (this.collectType === 'mandatory' && this.outstandingBalance > 0) {
-      rows.push({
-        label: 'Mandatory contribution',
-        amount: Math.min(this.amount, this.outstandingBalance)
-      });
-      if (this.amount > this.outstandingBalance) {
-        rows.push({ label: 'Advance / credit', amount: this.amount - this.outstandingBalance });
+    if (this.collectType === 'mandatory') {
+      let remaining = Number(this.amount);
+      for (const due of this.mandatoryDues()) {
+        if (remaining <= 0) {
+          break;
+        }
+        const open = this.dueOutstanding(due);
+        if (open <= 0) {
+          continue;
+        }
+        const applied = Math.min(remaining, open);
+        rows.push({
+          label: due.period_label || due.plan?.name || 'Open due',
+          amount: Math.round(applied * 100) / 100
+        });
+        remaining = Math.round((remaining - applied) * 100) / 100;
       }
+      if (remaining > 0) {
+        rows.push({ label: 'More than the open dues — not posted', amount: remaining });
+      }
+      return rows;
+    }
+    if (this.collectType === 'offering' && this.offeringCategoryId) {
+      const category = this.offeringCategories.find((row) => row.id === this.offeringCategoryId);
+      rows.push({ label: category?.name || 'Gift', amount: this.amount });
+      return rows;
+    }
+    const purpose = this.collectionPurposes.find((row) => row.id === this.generalPurposeId);
+    if (this.collectType === 'general' && purpose) {
+      rows.push({ label: purpose.name, amount: this.amount });
       return rows;
     }
     rows.push({
@@ -425,6 +475,18 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.rebuildKpiCards();
     this.refreshSession();
+    this.donationsService.getCategories().subscribe({
+      next: (res) => {
+        this.offeringCategories = res.data ?? [];
+        refreshStewardshipView(this.cdr);
+      }
+    });
+    this.donationsService.getFunds({ status: 'active' }).subscribe({
+      next: (res) => {
+        this.collectionPurposes = (res.data ?? []).map((fund) => ({ id: fund.id, name: fund.name }));
+        refreshStewardshipView(this.cdr);
+      }
+    });
     setupStewardshipRouteReload(this.router, this.destroyRef, '/donations/collection-day', () => this.refreshSession());
 
     this.donationsService.ledgerMutated$
@@ -654,6 +716,20 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
     refreshStewardshipView(this.cdr);
   }
 
+  private mandatoryDues(): Array<{ id?: string; period_label?: string; plan?: { name?: string }; outstanding_amount?: number; amount_due?: number; amount_paid?: number }> {
+    return this.familyProfile?.mandatory_contributions?.collect_allocation_dues
+      ?? this.familyProfile?.mandatory_contributions?.outstanding_dues
+      ?? this.familyProfile?.mandatory_contributions?.current_period_dues
+      ?? [];
+  }
+
+  private dueOutstanding(due: { outstanding_amount?: number; amount_due?: number; amount_paid?: number }): number {
+    if (due.outstanding_amount != null) {
+      return Number(due.outstanding_amount);
+    }
+    return Math.max(0, Number(due.amount_due || 0) - Number(due.amount_paid || 0));
+  }
+
   private buildPaymentAllocations(): Array<{ allocatable_type: string; allocatable_id: string; amount: number }> | undefined {
     if (!this.amount || this.amount <= 0) {
       return undefined;
@@ -662,14 +738,28 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
     const amount = Number(this.amount);
 
     if (this.collectType === 'mandatory') {
-      const dues = this.familyProfile?.mandatory_contributions?.collect_allocation_dues
-        ?? this.familyProfile?.mandatory_contributions?.outstanding_dues
-        ?? this.familyProfile?.mandatory_contributions?.current_period_dues
-        ?? [];
-      const due = dues[0];
-      if (due?.id) {
-        return [{ allocatable_type: 'due', allocatable_id: due.id, amount }];
+      let remaining = amount;
+      const allocations: Array<{ allocatable_type: string; allocatable_id: string; amount: number }> = [];
+      for (const due of this.mandatoryDues()) {
+        if (remaining <= 0 || !due.id) {
+          continue;
+        }
+        const open = this.dueOutstanding(due);
+        if (open <= 0) {
+          continue;
+        }
+        const applied = Math.round(Math.min(remaining, open) * 100) / 100;
+        allocations.push({ allocatable_type: 'due', allocatable_id: due.id, amount: applied });
+        remaining = Math.round((remaining - applied) * 100) / 100;
       }
+      if (remaining > 0 || !allocations.length) {
+        return undefined;
+      }
+      return allocations;
+    }
+
+    if (this.collectType === 'general' && this.generalPurposeId) {
+      return [{ allocatable_type: 'fund', allocatable_id: this.generalPurposeId, amount }];
     }
 
     if (this.collectType === 'project') {
@@ -687,13 +777,52 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const allocations = this.buildPaymentAllocations();
+    if (this.collectType === 'mandatory' && !allocations?.length) {
+      this.error = 'This amount is more than the open dues, or there is no open due. It is not stored as family credit.';
+      refreshStewardshipView(this.cdr);
+      return;
+    }
+
     this.saving = true;
     this.error = null;
     this.successMessage = null;
     refreshStewardshipView(this.cdr);
+
+    const fingerprint = this.idempotencyFingerprint();
+    if (this.lastIdempotencyFingerprint !== fingerprint) {
+      this.pendingIdempotencyKey = null;
+      this.lastIdempotencyFingerprint = fingerprint;
+    }
+    if (!this.pendingIdempotencyKey) {
+      this.pendingIdempotencyKey = newIdempotencyKey();
+    }
+    const idempotencyKey = this.pendingIdempotencyKey;
+
+    if (this.collectType === 'offering' && this.offeringCategoryId) {
+      const category = this.offeringCategories.find((row) => row.id === this.offeringCategoryId);
+      this.donationsService.collectVoluntaryDonation({
+        family_id: this.selectedFamily.id,
+        donation_category_id: this.offeringCategoryId,
+        title: category?.name || 'Offering',
+        payer_name: this.payerName.trim(),
+        payment_date: localDateOnly(),
+        amount: this.amount,
+        method: this.method === 'upi' ? 'online_placeholder' : this.method,
+        notes: this.notes.trim() || undefined,
+        ...(this.needsReference ? { gateway_reference: this.gatewayReference.trim() } : {})
+      }, { idempotencyKey }).subscribe({
+        next: (res) => this.afterCollectionPosted(res.message, res.data?.payment),
+        error: (err: { error?: { message?: string } }) => this.afterCollectionFailed(err)
+      });
+      return;
+    }
+
+    const purpose = this.collectionPurposes.find((row) => row.id === this.generalPurposeId);
+    const purposeNote = this.collectType === 'general' && purpose ? `Collection purpose: ${purpose.name}` : '';
+    const notes = [purposeNote, this.notes.trim()].filter(Boolean).join('\n') || undefined;
     const sourceType = this.collectType === 'offering' ? 'voluntary' : 'general';
 
-    const allocations = this.buildPaymentAllocations();
     this.donationsService.createPayment({
       family_id: this.selectedFamily.id,
       payer_name: this.payerName.trim(),
@@ -701,32 +830,52 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
       amount: this.amount,
       method: this.method === 'upi' ? 'online_placeholder' : this.method,
       source_type: sourceType,
-      notes: this.notes.trim() || undefined,
+      notes,
+      ...(this.collectType === 'mandatory' ? { collection_mode: 'mandatory_dues' } : {}),
       ...(this.needsReference ? { gateway_reference: this.gatewayReference.trim() } : {}),
       ...(allocations?.length ? { allocations } : {})
-    }).subscribe({
-      next: (res) => {
-        this.saving = false;
-        this.successMessage = res.message || 'Collection posted successfully.';
-        this.lastPaymentId = res.data?.id ?? null;
-        this.applyLocalPayment(res.data);
-        if (this.lastPaymentId) {
-          this.donationsService.getReceiptPreview(this.lastPaymentId).subscribe({
-            next: (preview) => {
-              this.receiptPreview = preview.data;
-              refreshStewardshipView(this.cdr);
-            }
-          });
-        }
-        refreshStewardshipView(this.cdr);
-        setTimeout(() => this.resetForNext(), 1800);
-      },
-      error: (err: { error?: { message?: string } }) => {
-        this.saving = false;
-        this.error = err?.error?.message || 'Unable to post collection.';
-        refreshStewardshipView(this.cdr);
-      }
+    }, { idempotencyKey }).subscribe({
+      next: (res) => this.afterCollectionPosted(res.message, res.data),
+      error: (err: { error?: { message?: string } }) => this.afterCollectionFailed(err)
     });
+  }
+
+  private idempotencyFingerprint(): string {
+    return JSON.stringify({
+      familyId: this.selectedFamily?.id ?? null,
+      amount: this.amount,
+      collectType: this.collectType,
+      generalPurposeId: this.generalPurposeId,
+      offeringCategoryId: this.offeringCategoryId,
+      method: this.method,
+      payerName: this.payerName.trim(),
+      gatewayReference: this.gatewayReference.trim(),
+    });
+  }
+
+  private afterCollectionPosted(message: string | undefined, payment: DonationPayment | undefined): void {
+    this.pendingIdempotencyKey = null;
+    this.lastIdempotencyFingerprint = null;
+    this.saving = false;
+    this.successMessage = message || 'Collection posted successfully.';
+    this.lastPaymentId = payment?.id ?? null;
+    this.applyLocalPayment(payment);
+    if (this.lastPaymentId) {
+      this.donationsService.getReceiptPreview(this.lastPaymentId).subscribe({
+        next: (preview) => {
+          this.receiptPreview = preview.data;
+          refreshStewardshipView(this.cdr);
+        }
+      });
+    }
+    refreshStewardshipView(this.cdr);
+    setTimeout(() => this.resetForNext(), 1800);
+  }
+
+  private afterCollectionFailed(err: { error?: { message?: string } }): void {
+    this.saving = false;
+    this.error = apiErrorMessage(err, 'Unable to post collection.');
+    refreshStewardshipView(this.cdr);
   }
 
   printReceipt(): void {
@@ -742,6 +891,8 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
     this.payerName = '';
     this.amount = null;
     this.notes = '';
+    this.offeringCategoryId = '';
+    this.generalPurposeId = '';
     this.receiptPreview = null;
     this.lastPaymentId = null;
     this.successMessage = null;
@@ -749,6 +900,8 @@ export class CollectionDayComponent implements OnInit, OnDestroy {
     this.collectType = 'general';
     this.method = 'cash';
     this.gatewayReference = '';
+    this.pendingIdempotencyKey = null;
+    this.lastIdempotencyFingerprint = null;
     setTimeout(() => this.searchInput?.nativeElement.focus(), 0);
     refreshStewardshipView(this.cdr);
   }

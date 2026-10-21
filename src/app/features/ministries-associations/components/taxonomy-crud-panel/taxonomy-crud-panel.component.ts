@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError, apiErrorMessage } from '@core/errors/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -645,13 +646,13 @@ export class TaxonomyCrudPanelComponent implements OnInit, OnChanges {
         this.loaded = true;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadSeq) {
           return;
         }
 
         this.loaded = true;
-        this.loadError = `Unable to load ${this.listTitle.toLowerCase()}. Please try again.`;
+        this.loadError = apiErrorMessage(err, `Unable to load ${this.listTitle.toLowerCase()}. Please try again.`);
         this.cdr.markForCheck();
       },
     });
@@ -884,8 +885,8 @@ export class TaxonomyCrudPanelComponent implements OnInit, OnChanges {
       ? `Could not activate this ${this.singularLabel}. Please try again.`
       : `Could not deactivate this ${this.singularLabel}. Please try again.`;
 
-    if (!(error instanceof HttpErrorResponse)) {
-      return fallback;
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
+      return apiErrorMessage(error, fallback);
     }
 
     const payload = error.error as {
@@ -914,8 +915,12 @@ export class TaxonomyCrudPanelComponent implements OnInit, OnChanges {
   }
 
   private applySaveError(error: unknown): void {
-    if (!(error instanceof HttpErrorResponse)) {
-      this.formError = 'Something went wrong. Please try again.';
+    const fallback = `Could not save this ${this.singularLabel}. Review the details and try again.`;
+    if (ApiError.fromUnknown(error).handled) {
+      return;
+    }
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
+      this.formError = apiErrorMessage(error, fallback);
       this.toastService.error(this.formError, `Could not save ${this.singularLabel}`);
       return;
     }
@@ -948,7 +953,7 @@ export class TaxonomyCrudPanelComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.formError = payload?.message?.trim() || 'Something went wrong. Please try again.';
+    this.formError = apiErrorMessage(error, fallback);
     this.toastService.error(this.formError, `Could not save ${this.singularLabel}`);
   }
 
@@ -967,7 +972,7 @@ export class TaxonomyCrudPanelComponent implements OnInit, OnChanges {
   }
 
   private parseError(err: unknown): string {
-    if (err instanceof HttpErrorResponse) {
+    if ((err instanceof HttpErrorResponse || err instanceof ApiError)) {
       const payload = err.error as {
         message?: string;
         errors?: Record<string, string[]>;
@@ -980,11 +985,10 @@ export class TaxonomyCrudPanelComponent implements OnInit, OnChanges {
           return fieldMessages[0];
         }
       }
-      return payload?.message?.trim() || 'Something went wrong. Please try again.';
+      return apiErrorMessage(err, 'This item could not be saved. Review the details and try again.');
     }
 
-    const body = (err as { error?: { message?: string } })?.error;
-    return body?.message || 'Something went wrong. Please try again.';
+    return apiErrorMessage(err, 'This item could not be saved. Review the details and try again.');
   }
 
   private capitalize(value: string): string {

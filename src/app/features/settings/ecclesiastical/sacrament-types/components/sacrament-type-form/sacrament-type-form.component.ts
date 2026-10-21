@@ -1,4 +1,5 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { SacramentTypeService } from '../../services/sacrament-type.service';
@@ -83,7 +84,7 @@ export class SacramentTypeFormComponent implements OnInit, OnChanges {
       },
       error: (error) => {
         console.error('Error saving sacrament type:', error);
-        const errorMessage = error.error?.message || 'Failed to save sacrament type';
+        const errorMessage = apiErrorMessage(error, 'Failed to save sacrament type');
         this.toastService.error(errorMessage);
         this.loading = false;
       }

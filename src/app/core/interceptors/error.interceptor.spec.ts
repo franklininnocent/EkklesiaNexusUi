@@ -8,6 +8,8 @@ import { ToastService } from '@core/services/toast.service';
 import { AuthService } from '@core/services/auth.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { of } from 'rxjs';
+import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { SubscriptionRestrictionService } from '@core/services/subscription-restriction.service';
 
 describe('errorInterceptor support session handling', () => {
   let http: HttpClient;
@@ -27,13 +29,15 @@ describe('errorInterceptor support session handling', () => {
         provideHttpClientTesting(),
         { provide: Router, useValue: { navigate: routerNavigate } },
         { provide: ToastService, useValue: { error: toastError } },
-        { provide: AuthService, useValue: { clearAuthState: jest.fn() } },
+        { provide: AuthService, useValue: { clearAuthState: jest.fn(), getRefreshToken: () => null, getToken: () => null, refreshTokens: () => of({}) } },
         {
           provide: SupportSessionService,
           useValue: {
             invalidateIfMatchesCurrent: invalidateSpy,
           },
         },
+        { provide: SubscriptionAccessService, useValue: { refresh: () => of(null) } },
+        { provide: SubscriptionRestrictionService, useValue: { handleRestrictedAction: jest.fn() } },
       ],
     });
 
@@ -120,9 +124,11 @@ describe('errorInterceptor plan errors', () => {
         provideHttpClientTesting(),
         { provide: Router, useValue: { navigate: routerNavigate } },
         { provide: ToastService, useValue: { error: jest.fn(), warning: toastWarning } },
-        { provide: AuthService, useValue: { clearAuthState: jest.fn(), canViewMySubscription } },
+        { provide: AuthService, useValue: { clearAuthState: jest.fn(), canViewMySubscription, getRefreshToken: () => null, getToken: () => null, refreshTokens: () => of({}) } },
         { provide: ConfirmationDialogService, useValue: { confirm } },
         { provide: SupportSessionService, useValue: { invalidateIfMatchesCurrent: jest.fn() } },
+        { provide: SubscriptionAccessService, useValue: { refresh: () => of(null) } },
+        { provide: SubscriptionRestrictionService, useValue: { handleRestrictedAction: jest.fn() } },
       ],
     });
 
@@ -176,5 +182,109 @@ describe('errorInterceptor plan errors', () => {
     expect(options.message).toContain('ask your church administrator');
     expect(options.confirmText).toBe('OK');
     expect(routerNavigate).not.toHaveBeenCalled();
+  });
+
+  it('maps validation errors onto the thrown ApiError without a generic validation label', () => {
+    let received: { message?: string; errors?: Record<string, string[]>; status?: number } | undefined;
+    http.post('/api/families', {}).subscribe({ error: (error) => (received = error) });
+
+    httpMock.expectOne('/api/families').flush(
+      { message: 'The given data was invalid.', errors: { email: ['Enter a valid email address.'] } },
+      { status: 422, statusText: 'Unprocessable Entity' }
+    );
+
+    expect(received?.status).toBe(422);
+    expect(received?.message).toBe('Enter a valid email address.');
+    expect(received?.errors?.['email'][0]).toBe('Enter a valid email address.');
+  });
+
+  it('hides SQL text on a server error', () => {
+    let received: { message?: string } | undefined;
+    http.get('/api/families').subscribe({ error: (error) => (received = error) });
+
+    httpMock.expectOne('/api/families').flush(
+      { message: 'SQLSTATE[23505]: duplicate key value violates unique constraint users_email_key' },
+      { status: 500, statusText: 'Server Error' }
+    );
+
+    expect(received?.message).not.toContain('SQLSTATE');
+    expect(received?.message).not.toContain('users_email_key');
+  });
+
+  it('does not toast a feature warning when the caller asked for a silent error', () => {
+    http.get('/api/donations', { headers: { 'X-Silent-Error': '1' } }).subscribe({ error: () => {} });
+
+    httpMock.expectOne('/api/donations').flush(
+      { code: 'FEATURE_NOT_AVAILABLE', message: 'Donations are not in your plan.' },
+      { status: 403, statusText: 'Forbidden' }
+    );
+
+    expect(toastWarning).not.toHaveBeenCalled();
+  });
+});
+
+describe('errorInterceptor session refresh', () => {
+  let http: HttpClient;
+  let httpMock: HttpTestingController;
+  let refreshTokens: jest.Mock;
+  let clearAuthState: jest.Mock;
+  let toastError: jest.Mock;
+
+  beforeEach(() => {
+    refreshTokens = jest.fn().mockReturnValue(of({ access_token: 'next-token' }));
+    clearAuthState = jest.fn();
+    toastError = jest.fn();
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withXhr(), withInterceptors([errorInterceptor])),
+        provideHttpClientTesting(),
+        { provide: Router, useValue: { navigate: jest.fn() } },
+        { provide: ToastService, useValue: { error: toastError, warning: jest.fn() } },
+        {
+          provide: AuthService,
+          useValue: {
+            clearAuthState,
+            canViewMySubscription: () => false,
+            getRefreshToken: () => 'refresh-token',
+            getToken: () => 'next-token',
+            refreshTokens,
+          },
+        },
+        { provide: SupportSessionService, useValue: { invalidateIfMatchesCurrent: jest.fn() } },
+        { provide: ConfirmationDialogService, useValue: { confirm: jest.fn() } },
+        { provide: SubscriptionAccessService, useValue: { refresh: () => of(null) } },
+        { provide: SubscriptionRestrictionService, useValue: { handleRestrictedAction: jest.fn() } },
+      ],
+    });
+
+    http = TestBed.inject(HttpClient);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpMock.verify());
+
+  it('retries a safe GET once after a successful refresh and does not retry a payment', () => {
+    let body: unknown;
+    http.get('/api/families').subscribe((response) => (body = response));
+
+    httpMock.expectOne('/api/families').flush({ message: 'Unauthenticated.' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(refreshTokens).toHaveBeenCalledTimes(1);
+    const retried = httpMock.expectOne('/api/families');
+    expect(retried.request.headers.get('Authorization')).toBe('Bearer next-token');
+    retried.flush({ success: true });
+    expect(body).toEqual({ success: true });
+    expect(clearAuthState).not.toHaveBeenCalled();
+
+    http.post('/api/donations/payments', { amount: '10.00' }).subscribe({ error: () => {} });
+    httpMock.expectOne('/api/donations/payments').flush(
+      { message: 'Unauthenticated.' },
+      { status: 401, statusText: 'Unauthorized' }
+    );
+    expect(refreshTokens).toHaveBeenCalledTimes(1);
+    expect(clearAuthState).toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalled();
+    httpMock.verify();
   });
 });

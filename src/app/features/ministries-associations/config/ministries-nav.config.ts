@@ -3,12 +3,13 @@ export interface MinistriesNavLink {
   label: string;
   path: string;
   exact?: boolean;
+  actionId?: string;
 }
 
 /** Source of truth for Ministries section navigation (sidebar + in-page sub-nav). */
 export const MINISTRIES_NAV_LINKS: MinistriesNavLink[] = [
   { id: 'organizations', label: 'Organizations', path: '/ministries', exact: true },
   { id: 'guests', label: 'Guest members', path: '/ministries/guests' },
-  { id: 'settings', label: 'Settings', path: '/ministries/settings' },
+  { id: 'settings', label: 'Settings', path: '/ministries/settings', actionId: 'ministries.configure' },
   { id: 'audit', label: 'Audit log', path: '/ministries/audit' },
 ];

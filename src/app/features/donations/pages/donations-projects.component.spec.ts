@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError, EMPTY } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { ToastService } from '@core/services/toast.service';
@@ -34,6 +35,7 @@ describe('DonationsProjectsComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: { hasPermission: () => true } },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
         { provide: QuickCollectService, useValue: { open: jest.fn() } },
         {
           provide: DonationsService,

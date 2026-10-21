@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SacramentTypeService } from '../../services/sacrament-type.service';
@@ -100,7 +101,7 @@ export class SacramentTypeListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading sacrament types:', error);
-        this.toastService.error('Failed to load sacrament types');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load sacrament types'));
         this.loading = false;
       }
     });
@@ -223,7 +224,7 @@ export class SacramentTypeListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error deleting sacrament type:', error);
-        const errorMessage = error.error?.message || 'Failed to delete sacrament type';
+        const errorMessage = apiErrorMessage(error, 'Failed to delete sacrament type');
         this.toastService.error(errorMessage);
         this.showDeleteModal = false;
       }

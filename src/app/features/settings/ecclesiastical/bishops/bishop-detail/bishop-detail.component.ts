@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BishopService } from '@core/services/ecclesiastical';
@@ -104,8 +105,8 @@ export class BishopDetailComponent implements OnInit {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.toastService.error('Failed to load bishop details');
+      error: (err) => {
+        this.toastService.error(apiErrorMessage(err, 'Failed to load bishop details'));
         this.loading = false;
         this.router.navigate(['/settings/ecclesiastical/bishops']);
       }
@@ -141,8 +142,8 @@ export class BishopDetailComponent implements OnInit {
         this.toastService.success('Bishop deleted successfully');
         this.router.navigate(['/settings/ecclesiastical/bishops']);
       },
-      error: () => {
-        this.toastService.error('Failed to delete bishop');
+      error: (err) => {
+        this.toastService.error(apiErrorMessage(err, 'Failed to delete bishop'));
         this.showDeleteModal = false;
         this.cdr.markForCheck();
       }
@@ -176,9 +177,9 @@ export class BishopDetailComponent implements OnInit {
         this.toastService.success('Photo uploaded');
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         this.uploadingPhoto = false;
-        this.toastService.error('Unable to upload Bishop photo. Please select a valid image and try again.');
+        this.toastService.error(apiErrorMessage(err, 'Unable to upload Bishop photo. Please select a valid image and try again.'));
         this.cdr.markForCheck();
       },
     });
@@ -199,9 +200,9 @@ export class BishopDetailComponent implements OnInit {
         this.toastService.success('Photo removed');
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         this.uploadingPhoto = false;
-        this.toastService.error('Failed to remove photo');
+        this.toastService.error(apiErrorMessage(err, 'Failed to remove photo'));
         this.cdr.markForCheck();
       },
     });

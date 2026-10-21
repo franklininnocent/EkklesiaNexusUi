@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -232,7 +233,7 @@ export class HandoverLeadershipModalComponent implements OnInit {
   }
 
   private mapHandoverError(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       return 'Could not complete handover. Please try again.';
     }
 

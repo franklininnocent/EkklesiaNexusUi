@@ -1,7 +1,7 @@
 <section class="register cf-page cf-financial-dashboard" [attr.aria-busy]="paymentsLoading">
   <app-page-header
     title="Today's Register"
-    subtitle="Today's collection log — Quick Collect handles most Sunday gifts."
+    subtitle="This business day’s collection log. Record a gift from Offering Categories."
   >
     <app-list-toolbar
       [showSearch]="false"
@@ -11,13 +11,13 @@
       <button
         *ngIf="canCollect"
         type="button"
-        class="cf-btn cf-btn-icon"
+        class="cf-btn"
         toolbarAfterFilters
         (click)="openVoluntaryDonationModal()"
-        aria-label="Record voluntary donation"
-        title="Record voluntary donation"
+        aria-label="Record a gift"
+        title="Record a gift"
       >
-        <app-cf-action-icon name="receipt" />
+        Record a gift
       </button>
       <button
         *ngIf="canExport"

@@ -1,10 +1,13 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
+import { AuthService } from '@core/services/auth.service';
 import { CommandCenterDataService } from '../dashboard/services/command-center-data.service';
 import { ParishExpenseRecord } from '../models/donation.model';
 import { refreshStewardshipView } from '../utils/stewardship-view.util';
@@ -38,8 +41,12 @@ import { StewardshipTablePanelComponent } from '../components/stewardship-table-
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DonationsExpensesComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly dataService = inject(CommandCenterDataService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly auth = inject(AuthService);
+
+  readonly canRecord = this.actions.allows('donations.manage');
 
   expenses: ParishExpenseRecord[] = [];
   loading = true;
@@ -69,8 +76,8 @@ export class DonationsExpensesComponent implements OnInit {
         this.loading = false;
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
-        this.error = 'Unable to load parish disbursements.';
+      error: (err) => {
+        this.error = apiErrorMessage(err, 'Unable to load parish disbursements.');
         this.loading = false;
         refreshStewardshipView(this.cdr);
       }

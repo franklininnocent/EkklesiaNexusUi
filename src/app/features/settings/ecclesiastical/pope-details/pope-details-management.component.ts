@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 /**
  * Pope Details Management Component
  *
@@ -197,7 +198,7 @@ export class PopeDetailsManagementComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to upload pope image:', err);
-        const errorMessage = err.error?.message || 'Failed to upload pope image';
+        const errorMessage = apiErrorMessage(err, 'Failed to upload pope image');
         this.toastService.error(errorMessage);
         this.uploading = false;
       }
@@ -230,7 +231,7 @@ export class PopeDetailsManagementComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to delete pope image:', err);
-        const errorMessage = err.error?.message || 'Failed to delete pope image';
+        const errorMessage = apiErrorMessage(err, 'Failed to delete pope image');
         this.toastService.error(errorMessage);
         this.uploading = false;
       }
@@ -263,7 +264,7 @@ export class PopeDetailsManagementComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to save pope details:', err);
-        const errorMessage = err.error?.message || 'Failed to save pope details';
+        const errorMessage = apiErrorMessage(err, 'Failed to save pope details');
         this.toastService.error(errorMessage);
         this.saving = false;
       }

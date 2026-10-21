@@ -1,4 +1,6 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -86,6 +88,7 @@ function projectDateRangeValidator(control: AbstractControl): ValidationErrors |
   styleUrl: './donations-projects.component.scss'
 })
 export class DonationsProjectsComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly churchCurrency = inject(ChurchCurrencyService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
@@ -163,7 +166,7 @@ export class DonationsProjectsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
     this.setupFamilyProgressLoader();
     this.loadProjects();
     this.donationsService.ledgerMutated$
@@ -175,7 +178,7 @@ export class DonationsProjectsComponent implements OnInit {
   readonly pageTitle = 'Building & Special Projects';
 
   readonly pageSubtitle =
-    'Long-running building and special funds — track family targets, installments, and follow up on gaps.';
+    'Family instalments and money received for a building project. A campaign target is not a family bill.';
 
   get isStatusActive(): boolean {
     return this.projectForm.value.status === 'active';
@@ -460,9 +463,7 @@ export class DonationsProjectsComponent implements OnInit {
         },
         error: (err: HttpErrorResponse) => {
           this.projectsLoadError =
-            err.error?.message ||
-            err.message ||
-            'Unable to load projects. Please check your connection and try again.';
+            apiErrorMessage(err, 'Unable to load projects. Please check your connection and try again.');
         }
       });
   }
@@ -543,7 +544,7 @@ export class DonationsProjectsComponent implements OnInit {
         this.loadProjects();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to save project.';
+        this.error = apiErrorMessage(err, 'Failed to save project.');
         this.saving = false;
         this.cdr.detectChanges();
       }
@@ -576,9 +577,9 @@ export class DonationsProjectsComponent implements OnInit {
             this.dashboard = res.data;
           }
         },
-        error: () => {
+        error: (err) => {
           if (this.selectedProjectId === project.id) {
-            this.dashboardLoadError = 'Failed to load project dashboard.';
+            this.dashboardLoadError = apiErrorMessage(err, 'Failed to load project dashboard.');
           }
         }
       });
@@ -724,7 +725,7 @@ export class DonationsProjectsComponent implements OnInit {
   private familyProgressError(err: HttpErrorResponse): string {
     const errors = err?.error?.errors as Record<string, string[]> | undefined;
     const first = errors ? Object.values(errors)[0]?.[0] : undefined;
-    return first || err?.error?.message || 'Could not load families. Try again.';
+    return first || apiErrorMessage(err, 'Could not load families. Try again.');
   }
 
   isGeneratingInstallments(projectId: string): boolean {
@@ -886,7 +887,7 @@ export class DonationsProjectsComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: (err) => {
-          const text = err?.error?.message || err?.message || 'Failed to generate installments.';
+          const text = apiErrorMessage(err, 'Failed to generate installments.');
           this.installmentNotice = text;
           this.installmentNoticeError = true;
           this.error = text;

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
@@ -205,7 +206,7 @@ export class DonationsHistoryComponent implements OnInit, OnDestroy {
         this.loadingMore = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadActivitiesSeq) {
           return;
         }
@@ -214,7 +215,7 @@ export class DonationsHistoryComponent implements OnInit, OnDestroy {
           this.currentPage = Math.max(1, this.currentPage - 1);
         } else {
           this.activitiesLoaded = true;
-          this.loadError = 'Unable to load activity history. Please try again.';
+          this.loadError = apiErrorMessage(err, 'Unable to load activity history. Please try again.');
         }
         this.cdr.detectChanges();
       }

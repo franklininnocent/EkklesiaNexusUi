@@ -6,6 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, of, Subject, switchMap } from 'rxjs';
 import { FamilyService } from '@core/services/family.service';
 import { Family } from '@core/models/family.model';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { CommandPaletteService } from '@shared/services/command-palette.service';
 import { QuickCollectService } from '@features/donations/services/quick-collect.service';
@@ -111,6 +112,7 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
   private readonly donationsService = inject(DonationsService);
   private readonly familyService = inject(FamilyService);
   private readonly authService = inject(AuthService);
+  private readonly actionAuth = inject(ActionAuthorizationService);
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly supportSessions = inject(SupportSessionService);
   private readonly overlayStack = inject(CfOverlayStackService);
@@ -149,9 +151,10 @@ export class CommandPaletteComponent implements OnInit, OnDestroy {
     const canDonations = this.authService.canAccessDonations(undefined, {
       hasActiveSupportSession: !!this.supportSessions.sessionId,
     });
+    const canCollect = this.actionAuth.allows('donations.collect');
     const blocksMutations = this.subscriptionAccess.blocksMutations();
     return this.actions.filter((action) => {
-      if (blocksMutations && (action.id === 'collect' || action.id === 'collection-day')) {
+      if ((action.id === 'collect' || action.id === 'collection-day') && (!canCollect || blocksMutations)) {
         return false;
       }
       if (action.donations && !canDonations) {

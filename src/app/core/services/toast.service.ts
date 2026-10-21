@@ -22,6 +22,7 @@ export class ToastService {
   public toasts$: Observable<Toast[]> = this.toastsSubject.asObservable();
 
   private defaultDuration = 4000; // 4 seconds
+  private recentKeys = new Map<string, number>();
 
   /**
    * Show a success toast
@@ -43,7 +44,7 @@ export class ToastService {
       type: 'error',
       message,
       title: title || 'Error',
-      duration: duration || this.defaultDuration
+      duration: duration || 8000
     });
   }
 
@@ -75,6 +76,20 @@ export class ToastService {
    * Show a toast notification
    */
   private show(toast: Omit<Toast, 'id'>): void {
+    if (!toast.message?.trim()) {
+      return;
+    }
+
+    if (toast.type === 'error' || toast.type === 'warning') {
+      const key = `${toast.type}|${toast.title || ''}|${toast.message}`;
+      const now = Date.now();
+      const previous = this.recentKeys.get(key);
+      if (previous && now - previous < 2000) {
+        return;
+      }
+      this.recentKeys.set(key, now);
+    }
+
     const id = this.generateId();
     const newToast: Toast = { ...toast, id };
     

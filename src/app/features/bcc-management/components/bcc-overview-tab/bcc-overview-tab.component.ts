@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -118,8 +119,8 @@ export class BccOverviewTabComponent implements OnChanges {
         }
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.loadError = 'Unable to load BCC overview. Please try again.';
+      error: (err) => {
+        this.loadError = apiErrorMessage(err, 'Unable to load BCC overview. Please try again.');
         this.loading = false;
         this.cdr.markForCheck();
       },

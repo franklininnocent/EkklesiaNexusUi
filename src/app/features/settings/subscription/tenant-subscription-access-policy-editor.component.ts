@@ -9,6 +9,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FormsModule } from '@angular/forms';
 import { TenantService } from '@core/services/tenant.service';
 import { ToastService } from '@core/services/toast.service';
@@ -189,8 +190,8 @@ export class TenantSubscriptionAccessPolicyEditorComponent implements OnChanges,
           this.loading = false;
           this.cdr.markForCheck();
         },
-        error: () => {
-          this.error = 'Unable to load access policy.';
+        error: (err) => {
+          this.error = apiErrorMessage(err, 'Unable to load access policy.');
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -218,8 +219,8 @@ export class TenantSubscriptionAccessPolicyEditorComponent implements OnChanges,
           this.saving = false;
           this.cdr.markForCheck();
         },
-        error: () => {
-          this.toast.error('Unable to save access policy', 'Error');
+        error: (err) => {
+          this.toast.error(apiErrorMessage(err, 'Unable to save access policy'), 'Error');
           this.saving = false;
           this.cdr.markForCheck();
         },

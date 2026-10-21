@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { Family } from '@core/models/family.model';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { SubscriptionRestrictionService } from '@core/services/subscription-restriction.service';
@@ -31,6 +32,7 @@ const MAX_RECENT = 6;
 
 @Injectable({ providedIn: 'root' })
 export class QuickCollectService {
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly subscriptionRestriction = inject(SubscriptionRestrictionService);
   private readonly openSubject = new Subject<QuickCollectLaunchContext>();
@@ -39,6 +41,9 @@ export class QuickCollectService {
   readonly open$ = this.openSubject.asObservable();
 
   open(context: QuickCollectLaunchContext = {}): void {
+    if (!this.actions.allows('donations.collect')) {
+      return;
+    }
     if (this.subscriptionAccess.blocksMutations()) {
       this.subscriptionRestriction.handleRestrictedAction();
       return;

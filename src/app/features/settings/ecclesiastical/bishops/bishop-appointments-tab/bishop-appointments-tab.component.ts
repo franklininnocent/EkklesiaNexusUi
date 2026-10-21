@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -138,8 +139,8 @@ export class BishopAppointmentsTabComponent implements OnChanges {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.toast.error('Failed to load appointments');
+      error: (err) => {
+        this.toast.error(apiErrorMessage(err, 'Failed to load appointments'));
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -152,7 +153,7 @@ export class BishopAppointmentsTabComponent implements OnChanges {
         this.toast.success('Appointment activated');
         this.load();
       },
-      error: () => this.toast.error('Failed to activate appointment'),
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Failed to activate appointment')),
     });
   }
 
@@ -185,8 +186,8 @@ export class BishopAppointmentsTabComponent implements OnChanges {
         this.closeEndModal();
         this.load();
       },
-      error: () => {
-        this.toast.error('Failed to end appointment');
+      error: (err) => {
+        this.toast.error(apiErrorMessage(err, 'Failed to end appointment'));
         this.endSaving = false;
         this.cdr.markForCheck();
       },

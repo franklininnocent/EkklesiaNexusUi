@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterModule } from '@angular/router';
@@ -41,6 +42,7 @@ import { massIntentionsHomePeriodSubtitle } from '../utils/mass-intentions-chrom
   styleUrl: './mass-intentions-home.page.scss',
 })
 export class MassIntentionsHomePageComponent {
+  protected readonly massActions = inject(ActionAuthorizationService);
   private readonly api = inject(MassIntentionsApiService);
   private readonly auth = inject(AuthService);
 
@@ -68,11 +70,11 @@ export class MassIntentionsHomePageComponent {
   }
 
   canCreate(): boolean {
-    return canCreateMassIntention(this.auth);
+    return canCreateMassIntention(this.massActions);
   }
 
   canSchedule(): boolean {
-    return canScheduleMasses(this.auth);
+    return canScheduleMasses(this.massActions);
   }
 
   canLinkOfferingsReport(): boolean {

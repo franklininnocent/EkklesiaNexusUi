@@ -10,6 +10,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ApiError } from '@core/errors/api-error';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
@@ -460,7 +461,7 @@ export class EntitlementsEditorComponent implements OnChanges, OnDestroy {
   }
 
   private extractApiErrors(err: unknown): string[] {
-    if (err instanceof HttpErrorResponse && err.error && typeof err.error === 'object' && err.error.errors) {
+    if ((err instanceof HttpErrorResponse || err instanceof ApiError) && err.error && typeof err.error === 'object' && err.error.errors) {
       return Object.values(err.error.errors as Record<string, string[]>).flat();
     }
     if (err && typeof err === 'object' && 'errors' in err) {

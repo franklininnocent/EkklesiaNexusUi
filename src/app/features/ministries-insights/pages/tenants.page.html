@@ -19,7 +19,7 @@
       (searchChange)="onSearchChange($event)"
       (filtersOpened)="openFilters()"
     ></app-list-toolbar>
-    <button type="button" class="cf-btn cf-btn-sm cf-btn-secondary" (click)="exportCsv()" [disabled]="exporting">
+    <button *ngIf="canExportCsv()" type="button" class="cf-btn cf-btn-sm cf-btn-secondary" (click)="exportCsv()" [disabled]="exporting">
       {{ exporting ? 'Exporting…' : 'Export CSV' }}
     </button>
   </div>

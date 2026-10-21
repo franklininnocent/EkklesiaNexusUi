@@ -83,6 +83,10 @@
     </app-list-toolbar>
   </app-page-header>
 
+  <p class="cf-meta" *ngIf="rosterMode && planIdFilter" role="status">
+    Showing every family for this plan, including future and settled bills.
+  </p>
+
   <app-stewardship-active-filter-chips
     *ngIf="activeFilterChips.length"
     [chips]="activeFilterChips"

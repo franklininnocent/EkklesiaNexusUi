@@ -4,6 +4,7 @@
  */
 
 import { Component, EventEmitter, Output, inject, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -105,10 +106,10 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
           this.loadingArchdioceses = false;
           this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
           this.archdioceseOptions = null;
           this.archdioceses = [];
-          this.archdiocesesLoadError = 'Failed to load dioceses. Check your connection and try again.';
+          this.archdiocesesLoadError = apiErrorMessage(err, 'Failed to load dioceses. Check your connection and try again.');
           this.loadingArchdioceses = false;
           this.cdr.markForCheck();
         }
@@ -149,10 +150,10 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
           this.loadingCountries = false;
           this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
           this.countryOptions = null;
           this.countries = [];
-          this.countriesLoadError = 'Failed to load countries. Check your connection and try again.';
+          this.countriesLoadError = apiErrorMessage(err, 'Failed to load countries. Check your connection and try again.');
           this.toastService.error(this.countriesLoadError, 'Error');
           this.loadingCountries = false;
           this.cdr.markForCheck();
@@ -306,7 +307,7 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
           this[loadingKey] = false;
           this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
           if (target === 'tenant') {
             this.tenantStateOptions = [];
             this.tenantStates = [];
@@ -314,7 +315,7 @@ export class TenantCreateModalComponent implements OnInit, OnDestroy {
             this.primaryStateOptions = [];
             this.primaryStates = [];
           }
-          this.toastService.error('Failed to load states/provinces', 'Error');
+          this.toastService.error(apiErrorMessage(err, 'Failed to load states/provinces'), 'Error');
           this[loadingKey] = false;
           this.cdr.markForCheck();
         }

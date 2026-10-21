@@ -9,6 +9,7 @@ import {
   ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FamilyService } from '../../../../core/services/family.service';
 import { Family, FamilyMember } from '../../../../core/models/family.model';
@@ -16,6 +17,7 @@ import { FamilyFormComponent } from '../family-form/family-form';
 import { FamilyMemberFormModalComponent, FamilyMemberFormValue } from '../family-member-form-modal/family-member-form-modal.component';
 import { mapFamilyMemberToFormValue } from '../../utils/map-family-member-to-form-value.util';
 import { ToastService } from '../../../../core/services/toast.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { CountryCode, getCountryCallingCode, parsePhoneNumber } from 'libphonenumber-js';
 import { SacramentEditModalComponent, SacramentFormType } from '../sacrament-edit-modal/sacrament-edit-modal.component';
@@ -95,6 +97,7 @@ const DEFAULT_SACRAMENT_TYPES: SacramentTypeDto[] = [
 })
 export class FamilyDetail implements OnInit, OnDestroy {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly confirmationDialog = inject(ConfirmationDialogService);
 
   @ViewChild('workspaceDetail') private workspaceDetailRef?: ElementRef<HTMLElement>;
@@ -784,7 +787,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
   }
 
   openEdit(): void {
-    if (!this.guardWrite('edit families')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('edit families')) {
       return;
     }
     this.showEdit = true;
@@ -1384,7 +1387,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
   }
 
   onNavigatorAddMember(): void {
-    if (!this.guardWrite('add members')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('add members')) {
       return;
     }
     this.memberToEditIndex = null;
@@ -1682,7 +1685,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
   }
 
   openEditMember(index: number): void {
-    if (!this.guardWrite('edit members')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('edit members')) {
       return;
     }
     this.memberToEditIndex = index;
@@ -1885,7 +1888,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
    * Upload family profile image
    */
   uploadProfileImage(file: File): void {
-    if (!this.guardWrite('upload images')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('upload images')) {
       return;
     }
     if (!this.family?.id) {
@@ -1928,7 +1931,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
    * Delete family profile image
    */
   deleteProfileImage(): void {
-    if (!this.guardWrite('delete images')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('delete images')) {
       return;
     }
     if (!this.family?.id) {
@@ -1964,7 +1967,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error deleting profile image:', err);
-          this.toastService.error('Failed to delete image', 'Error', 6000);
+          this.toastService.error(apiErrorMessage(err, 'Failed to delete image'), 'Error', 6000);
           this.cdr.markForCheck();
         }
       });
@@ -2017,7 +2020,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
    * Upload family head profile image
    */
   uploadHeadProfileImage(file: File): void {
-    if (!this.guardWrite('upload images')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('upload images')) {
       return;
     }
     if (!this.family?.id) {
@@ -2061,7 +2064,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
    * Delete family head profile image
    */
   deleteHeadProfileImage(): void {
-    if (!this.guardWrite('delete images')) {
+    if (!this.actions.allows('families.edit') || !this.guardWrite('delete images')) {
       return;
     }
     if (!this.family?.id) {
@@ -2098,7 +2101,7 @@ export class FamilyDetail implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error deleting head profile image:', err);
-          this.toastService.error('Failed to delete image', 'Error', 6000);
+          this.toastService.error(apiErrorMessage(err, 'Failed to delete image'), 'Error', 6000);
           this.cdr.markForCheck();
         }
       });

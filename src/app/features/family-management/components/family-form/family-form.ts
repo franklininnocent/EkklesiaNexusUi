@@ -15,6 +15,7 @@ import {
   inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { FamilyService } from '../../../../core/services/family.service';
 import { BCCService } from '../../../../core/services/bcc.service';
@@ -559,8 +560,8 @@ export class FamilyFormComponent implements OnInit, OnChanges, AfterViewInit {
           this.reloadMembersFromServer(String(familyId));
         }
       },
-      error: () => {
-        this.toastService.error('Failed to update member status', 'Error', 4000);
+      error: (err) => {
+        this.toastService.error(apiErrorMessage(err, 'Failed to update member status'), 'Error', 4000);
       }
     });
     });
@@ -1662,7 +1663,7 @@ export class FamilyFormComponent implements OnInit, OnChanges, AfterViewInit {
     this.validationErrors = {};
     
     // Get error message
-    const errorMessage = error?.error?.message || 'Failed to save family. Please try again.';
+    const errorMessage = apiErrorMessage(error, 'Failed to save family. Please try again.');
     this.error = errorMessage;
     
     // Parse validation errors from backend

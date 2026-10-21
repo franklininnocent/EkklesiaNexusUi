@@ -10,6 +10,7 @@ import { ToastService } from '@core/services/toast.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { AuthService } from '@core/services/auth.service';
 import { EntitlementService } from '@core/services/entitlement.service';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { User } from '@core/models/user.model';
 import { PaginationComponent } from '@shared/components';
 import { SortableDirective, SortEvent } from '@shared/directives/sortable.directive';
@@ -1184,36 +1185,8 @@ export class RolesPermissionsComponent implements OnInit, OnDestroy {
     return this.tenantUsers.filter((user) => (user.roles || []).some((role) => this.isProtectedTenantRole(role))).length;
   }
 
-  private getFriendlyErrorMessage(error: any, fallback: string): string {
-    // errorInterceptor flattens HttpErrorResponse to { message, status, errors }.
-    const status = error?.status;
-    const apiMessage = error?.message || error?.error?.message;
-
-    if (status === 0) {
-      return 'Network connection failed. Please check your internet and try again.';
-    }
-
-    if (status === 403) {
-      return apiMessage || 'You do not have permission to perform this action.';
-    }
-
-    if (status === 422) {
-      const validationErrors = error?.errors || error?.error?.errors;
-      if (validationErrors) {
-        const firstKey = Object.keys(validationErrors)[0];
-        const firstMessage = firstKey ? validationErrors[firstKey]?.[0] : null;
-        if (firstMessage) {
-          return firstMessage;
-        }
-      }
-      return apiMessage || 'Validation failed. Please review your input and try again.';
-    }
-
-    if (status >= 500) {
-      return 'Server error occurred. Please try again in a moment.';
-    }
-
-    return apiMessage || fallback;
+  private getFriendlyErrorMessage(error: unknown, fallback: string): string {
+    return apiErrorMessage(error, fallback);
   }
 
   /**
