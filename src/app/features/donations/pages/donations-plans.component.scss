@@ -376,6 +376,9 @@
 
 .plan-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
   gap: 0.5rem;
   padding-top: 0.25rem;
   border-top: 1px solid var(--cf-slate-100);
@@ -385,39 +388,127 @@
   padding-bottom: 0.15rem;
 }
 
-.plan-purpose-empty {
-  border: 1px dashed var(--cf-panel-border);
-  border-radius: var(--cf-radius-sm);
-  padding: 0.75rem;
-  background: var(--cf-slate-50);
-  display: grid;
-  gap: 0.45rem;
+/* ng-select projects internal DOM without host encapsulation — ::ng-deep required (see .cf-split-select). */
+.plan-field .plan-fund-select {
+  display: block;
+  width: 100%;
+
+  ::ng-deep {
+    .ng-select-container {
+      min-height: calc(0.5rem + 0.5rem + 0.9rem + 2px);
+      border: 1px solid var(--cf-panel-border);
+      border-radius: var(--cf-radius-sm);
+      background: #fff;
+      box-shadow: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+      &:hover {
+        border-color: var(--cf-panel-border);
+      }
+    }
+
+    .ng-value-container {
+      padding: 0.5rem 0.6rem;
+      padding-right: 0.25rem;
+      align-items: center;
+    }
+
+    .ng-placeholder {
+      color: var(--cf-muted);
+      font-size: 0.9rem;
+    }
+
+    .ng-value,
+    .ng-value-label,
+    .ng-input > input {
+      font-size: 0.9rem;
+      color: var(--cf-slate-900);
+      font-weight: 400;
+    }
+
+    .ng-value {
+      background: transparent;
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .ng-arrow-wrapper {
+      width: 2rem;
+      padding-right: 0.35rem;
+    }
+
+    .ng-arrow {
+      border-color: var(--cf-slate-500) transparent transparent;
+    }
+  }
+
+  &.ng-select-focused ::ng-deep .ng-select-container,
+  &.ng-select-opened ::ng-deep .ng-select-container {
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &.ng-select-error ::ng-deep .ng-select-container {
+    border-color: var(--cf-critical);
+    box-shadow: none;
+  }
+
+  &.ng-select-disabled ::ng-deep .ng-select-container {
+    background: var(--cf-slate-50);
+    cursor: not-allowed;
+    opacity: 1;
+  }
 }
 
-.plan-purpose-empty__title {
-  margin: 0;
+.plan-purpose-modal {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.plan-purpose-modal__label {
   font-size: 0.85rem;
   font-weight: 600;
+  color: var(--cf-slate-900);
 }
 
-.plan-purpose-empty__hint {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--cf-muted);
-}
-
-.plan-purpose-create {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-.plan-purpose-create input {
-  flex: 1;
-  min-width: 140px;
+.plan-purpose-modal__input {
+  width: 100%;
   border: 1px solid var(--cf-panel-border);
   border-radius: var(--cf-radius-sm);
   padding: 0.5rem 0.6rem;
+  font-size: 0.9rem;
+  background: #fff;
+
+  &:focus {
+    outline: none;
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &.is-invalid {
+    border-color: var(--cf-critical);
+  }
+}
+
+.plan-purpose-modal__helper {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--cf-muted);
+  line-height: 1.45;
+}
+
+.plan-purpose-modal__warn {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--cf-slate-700);
+  line-height: 1.45;
+}
+
+.plan-purpose-modal__error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--cf-critical);
 }
 
 .plan-meta {

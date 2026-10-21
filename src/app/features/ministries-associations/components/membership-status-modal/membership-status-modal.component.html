@@ -36,9 +36,8 @@
             : null
       "
     >
-      <input
-        id="membership-exit-date"
-        type="date"
+      <app-cf-date-field
+        inputId="membership-exit-date"
         formControlName="exit_date"
         [attr.min]="membership.joined_date"
       />

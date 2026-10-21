@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -49,7 +50,7 @@ export interface FocExpenseMethodOption {
 @Component({
   selector: 'app-foc-expense-modal',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CfDatePipe,CommonModule, FormsModule, RouterModule, ModalShellComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './foc-expense-modal.component.html',

@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, ViewChild, ElementRef, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,7 +13,7 @@ import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.
 @Component({
   selector: 'app-diocese-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, PhoneInputComponent, ModalShellComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, PhoneInputComponent, ModalShellComponent],
   templateUrl: './diocese-form-modal.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './diocese-form-modal.component.scss'

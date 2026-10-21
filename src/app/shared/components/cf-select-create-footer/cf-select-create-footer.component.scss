@@ -1,0 +1,66 @@
+@use '../../../../styles/church-financial-os-mixins' as *;
+
+.cf-select-create__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--cf-slate-50);
+  color: var(--cf-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--cf-primary-subtle);
+  }
+
+  &:active:not(:disabled) {
+    background: var(--cf-primary-subtle);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    @include cf-focus-ring;
+    position: relative;
+    z-index: 1;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.cf-select-create__icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--cf-primary-subtle);
+  color: var(--cf-primary);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  .cf-select-create__btn:hover:not(:disabled) &,
+  .cf-select-create__btn:focus-visible & {
+    background: var(--cf-primary);
+    color: #fff;
+  }
+}
+
+.cf-select-create__label {
+  flex: 1;
+  min-width: 0;
+}

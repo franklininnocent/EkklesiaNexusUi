@@ -52,7 +52,7 @@ export async function submitNewBishopSuggestion(
   await expect(dialog.getByText('Diocese / Archdiocese')).toBeVisible();
 
   await dialog.getByPlaceholder('Full name as announced').fill(bishopName);
-  await dialog.locator('input[type="date"]').first().fill('2026-03-01');
+  await dialog.locator('app-cf-date-field input').first().fill('01/03/2026');
   const endReason = dialog.locator('select');
   if (await endReason.count()) {
     await endReason.selectOption('retirement');

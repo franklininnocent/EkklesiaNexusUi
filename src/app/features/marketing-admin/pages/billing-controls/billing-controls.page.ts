@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { CfDateTimeFieldComponent } from '@shared/components/cf-datetime-field/cf-datetime-field.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { BillingAdminNavComponent } from '../../components/billing-admin-nav/billing-admin-nav.component';
@@ -25,7 +26,7 @@ interface OfflineMethodRow {
 @Component({
   selector: 'app-billing-controls-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, BillingAdminNavComponent, PageHeaderComponent, ModalShellComponent],
+  imports: [CommonModule, FormsModule, CfDateTimeFieldComponent, BillingAdminNavComponent, PageHeaderComponent, ModalShellComponent],
   templateUrl: './billing-controls.page.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['../../styles/billing-workspace.scss', './billing-controls.page.scss'],

@@ -107,7 +107,7 @@
         </label>
         <div class="sa-field" *ngIf="when === 'later'">
           <label for="sa-publish-at">Go-live date and time</label>
-          <input id="sa-publish-at" type="datetime-local" [min]="minDate" [(ngModel)]="effectiveFrom" [disabled]="submitting" />
+          <app-cf-datetime-field dateInputId="sa-publish-at" [minDateTime]="minDate" [(ngModel)]="effectiveFrom" [disabled]="submitting" />
         </div>
         <div class="sa-field">
           <label for="sa-publish-reason">Note for change history</label>

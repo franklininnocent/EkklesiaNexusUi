@@ -75,21 +75,21 @@
     <div class="mass-view-nav__jump-field">
       <label class="mass-view-nav__jump-label" [attr.for]="jumpFieldId()">{{ jumpControlLabel() }}</label>
       @if (view() === 'list') {
-        <input
-          [id]="jumpFieldId()"
-          type="month"
+        <app-cf-month-field
+          [inputId]="jumpFieldId()"
           class="mass-view-nav__jump-control"
-          [value]="pickerValue()"
-          (change)="onPickerChange($any($event.target).value)"
+          [ngModel]="pickerValue()"
+          (ngModelChange)="onPickerChange($event)"
+          [ngModelOptions]="{ standalone: true }"
           [attr.aria-label]="jumpInputAriaLabel()"
         />
       } @else {
-        <input
-          [id]="jumpFieldId()"
-          type="date"
+        <app-cf-date-field
+          [inputId]="jumpFieldId()"
           class="mass-view-nav__jump-control"
-          [value]="pickerValue()"
-          (change)="onPickerChange($any($event.target).value)"
+          [ngModel]="pickerValue()"
+          (ngModelChange)="onPickerChange($event)"
+          [ngModelOptions]="{ standalone: true }"
           [attr.aria-label]="jumpInputAriaLabel()"
         />
       }

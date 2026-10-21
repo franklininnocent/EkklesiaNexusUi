@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -27,7 +28,7 @@ type DrawerFilterChipKey = 'ytd' | 'custom' | 'bcc' | 'project';
 @Component({
   selector: 'app-donations-dashboard-filter-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CfDateFieldComponent, CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -106,9 +107,8 @@ type DrawerFilterChipKey = 'ytd' | 'custom' | 'bcc' | 'project';
               From
               <span *ngIf="draftFrom" class="filter-drawer__active-dot" aria-hidden="true"></span>
             </label>
-            <input
-              id="dash-custom-from"
-              type="date"
+            <app-cf-date-field
+              inputId="dash-custom-from"
               class="filter-drawer__input"
               name="date_from"
               [ngModel]="draftFrom"
@@ -121,9 +121,8 @@ type DrawerFilterChipKey = 'ytd' | 'custom' | 'bcc' | 'project';
               To
               <span *ngIf="draftTo" class="filter-drawer__active-dot" aria-hidden="true"></span>
             </label>
-            <input
-              id="dash-custom-to"
-              type="date"
+            <app-cf-date-field
+              inputId="dash-custom-to"
               class="filter-drawer__input"
               name="date_to"
               [ngModel]="draftTo"

@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -34,7 +35,7 @@ import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-br
 @Component({
   selector: 'app-assign-leadership-modal',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     ReactiveFormsModule,
     LeadershipMemberPickerComponent,

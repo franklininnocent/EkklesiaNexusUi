@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
@@ -10,7 +11,7 @@ import { formatMassDayTime } from '../utils/mass-celebration-display';
 @Component({
   selector: 'app-add-mass-modal',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, ModalShellComponent],
+  imports: [CfDateFieldComponent, CommonModule, RouterModule, ReactiveFormsModule, ModalShellComponent],
   template: `
     <app-modal-shell
       *ngIf="open"
@@ -50,9 +51,8 @@ import { formatMassDayTime } from '../utils/mass-celebration-display';
               <label for="mass-celebration-day">
                 Day <span class="cf-split-req" aria-hidden="true">*</span>
               </label>
-              <input
-                id="mass-celebration-day"
-                type="date"
+              <app-cf-date-field
+                inputId="mass-celebration-day"
                 formControlName="celebrated_on"
                 aria-required="true"
                 [readonly]="fromWeeklySchedule()"

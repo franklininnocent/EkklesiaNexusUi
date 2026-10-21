@@ -68,7 +68,7 @@
 
       <label class="bishop-wizard__block" *ngIf="requiresEffectiveDate()">
         <span>Effective date <abbr title="required">*</abbr></span>
-        <input type="date" formControlName="effective_date" />
+        <app-cf-date-field formControlName="effective_date" />
       </label>
 
       <label class="bishop-wizard__block" *ngIf="requiresEndReason()">
@@ -108,15 +108,15 @@
         </label>
         <label class="bishop-wizard__block">
           <span>Date of birth</span>
-          <input type="date" formControlName="date_of_birth" />
+          <app-cf-date-field formControlName="date_of_birth" />
         </label>
         <label class="bishop-wizard__block">
           <span>Ordained priest</span>
-          <input type="date" formControlName="ordained_priest_date" />
+          <app-cf-date-field formControlName="ordained_priest_date" />
         </label>
         <label class="bishop-wizard__block">
           <span>Ordained bishop</span>
-          <input type="date" formControlName="ordained_bishop_date" />
+          <app-cf-date-field formControlName="ordained_bishop_date" />
         </label>
         <label class="bishop-wizard__block">
           <span>Email</span>

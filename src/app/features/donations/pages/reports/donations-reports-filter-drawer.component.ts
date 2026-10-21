@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectorRef,
@@ -38,7 +39,7 @@ export interface DonationsReportsFilterDraft {
 @Component({
   selector: 'app-donations-reports-filter-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CfDateFieldComponent, CommonModule, FormsModule],
   template: `
     <div *ngIf="isOpen" class="drawer-backdrop animate-fade-in" (click)="onClose()" aria-hidden="true"></div>
 
@@ -59,9 +60,9 @@ export interface DonationsReportsFilterDraft {
         <div class="filter-drawer__group" *ngIf="usesDateRange">
           <p class="filter-drawer__group-caption">Date range</p>
           <label class="filter-drawer__label" for="rep-filter-from">From</label>
-          <input id="rep-filter-from" type="date" class="filter-drawer__input" [(ngModel)]="draft.dateFrom" />
+          <app-cf-date-field inputId="rep-filter-from" class="filter-drawer__input" [(ngModel)]="draft.dateFrom" />
           <label class="filter-drawer__label" for="rep-filter-to">To</label>
-          <input id="rep-filter-to" type="date" class="filter-drawer__input" [(ngModel)]="draft.dateTo" />
+          <app-cf-date-field inputId="rep-filter-to" class="filter-drawer__input" [(ngModel)]="draft.dateTo" />
           <label class="filter-drawer__label" for="rep-filter-preset">Period preset</label>
           <select id="rep-filter-preset" class="filter-drawer__input" [(ngModel)]="draft.preset">
             <option value="">Custom dates</option>
@@ -74,7 +75,7 @@ export interface DonationsReportsFilterDraft {
 
         <div class="filter-drawer__group" *ngIf="usesAsOf">
           <label class="filter-drawer__label" for="rep-filter-asof">As of date</label>
-          <input id="rep-filter-asof" type="date" class="filter-drawer__input" [(ngModel)]="draft.asOfDate" />
+          <app-cf-date-field inputId="rep-filter-asof" class="filter-drawer__input" [(ngModel)]="draft.asOfDate" />
         </div>
 
         <div class="filter-drawer__group" *ngIf="supports('fiscal_year')">

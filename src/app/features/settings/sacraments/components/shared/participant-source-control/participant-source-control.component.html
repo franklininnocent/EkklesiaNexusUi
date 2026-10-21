@@ -136,8 +136,7 @@
         <span class="cf-split-req" *ngIf="requireIdentityFields" aria-hidden="true">*</span>
         <span class="cf-split-optional" *ngIf="!requireIdentityFields">optional</span>
       </label>
-      <input
-        type="date"
+      <app-cf-date-field
         [id]="'ext_dob_' + fieldId"
         [(ngModel)]="externalDob"
         (ngModelChange)="onExternalChange()"

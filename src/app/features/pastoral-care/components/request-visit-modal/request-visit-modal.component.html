@@ -47,7 +47,7 @@
 
     <label class="request-visit__block">
       <span>Due date (optional)</span>
-      <input type="date" formControlName="due_on" />
+      <app-cf-date-field formControlName="due_on" />
     </label>
 
     <p class="request-visit__error" *ngIf="formError" role="alert">{{ formError }}</p>

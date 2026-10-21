@@ -1,4 +1,7 @@
+import { CfMonthFieldComponent } from '@shared/components/cf-month-field/cf-month-field.component';
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import {
@@ -21,7 +24,7 @@ import {
 @Component({
   selector: 'app-mass-celebrations-view-nav',
   standalone: true,
-  imports: [RouterModule, CfActionIconComponent],
+  imports: [CfDateFieldComponent, CfMonthFieldComponent, FormsModule, RouterModule, CfActionIconComponent],
   templateUrl: './mass-celebrations-view-nav.component.html',
   styleUrl: './mass-celebrations-view-nav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

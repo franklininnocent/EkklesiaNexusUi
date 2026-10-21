@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -22,7 +23,7 @@ import { ModalShellComponent } from '@shared/components';
 @Component({
   selector: 'app-enroll-from-family-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent],
   templateUrl: './enroll-from-family-modal.component.html',
   styleUrl: './enroll-from-family-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
