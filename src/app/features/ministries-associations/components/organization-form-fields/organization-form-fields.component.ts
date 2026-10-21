@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -19,7 +20,7 @@ import { OrganizationFormGroup } from '../../utils/organization-form.util';
 @Component({
   selector: 'app-organization-form-fields',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormFieldComponent, RichTextEditorComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, FormFieldComponent, RichTextEditorComponent],
   templateUrl: './organization-form-fields.component.html',
   styleUrl: './organization-form-fields.component.scss',
   changeDetection: ChangeDetectionStrategy.Eager,

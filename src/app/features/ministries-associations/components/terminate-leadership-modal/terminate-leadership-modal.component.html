@@ -21,7 +21,7 @@
         fieldId="terminate-effective-to"
         [errorText]="submitted && form.controls.effective_to.invalid ? 'Effective to date is required.' : null"
       >
-        <input id="terminate-effective-to" type="date" formControlName="effective_to" />
+        <app-cf-date-field inputId="terminate-effective-to" formControlName="effective_to" />
       </app-form-field>
 
       <app-form-field

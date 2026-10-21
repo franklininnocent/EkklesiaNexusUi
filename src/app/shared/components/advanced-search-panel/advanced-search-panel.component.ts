@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { Component, EventEmitter, Input, Output, OnChanges, OnDestroy, SimpleChanges, ChangeDetectionStrategy, ElementRef, ViewChild, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,7 +39,7 @@ export interface FieldGroup {
 @Component({
   selector: 'app-advanced-search-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule],
+  imports: [CfDateFieldComponent, CommonModule, FormsModule, NgSelectModule],
   templateUrl: './advanced-search-panel.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './advanced-search-panel.component.scss'

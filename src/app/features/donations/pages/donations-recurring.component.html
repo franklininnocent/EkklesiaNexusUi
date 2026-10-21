@@ -58,10 +58,45 @@
               <div class="cf-split-grid">
                 <div class="cf-split-field cf-split-field--full">
                   <label for="recurring-donor">Donor</label>
-                  <select id="recurring-donor" formControlName="donor_id">
-                    <option value="">Select donor</option>
-                    <option *ngFor="let donor of donors" [value]="donor.id">{{ donor.name }}</option>
-                  </select>
+                  <p class="cf-split-field__hint" *ngIf="!donorsLoaded">Loading donors…</p>
+                  <p class="cf-split-field__hint cf-split-field__hint--error" *ngIf="donorsLoaded && donorsLoadError">{{ donorsLoadError }}</p>
+                  <ng-select
+                    *ngIf="donorsLoaded && !donorsLoadError"
+                    #donorSelect
+                    id="recurring-donor"
+                    class="cf-split-select"
+                    panelClass="cf-select-create-panel recurring-donor-create-panel"
+                    formControlName="donor_id"
+                    labelForId="recurring-donor"
+                    [items]="donors"
+                    bindLabel="name"
+                    bindValue="id"
+                    placeholder="Select option"
+                    [searchable]="true"
+                    [clearable]="true"
+                    notFoundText="No donors yet"
+                    [disabled]="creatingDonor"
+                    (open)="onDonorSelectOpen()"
+                    (close)="onDonorSelectClose()"
+                    (search)="onDonorSearch($event)"
+                    (keydown)="onDonorSelectKeydown($event)"
+                  >
+                    <ng-template ng-footer-tmp>
+                      <app-cf-select-create-footer
+                        *ngIf="canCreateDonor"
+                        ariaLabel="Add new donor"
+                        [disabled]="creatingDonor"
+                        [suppressPointerActivation]="true"
+                      />
+                    </ng-template>
+                  </ng-select>
+                  <p
+                    class="cf-split-field__hint"
+                    *ngIf="donorsLoaded && !donorsLoadError && !donors.length && !canCreateDonor"
+                    role="status"
+                  >
+                    No donors are set up yet. Ask someone with stewardship manage access to add one.
+                  </p>
                 </div>
                 <div class="cf-split-field cf-split-field--full">
                   <label for="recurring-category">Category</label>
@@ -91,7 +126,7 @@
                 </div>
                 <div class="cf-split-field cf-split-field--full">
                   <label for="recurring-next-run">Next run on <span class="cf-split-req" aria-hidden="true">*</span></label>
-                  <input id="recurring-next-run" formControlName="next_run_on" type="date" aria-required="true" />
+                  <app-cf-date-field inputId="recurring-next-run" formControlName="next_run_on" aria-required="true" />
                 </div>
               </div>
             </section>
@@ -99,12 +134,103 @@
             <div class="cf-split-form-actions">
               <button
           aria-label="Save"
-          title="Save" type="submit" class="cf-btn cf-btn-icon cf-btn-primary" [disabled]="form.invalid || saving">
+          title="Save" type="submit" class="cf-btn cf-btn-icon cf-btn-primary" [disabled]="form.invalid || saving || creatingDonor">
           <app-cf-action-icon name="save" />
               </button>
-              <button type="button" class="cf-btn cf-btn-icon" (click)="closeForm()" [disabled]="saving" aria-label="Cancel" title="Cancel"><app-cf-action-icon name="x" /></button>
+              <button type="button" class="cf-btn cf-btn-icon" (click)="closeForm()" [disabled]="saving || creatingDonor" aria-label="Cancel" title="Cancel"><app-cf-action-icon name="x" /></button>
             </div>
           </form>
+
+          <app-modal-shell
+            *ngIf="showDonorModal"
+            title="Add donor"
+            size="sm"
+            headerVariant="compact"
+            bodyPadding="none"
+            closeAriaLabel="Close add donor"
+            [isSubmitting]="creatingDonor"
+            (closeRequested)="closeDonorModal()"
+          >
+            <form class="cf-split-form-body" [formGroup]="donorModalForm" (ngSubmit)="submitDonorModal()" novalidate>
+              <p class="cf-meta">
+                For walk-in, external, or organizational supporters.
+              </p>
+              <section class="cf-split-section" aria-labelledby="recurring-donor-add-section-details">
+                <h3 id="recurring-donor-add-section-details" class="cf-split-section__title">Donor details</h3>
+                <div class="cf-split-grid">
+                  <div class="cf-split-field cf-split-field--full">
+                    <label for="recurring-donor-modal-name">Donor name <span class="cf-split-req" aria-hidden="true">*</span></label>
+                    <input
+                      #donorModalNameInput
+                      id="recurring-donor-modal-name"
+                      formControlName="name"
+                      autocomplete="name"
+                      maxlength="180"
+                      required
+                      aria-required="true"
+                      [disabled]="creatingDonor"
+                    />
+                  </div>
+                  <div class="cf-split-field">
+                    <label for="recurring-donor-modal-email">Email <span class="cf-split-optional">optional</span></label>
+                    <input
+                      id="recurring-donor-modal-email"
+                      type="email"
+                      formControlName="email"
+                      autocomplete="email"
+                      [disabled]="creatingDonor"
+                    />
+                  </div>
+                  <div class="cf-split-field">
+                    <label for="recurring-donor-modal-phone">Phone <span class="cf-split-optional">optional</span></label>
+                    <input
+                      id="recurring-donor-modal-phone"
+                      type="tel"
+                      formControlName="phone"
+                      autocomplete="tel"
+                      [disabled]="creatingDonor"
+                    />
+                  </div>
+                  <div class="cf-split-field cf-split-field--full">
+                    <label for="recurring-donor-modal-type">Donor type</label>
+                    <select id="recurring-donor-modal-type" formControlName="donor_type" [disabled]="creatingDonor">
+                      <option value="external">External supporter</option>
+                      <option value="individual">Individual</option>
+                      <option value="family">Family-linked</option>
+                      <option value="organization">Organization</option>
+                    </select>
+                  </div>
+                </div>
+                <p class="cf-split-field__hint" *ngIf="donorDuplicateNameWarning" role="status">
+                  A donor with this name already exists. Save only if you need another record.
+                </p>
+                <p class="cf-split-field__hint cf-split-field__hint--error" *ngIf="donorModalError" role="alert">
+                  {{ donorModalError }}
+                </p>
+              </section>
+              <div class="cf-split-form-actions">
+                <button
+                  type="submit"
+                  class="cf-btn cf-btn-icon cf-btn-primary"
+                  [disabled]="donorModalForm.invalid || creatingDonor"
+                  aria-label="Save donor"
+                  title="Save donor"
+                >
+                  <app-cf-action-icon name="save" />
+                </button>
+                <button
+                  type="button"
+                  class="cf-btn cf-btn-icon"
+                  (click)="closeDonorModal()"
+                  [disabled]="creatingDonor"
+                  aria-label="Cancel"
+                  title="Cancel"
+                >
+                  <app-cf-action-icon name="x" />
+                </button>
+              </div>
+            </form>
+          </app-modal-shell>
         </article>
       </aside>
 

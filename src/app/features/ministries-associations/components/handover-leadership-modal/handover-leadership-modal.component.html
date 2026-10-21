@@ -33,7 +33,7 @@
           fieldId="handover-outgoing-effective-to"
           [errorText]="submitted && form.controls.outgoing_effective_to.invalid ? 'Effective to date is required.' : null"
         >
-          <input id="handover-outgoing-effective-to" type="date" formControlName="outgoing_effective_to" />
+          <app-cf-date-field inputId="handover-outgoing-effective-to" formControlName="outgoing_effective_to" />
         </app-form-field>
 
         <app-form-field
@@ -77,7 +77,7 @@
           fieldId="handover-appointment-date"
           [errorText]="submitted && form.controls.appointment_date.invalid ? 'Appointment date is required.' : null"
         >
-          <input id="handover-appointment-date" type="date" formControlName="appointment_date" />
+          <app-cf-date-field inputId="handover-appointment-date" formControlName="appointment_date" />
         </app-form-field>
 
         <app-form-field
@@ -86,7 +86,7 @@
           fieldId="handover-effective-from"
           [errorText]="submitted && form.controls.effective_from.invalid ? 'Effective from date is required.' : null"
         >
-          <input id="handover-effective-from" type="date" formControlName="effective_from" />
+          <app-cf-date-field inputId="handover-effective-from" formControlName="effective_from" />
         </app-form-field>
       </div>
 
@@ -104,7 +104,7 @@
           fieldId="handover-effective-to"
           [errorText]="submitted && form.hasError('effectiveToBeforeFrom') ? 'Effective to must be on or after the effective from date.' : null"
         >
-          <input id="handover-effective-to" type="date" formControlName="effective_to" />
+          <app-cf-date-field inputId="handover-effective-to" formControlName="effective_to" />
         </app-form-field>
 
         <app-form-field label="Term label" fieldId="handover-term-label">

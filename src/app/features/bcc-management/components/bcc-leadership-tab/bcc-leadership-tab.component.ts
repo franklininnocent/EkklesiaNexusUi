@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -48,7 +49,7 @@ const EXIT_REASON_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-bcc-leadership-tab',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     FormsModule,
     NgSelectModule,

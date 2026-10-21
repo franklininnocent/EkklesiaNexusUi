@@ -154,7 +154,7 @@
           <div class="clw-field">
             <label for="clw_appointed">Appointed Date *</label>
             <div class="clw-date-row">
-              <input id="clw_appointed" type="date" formControlName="appointed_date" />
+              <app-cf-date-field inputId="clw_appointed" formControlName="appointed_date" />
               <div class="clw-date-presets">
                 <button type="button" (click)="setAppointedDatePreset('today')">Today</button>
                 <button type="button" (click)="setAppointedDatePreset('month_start')">Beginning of Month</button>
@@ -165,7 +165,7 @@
 
           <div class="clw-field" *ngIf="showRelievedDate">
             <label for="clw_relieved">Relieved Date</label>
-            <input id="clw_relieved" type="date" formControlName="relieved_date" />
+            <app-cf-date-field inputId="clw_relieved" formControlName="relieved_date" />
             <small>Leave empty for active leaders.</small>
           </div>
 

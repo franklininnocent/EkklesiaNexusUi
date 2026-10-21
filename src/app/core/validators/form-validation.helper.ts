@@ -323,7 +323,7 @@ export function markFormGroupTouched(form: FormGroup, fieldSelectorPrefix: strin
         ? `${fieldSelectorPrefix}[formControlName="${firstInvalidField}"]`
         : `[formControlName="${firstInvalidField}"]`;
       const datetimeDate = document.querySelector(
-        `${baseSelector} input[type="date"]`
+        `${baseSelector} app-cf-date-field input.cf-date-field__control, ${baseSelector} input[type="date"]`
       ) as HTMLElement | null;
       const element =
         datetimeDate ||

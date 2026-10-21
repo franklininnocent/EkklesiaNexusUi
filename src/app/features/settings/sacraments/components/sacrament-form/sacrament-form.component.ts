@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ import { CfLoadingContainerComponent } from '@shared/components/cf-loading-conta
 @Component({
   selector: 'app-sacrament-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalShellComponent, CfLoadingContainerComponent],
+  imports: [CfDateFieldComponent, CommonModule, FormsModule, ModalShellComponent, CfLoadingContainerComponent],
   templateUrl: './sacrament-form.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sacrament-form.component.scss'

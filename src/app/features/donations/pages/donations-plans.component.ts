@@ -1,5 +1,8 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { DOCUMENT } from '@angular/common';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ChangeDetectionStrategy, ViewChild, inject } from '@angular/core';
+import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription, switchMap } from 'rxjs';
@@ -16,6 +19,8 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import { EditIconButtonComponent } from '@shared/components/edit-icon-button/edit-icon-button.component';
+import { CfSelectCreateFooterComponent } from '@shared/components/cf-select-create-footer/cf-select-create-footer.component';
+import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { DonationsService } from '../services/donations.service';
 import { ContributionDue, ContributionPlan, ContributionPlanAssignment } from '../models/donation.model';
 import { localDateOnly } from '../utils/local-date-only';
@@ -29,12 +34,30 @@ interface ApiErrorBody {
 @Component({
   selector: 'app-donations-plans',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CfEmptyStateComponent, LoadingSkeletonComponent, PageHeaderComponent, CfCurrencyPipe, CfActionIconComponent, EditIconButtonComponent, CfFamilyPickerLabelPipe],
+  imports: [CfDateFieldComponent, 
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    NgSelectModule,
+    CfEmptyStateComponent,
+    LoadingSkeletonComponent,
+    PageHeaderComponent,
+    CfCurrencyPipe,
+    CfActionIconComponent,
+    EditIconButtonComponent,
+    CfFamilyPickerLabelPipe,
+    CfSelectCreateFooterComponent,
+    ModalShellComponent,
+  ],
   templateUrl: './donations-plans.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './donations-plans.component.scss'
 })
 export class DonationsPlansComponent implements OnInit, OnDestroy {
+  @ViewChild('fundSelect') fundSelect?: NgSelectComponent;
+  @ViewChild('purposeNameInput') purposeNameInput?: ElementRef<HTMLInputElement>;
+
   plans: ContributionPlan[] = [];
   plansLoaded = false;
   plansLoadError: string | null = null;
@@ -45,8 +68,18 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   funds: Array<{ id: string; name: string; code: string }> = [];
   fundsLoaded = false;
   fundsLoadError: string | null = null;
-  newPurposeName = '';
   creatingPurpose = false;
+  showPurposeModal = false;
+  purposeModalName = '';
+  purposeModalError: string | null = null;
+  purposeModalAttempted = false;
+  /** Re-evaluated when the collection-purpose panel opens. */
+  canCreatePurpose = false;
+  purposeSearchTerm = '';
+  private readonly document = inject(DOCUMENT);
+  private purposeFooterDocListener: ((event: MouseEvent) => void) | null = null;
+  private lastSelectedFundId: string | null = null;
+  private createPurposeSub?: Subscription;
   families: Family[] = [];
   draftAssignments: ContributionPlanAssignment[] = [];
   selectedFamilyId = '';
@@ -64,7 +97,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   planForm = this.fb.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
     code: [''],
-    fund_id: ['', Validators.required],
+    fund_id: [null as string | null, Validators.required],
     plan_type: ['uniform', Validators.required],
     frequency: ['monthly', Validators.required],
     custom_interval_days: [30, [Validators.min(1)]],
@@ -109,7 +142,9 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.detachPurposeFooterDocumentListener();
     this.routerSub?.unsubscribe();
+    this.createPurposeSub?.unsubscribe();
   }
 
   get activePlanCount(): number {
@@ -289,7 +324,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.funds = res.data || [];
         this.fundsLoaded = true;
-        this.ensureDefaultFund();
+        this.syncFundSelectionWithLoadedFunds();
       },
       error: (err) => {
         console.error('Failed to load collection purposes', err);
@@ -300,32 +335,243 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
     });
   }
 
-  createPurpose(): void {
-    const name = this.newPurposeName.trim();
-    if (!name || this.creatingPurpose) {
+  onFundSelectOpen(): void {
+    this.canCreatePurpose = this.authService.hasPermission('donations.manage');
+    this.purposeSearchTerm = '';
+    this.attachPurposeFooterDocumentListener();
+  }
+
+  onFundSelectClose(): void {
+    this.purposeSearchTerm = '';
+    this.detachPurposeFooterDocumentListener();
+  }
+
+  onFundPurposeSearch(event: { term: string }): void {
+    this.purposeSearchTerm = event.term ?? '';
+  }
+
+  onFundPurposeChange(fundId: string | null): void {
+    if (fundId) {
+      this.lastSelectedFundId = fundId;
+    }
+  }
+
+  onFundSelectKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' || !this.canCreatePurpose || this.creatingPurpose) {
       return;
     }
+    const term = this.purposeSearchTerm.trim();
+    if (!term || this.purposeSearchMatchesAnyFund(term)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.fundSelect?.close();
+    this.openPurposeModal(term);
+  }
 
+  /**
+   * ng-select projects `ng-footer-tmp` into an overlay; footer `(activated)` and host bindings may not wire.
+   * Document capture while the panel is open is reliable and runs before the overlay unmounts.
+   */
+  private attachPurposeFooterDocumentListener(): void {
+    this.detachPurposeFooterDocumentListener();
+    if (!this.canCreatePurpose) {
+      return;
+    }
+    this.purposeFooterDocListener = (event) => this.handlePurposeFooterDocumentPointerDown(event);
+    this.document.addEventListener('mousedown', this.purposeFooterDocListener, true);
+  }
+
+  private detachPurposeFooterDocumentListener(): void {
+    if (!this.purposeFooterDocListener) {
+      return;
+    }
+    this.document.removeEventListener('mousedown', this.purposeFooterDocListener, true);
+    this.purposeFooterDocListener = null;
+  }
+
+  handlePurposeFooterDocumentPointerDown(event: MouseEvent): void {
+    if (event.button !== 0 || this.creatingPurpose) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.cf-select-create-panel .cf-select-create__btn')) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.onAddPurposeFromFooter(this.purposeSearchTerm);
+  }
+
+  onAddPurposeFromFooter(searchTerm: string): void {
+    if (!this.authService.hasPermission('donations.manage') || this.creatingPurpose) {
+      return;
+    }
+    const prefill = this.prefillPurposeNameFromSearch(searchTerm ?? '');
+    this.fundSelect?.close();
+    // Open after the overlay unmounts so the modal is not torn down with the panel.
+    setTimeout(() => this.openPurposeModal(prefill), 0);
+  }
+
+  openPurposeModal(initialName = ''): void {
+    this.purposeModalName = initialName;
+    this.purposeModalError = null;
+    this.purposeModalAttempted = false;
+    this.showPurposeModal = true;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.purposeNameInput?.nativeElement?.focus();
+    }, 0);
+  }
+
+  closePurposeModal(): void {
+    if (this.creatingPurpose) {
+      return;
+    }
+    this.showPurposeModal = false;
+    this.purposeModalError = null;
+    this.purposeModalAttempted = false;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.fundSelect?.focus();
+    }, 0);
+  }
+
+  get purposeDuplicateNameWarning(): boolean {
+    const trimmed = this.purposeModalName.trim().toLowerCase();
+    if (!trimmed) {
+      return false;
+    }
+    return this.funds.some((fund) => fund.name.trim().toLowerCase() === trimmed);
+  }
+
+  submitPurposeModal(): void {
+    this.purposeModalAttempted = true;
+    const name = this.purposeModalName.trim();
+    if (!name) {
+      this.purposeModalError = 'Enter a purpose name.';
+      return;
+    }
+    if (name.length > 150) {
+      this.purposeModalError = 'Purpose name cannot be longer than 150 characters.';
+      return;
+    }
+    if (this.creatingPurpose) {
+      return;
+    }
+    this.createPurposeFromModal(name, false);
+  }
+
+  onPurposeModalNameKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.submitPurposeModal();
+    }
+  }
+
+  private createPurposeFromModal(name: string, forceUniqueCode: boolean): void {
     this.creatingPurpose = true;
-    this.formError = null;
-    this.donationsService.createFund({
+    this.purposeModalError = null;
+    const code = forceUniqueCode
+      ? this.suggestPurposeCodeWithTimeSuffix(name)
+      : this.suggestPurposeCode(name);
+
+    this.createPurposeSub?.unsubscribe();
+    this.createPurposeSub = this.donationsService.createFund({
       name,
-      code: this.suggestPurposeCode(name),
-      status: 'active'
+      code,
+      status: 'active',
     }).subscribe({
       next: (res) => {
         this.creatingPurpose = false;
-        this.newPurposeName = '';
-        this.funds = [...this.funds, res.data];
-        this.planForm.patchValue({ fund_id: res.data.id });
+        this.applyCreatedFund(res.data);
+        this.showPurposeModal = false;
+        this.purposeModalName = '';
+        this.purposeModalAttempted = false;
         this.toastService.success(`"${res.data.name}" added.`, 'Purpose added');
+        this.cdr.detectChanges();
+        setTimeout(() => this.fundSelect?.focus(), 0);
       },
       error: (err) => {
+        if (!forceUniqueCode && this.isFundCodeUniqueViolation(err)) {
+          this.createPurposeFromModal(name, true);
+          return;
+        }
         this.creatingPurpose = false;
-        this.formError = this.parseApiError(err);
-        this.toastService.error(this.formError, 'Could not add purpose');
-      }
+        this.purposeModalError = this.parsePurposeApiError(err);
+        this.cdr.detectChanges();
+      },
     });
+  }
+
+  private applyCreatedFund(fund: { id: string; name: string; code: string }): void {
+    if (!this.funds.some((f) => f.id === fund.id)) {
+      this.funds = [...this.funds, fund].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    this.lastSelectedFundId = fund.id;
+    this.planForm.patchValue({ fund_id: fund.id });
+  }
+
+  private prefillPurposeNameFromSearch(term: string): string {
+    const trimmed = term.trim();
+    if (!trimmed || this.purposeSearchMatchesAnyFund(trimmed)) {
+      return '';
+    }
+    return trimmed;
+  }
+
+  /** True when any fund name contains the search text (ng-select default filter). */
+  private purposeSearchMatchesAnyFund(term: string): boolean {
+    const q = term.trim().toLowerCase();
+    if (!q) {
+      return true;
+    }
+    return this.funds.some((fund) => fund.name.toLowerCase().includes(q));
+  }
+
+  private isFundCodeUniqueViolation(err: unknown): boolean {
+    const status = (err as { status?: number })?.status;
+    const body = (err as { error?: { message?: string } })?.error;
+    const message = (body?.message ?? '').toLowerCase();
+    if (status === 422) {
+      return message.includes('code') && (message.includes('taken') || message.includes('unique') || message.includes('already'));
+    }
+    if (status === 500) {
+      return message.includes('duplicate') || message.includes('unique') || message.includes('23505');
+    }
+    return false;
+  }
+
+  private parsePurposeApiError(err: unknown): string {
+    const status = (err as { status?: number })?.status;
+    if (status === 401) {
+      return 'Your session has expired. Sign in again and try adding the collection purpose.';
+    }
+    const body = (err as { error?: ApiErrorBody })?.error ?? (err as ApiErrorBody);
+    if (body?.errors) {
+      const firstField = Object.keys(body.errors)[0];
+      const firstMessage = firstField ? body.errors[firstField]?.[0] : undefined;
+      if (firstMessage) {
+        return firstMessage;
+      }
+    }
+    const message = body?.message || (err as ApiErrorBody)?.message;
+    if (message && message !== 'Validation error' && !this.looksLikeDatabaseError(message)) {
+      return message;
+    }
+    return 'Could not add the collection purpose. Check the name and try again.';
+  }
+
+  private looksLikeDatabaseError(message: string): boolean {
+    const lower = message.toLowerCase();
+    return lower.includes('sqlstate') || lower.includes('duplicate key') || lower.includes('23505');
+  }
+
+  private suggestPurposeCodeWithTimeSuffix(name: string): string {
+    const base = this.suggestPurposeCode(name);
+    const suffix = Date.now().toString().slice(-6);
+    return `${base.slice(0, Math.max(1, 60 - suffix.length - 1))}-${suffix}`;
   }
 
   loadFamilies(): void {
@@ -366,6 +612,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
     this.donationsService.getPlan(plan.id).subscribe({
       next: (res) => {
         const loaded = res.data ?? plan;
+        this.lastSelectedFundId = loaded.fund_id ?? null;
         this.planForm.patchValue({
           name: loaded.name,
           code: loaded.code,
@@ -387,6 +634,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
         }, 0);
       },
       error: () => {
+        this.lastSelectedFundId = plan.fund_id ?? null;
         this.planForm.patchValue({
           name: plan.name,
           code: plan.code,
@@ -447,7 +695,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.ensureDefaultFund();
+    this.syncFundSelectionWithLoadedFunds();
 
     if (this.planForm.invalid) {
       this.formError = this.formValidationSummary;
@@ -590,14 +838,27 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
     return 'Could not save the plan. Check your entries and try again.';
   }
 
-  private ensureDefaultFund(): void {
+  /** Keeps an existing selection valid; does not auto-pick the first fund (placeholder stays visible). */
+  private syncFundSelectionWithLoadedFunds(): void {
     if (!this.funds.length) {
       return;
     }
     const currentFundId = this.planForm.get('fund_id')?.value;
     if (!currentFundId) {
-      this.planForm.patchValue({ fund_id: this.funds[0].id });
+      return;
     }
+    if (!this.funds.some((f) => f.id === currentFundId)) {
+      this.planForm.patchValue({ fund_id: null });
+      this.lastSelectedFundId = null;
+    }
+  }
+
+  private resetPurposeEntryState(): void {
+    this.lastSelectedFundId = null;
+    this.showPurposeModal = false;
+    this.purposeModalName = '';
+    this.purposeModalError = null;
+    this.purposeModalAttempted = false;
   }
 
   private suggestPlanCode(name: string): string {
@@ -607,8 +868,19 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   }
 
   private suggestPurposeCode(name: string): string {
-    const slug = name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
-    return slug || `PURPOSE-${Date.now().toString().slice(-6)}`;
+    const base = name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20);
+    const slug = base || `PURPOSE-${Date.now().toString().slice(-6)}`;
+    const existing = new Set(this.funds.map((fund) => fund.code.toUpperCase()));
+    if (!existing.has(slug)) {
+      return slug;
+    }
+    for (let i = 2; i < 100; i++) {
+      const candidate = `${slug.slice(0, 17)}-${i}`;
+      if (!existing.has(candidate)) {
+        return candidate;
+      }
+    }
+    return `${slug.slice(0, 12)}-${Date.now().toString().slice(-6)}`;
   }
 
   private resetFormFields(keepFormOpen = false): void {
@@ -616,6 +888,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       this.showForm = false;
     }
     this.draftAssignments = [];
+    this.resetPurposeEntryState();
     this.planForm.reset({
       plan_type: 'uniform',
       frequency: 'monthly',
@@ -625,10 +898,10 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       status: 'active',
       start_date: localDateOnly(),
       end_date: '',
-      fund_id: this.funds[0]?.id || '',
+      fund_id: null,
       code: '',
       name: ''
     });
-    this.ensureDefaultFund();
+    this.syncFundSelectionWithLoadedFunds();
   }
 }

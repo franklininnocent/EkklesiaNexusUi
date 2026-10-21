@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -18,7 +19,7 @@ export type SacramentFormType = 'baptism' | 'first_communion' | 'confirmation' |
 @Component({
   selector: 'app-sacrament-edit-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent],
   templateUrl: './sacrament-edit-modal.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./sacrament-edit-modal.component.scss']

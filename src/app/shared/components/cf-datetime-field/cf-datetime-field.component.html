@@ -8,19 +8,31 @@
   <span class="sr-only" *ngIf="displaySummary">{{ displaySummary }}</span>
 
   <div class="cf-datetime-field__date">
-    <span class="cf-datetime-field__icon" aria-hidden="true">📅</span>
     <input
-      type="date"
+      type="text"
       class="cf-datetime-field__control"
       [id]="dateInputId"
-      [value]="dateValue"
-      [min]="minDate"
+      [value]="dateDisplay"
+      [placeholder]="datePlaceholder"
       [disabled]="disabled"
       [attr.aria-label]="dateAriaLabel"
-      [attr.aria-invalid]="invalid"
-      (input)="onDateInput($event)"
-      (blur)="onBlur()"
+      [attr.aria-invalid]="invalid || dateInputInvalid"
+      inputmode="numeric"
+      autocomplete="off"
+      (input)="onDateTextInput($event)"
+      (blur)="onDateBlur()"
     />
+    <button
+      type="button"
+      class="cf-datetime-field__picker-btn"
+      (click)="toggleDateCalendar($event)"
+      [disabled]="disabled"
+      [attr.aria-expanded]="calendarOpen"
+      aria-haspopup="dialog"
+      aria-label="Open calendar"
+    >
+      📅
+    </button>
   </div>
 
   <div class="cf-datetime-field__time">
@@ -42,7 +54,7 @@
   <button
     type="button"
     class="cf-datetime-field__clear"
-    *ngIf="(dateValue || timeValue) && !disabled"
+    *ngIf="(dateDisplay || timeValue) && !disabled"
     (click)="clear()"
     aria-label="Clear date and time"
   >

@@ -1,5 +1,5 @@
 /**
- * Normalize API date strings for HTML <input type="date"> (YYYY-MM-DD).
+ * Normalize API date strings for form date fields (YYYY-MM-DD wire value).
  */
 export function toDateInputValue(value: string | null | undefined): string {
   if (!value) {

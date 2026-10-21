@@ -93,9 +93,8 @@
         <div class="bcc-leadership__field-grid">
           <label class="bcc-leadership__field">
             <span class="bcc-leadership__label">Appointment date <span aria-hidden="true">*</span></span>
-            <input
+            <app-cf-date-field
               class="cf-input"
-              type="date"
               name="appointmentDate"
               [(ngModel)]="appointmentDate"
               [disabled]="saving"
@@ -105,9 +104,8 @@
 
           <label class="bcc-leadership__field">
             <span class="bcc-leadership__label">Effective from <span aria-hidden="true">*</span></span>
-            <input
+            <app-cf-date-field
               class="cf-input"
-              type="date"
               name="effectiveFrom"
               [(ngModel)]="effectiveFrom"
               [disabled]="saving"
@@ -125,9 +123,8 @@
         <div class="bcc-leadership__field-grid">
           <label class="bcc-leadership__field">
             <span class="bcc-leadership__label">Effective to</span>
-            <input
+            <app-cf-date-field
               class="cf-input"
-              type="date"
               name="effectiveTo"
               [(ngModel)]="effectiveTo"
               [disabled]="saving"
@@ -216,9 +213,8 @@
           <div class="bcc-leadership__field-grid">
             <label class="bcc-leadership__field">
               <span class="bcc-leadership__label">Effective to <span aria-hidden="true">*</span></span>
-              <input
+              <app-cf-date-field
                 class="cf-input"
-                type="date"
                 name="endEffectiveTo"
                 [(ngModel)]="endEffectiveTo"
                 [disabled]="saving"
@@ -287,9 +283,8 @@
           <div class="bcc-leadership__field-grid">
             <label class="bcc-leadership__field">
               <span class="bcc-leadership__label">Appointment date <span aria-hidden="true">*</span></span>
-              <input
+              <app-cf-date-field
                 class="cf-input"
-                type="date"
                 name="handoverAppointmentDate"
                 [(ngModel)]="appointmentDate"
                 [disabled]="saving"
@@ -298,9 +293,8 @@
             </label>
             <label class="bcc-leadership__field">
               <span class="bcc-leadership__label">Effective from <span aria-hidden="true">*</span></span>
-              <input
+              <app-cf-date-field
                 class="cf-input"
-                type="date"
                 name="handoverEffectiveFrom"
                 [(ngModel)]="effectiveFrom"
                 [disabled]="saving"
@@ -315,9 +309,8 @@
           <div class="bcc-leadership__field-grid">
             <label class="bcc-leadership__field">
               <span class="bcc-leadership__label">Effective to</span>
-              <input
+              <app-cf-date-field
                 class="cf-input"
-                type="date"
                 name="handoverEffectiveTo"
                 [(ngModel)]="effectiveTo"
                 [disabled]="saving"
@@ -387,9 +380,8 @@
 
         <label class="bcc-leadership__field">
           <span class="bcc-leadership__label">Effective to <span aria-hidden="true">*</span></span>
-          <input
+          <app-cf-date-field
             class="cf-input"
-            type="date"
             name="endEffectiveTo"
             [(ngModel)]="endEffectiveTo"
             [disabled]="saving"

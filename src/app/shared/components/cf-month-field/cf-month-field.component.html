@@ -1,0 +1,34 @@
+<div
+  class="cf-month-field cf-date-field"
+  [class.cf-date-field--invalid]="invalid || inputInvalid"
+  [class.cf-date-field--disabled]="disabled"
+>
+  <div class="cf-month-field__input-wrap cf-date-field__input-wrap">
+    <input
+      #textInput
+      type="text"
+      class="cf-date-field__control cf-control"
+      [id]="inputId || null"
+      [value]="displayText"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [attr.aria-label]="ariaLabel"
+      [attr.aria-invalid]="invalid || inputInvalid"
+      inputmode="numeric"
+      autocomplete="off"
+      (input)="onTextInput($event)"
+      (blur)="onBlur()"
+    />
+    <button
+      type="button"
+      class="cf-date-field__calendar-btn"
+      (click)="togglePicker($event)"
+      [disabled]="disabled"
+      [attr.aria-expanded]="pickerOpen"
+      aria-haspopup="dialog"
+      aria-label="Open month picker"
+    >
+      📅
+    </button>
+  </div>
+</div>

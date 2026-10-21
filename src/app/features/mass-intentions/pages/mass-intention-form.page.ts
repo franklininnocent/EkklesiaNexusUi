@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -31,7 +32,7 @@ import {
 @Component({
   selector: 'app-mass-intention-form-page',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
@@ -142,7 +143,7 @@ import {
           <div class="cf-panel mass-form__panel">
             <label class="mass-form__field">
               <span>When</span>
-              <input class="cf-control" type="date" formControlName="requested_date" />
+              <app-cf-date-field formControlName="requested_date" />
             </label>
             <label class="mass-form__field mass-form__checkbox">
               <input type="checkbox" formControlName="date_must_be_kept" />
@@ -189,7 +190,7 @@ import {
               </label>
               <label class="mass-form__field">
                 <span>Date received</span>
-                <input class="cf-control" type="date" formControlName="offering_received_on" />
+                <app-cf-date-field formControlName="offering_received_on" />
               </label>
             </details>
           }

@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -31,7 +32,7 @@ type TerminateExitReason = Exclude<LeadershipExitReason, 'census_cascade'>;
 @Component({
   selector: 'app-terminate-leadership-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent, FormFieldComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent, FormFieldComponent],
   templateUrl: './terminate-leadership-modal.component.html',
   styleUrl: './terminate-leadership-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

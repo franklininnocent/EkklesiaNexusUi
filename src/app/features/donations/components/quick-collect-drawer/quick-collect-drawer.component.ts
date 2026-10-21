@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, ViewChild, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -66,7 +67,7 @@ interface ActivityRow {
 @Component({
   selector: 'app-quick-collect-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, CfCurrencyPipe, CfDatePipe, CfActionIconComponent, CfBrandLoaderComponent, CfFamilyPickerLabelPipe, QuickCollectDuesPanelComponent],
+  imports: [CfDateFieldComponent, CommonModule, FormsModule, RouterModule, CfCurrencyPipe, CfDatePipe, CfActionIconComponent, CfBrandLoaderComponent, CfFamilyPickerLabelPipe, QuickCollectDuesPanelComponent],
   template: `
     <div class="qc-backdrop" *ngIf="isOpen" [style.z-index]="overlayZIndex" (click)="close()" aria-hidden="true"></div>
 
@@ -414,7 +415,7 @@ interface ActivityRow {
 
                   <label class="qc-field">
                     <span>Collection date</span>
-                    <input type="date" [(ngModel)]="paymentDate" />
+                    <app-cf-date-field [(ngModel)]="paymentDate" />
                   </label>
 
                   <label class="qc-field qc-field--full">

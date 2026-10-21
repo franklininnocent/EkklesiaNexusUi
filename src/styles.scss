@@ -164,7 +164,7 @@ a {
 
 
 /* Custom ng-select styling to match form inputs */
-.ng-select {
+.ng-select:not(.plan-fund-select) {
   &.ng-select-opened > .ng-select-container {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -285,6 +285,46 @@ a {
   .ng-dropdown-footer {
     padding: 0.5rem 0.875rem;
     border-top: 1px solid var(--gray-200);
+  }
+}
+
+/* Pinned “create record” command inside ng-select panels (select-with-create pilot). */
+.ng-dropdown-panel.cf-select-create-panel {
+  z-index: var(--cf-z-dropdown);
+  background-color: #fff;
+  border: 1px solid var(--cf-panel-border);
+  border-radius: var(--cf-radius-sm);
+  box-shadow: var(--cf-shadow-lg);
+
+  .ng-dropdown-panel-items {
+    max-height: 240px;
+  }
+
+  .ng-dropdown-footer {
+    padding: 0;
+    border-top: 1px solid var(--cf-color-border);
+  }
+
+  .ng-option {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.9rem;
+    color: var(--cf-slate-900);
+
+    &.ng-option-marked {
+      background: var(--cf-slate-50);
+      box-shadow: inset 2px 0 0 var(--cf-primary);
+    }
+
+    &.ng-option-selected {
+      background: var(--cf-primary-subtle);
+      color: var(--cf-primary);
+      font-weight: 600;
+
+      &.ng-option-marked {
+        background: var(--cf-primary-subtle);
+        color: var(--cf-primary);
+      }
+    }
   }
 }
 

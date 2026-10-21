@@ -1,0 +1,10 @@
+.cf-month-field__input-wrap {
+  display: flex;
+  align-items: center;
+  flex: 1 1 9rem;
+  min-width: 0;
+  border: 1px solid var(--cf-panel-border);
+  border-radius: var(--cf-radius-sm);
+  background: var(--cf-panel-bg);
+  padding: 0 var(--cf-control-pad-x);
+}

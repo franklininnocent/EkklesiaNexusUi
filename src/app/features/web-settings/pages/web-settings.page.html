@@ -39,9 +39,19 @@
         <div><dt>From address</dt><dd>{{ diagnostics.from_address_configured ? 'Configured' : 'Missing' }}</dd></div>
         <div><dt>From name</dt><dd>{{ diagnostics.from_name_configured ? 'Configured' : 'Missing' }}</dd></div>
         <div><dt>Queue</dt><dd>{{ diagnostics.queue_connection }}</dd></div>
-        <div><dt>SMTP host</dt><dd>{{ diagnostics.smtp_host || (diagnostics.smtp_host_configured ? 'Configured' : 'Not required / missing') }}</dd></div>
-        <div><dt>SMTP username</dt><dd>{{ diagnostics.smtp_username_configured ? 'Set' : 'Not set' }}</dd></div>
-        <div><dt>SMTP password</dt><dd>{{ diagnostics.smtp_password_configured ? 'Set' : 'Not set' }}</dd></div>
+        <div *ngIf="diagnostics.mailer === 'resend'">
+          <dt>API key</dt>
+          <dd>{{ diagnostics.api_key_configured ? 'Set' : 'Not set' }}</dd>
+        </div>
+        <ng-container *ngIf="diagnostics.mailer === 'smtp'">
+          <div><dt>SMTP host</dt><dd>{{ diagnostics.smtp_host || 'Missing' }}</dd></div>
+          <div><dt>SMTP username</dt><dd>{{ diagnostics.smtp_username_configured ? 'Set' : 'Not set' }}</dd></div>
+          <div><dt>SMTP password</dt><dd>{{ diagnostics.smtp_password_configured ? 'Set' : 'Not set' }}</dd></div>
+        </ng-container>
+        <div *ngIf="diagnostics.mailer !== 'smtp' && diagnostics.mailer !== 'resend'">
+          <dt>SMTP</dt>
+          <dd>Not used by this mailer</dd>
+        </div>
       </dl>
       <button type="button" class="cf-btn" [disabled]="testing || !canUpdate" (click)="sendTest()">
         {{ testing ? 'Sending…' : 'Send test email' }}
