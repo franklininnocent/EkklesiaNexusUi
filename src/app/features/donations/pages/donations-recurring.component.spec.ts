@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { DonationsRecurringComponent } from './donations-recurring.component';
@@ -32,6 +33,7 @@ describe('DonationsRecurringComponent — donor create from select', () => {
           },
         },
         { provide: AuthService, useValue: { hasPermission } },
+        { provide: ActionAuthorizationService, useValue: { allows: (id: string) => hasPermission(id) } },
         { provide: ToastService, useValue: { success: jest.fn(), error: jest.fn() } },
       ],
     }).compileComponents();

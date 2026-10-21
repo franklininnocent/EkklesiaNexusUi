@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs';
 import { QuickCollectDrawerComponent } from './quick-collect-drawer.component';
 import { FamilyService } from '@core/services/family.service';
 import { DonationsService } from '../../services/donations.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { QuickCollectService } from '../../services/quick-collect.service';
 import { ReceiptPrintService } from '../../services/receipt-print.service';
 import { ToastService } from '@core/services/toast.service';
@@ -48,6 +49,7 @@ describe('QuickCollectDrawerComponent', () => {
       imports: [QuickCollectDrawerComponent],
       providers: [
         QuickCollectService,
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
         {
           provide: FamilyService,
           useValue: {

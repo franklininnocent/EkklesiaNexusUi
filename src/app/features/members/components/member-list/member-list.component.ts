@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -170,7 +171,7 @@ export class MemberListComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.members = [];
-          this.error = error?.error?.message || error?.message || 'Failed to load members. Please try again.';
+          this.error = apiErrorMessage(error, 'Failed to load members. Please try again.');
           this.loading = false;
           this.loaded = true;
           this.cdr.markForCheck();

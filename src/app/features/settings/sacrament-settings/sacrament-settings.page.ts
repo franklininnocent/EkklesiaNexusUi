@@ -7,6 +7,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { RouterLink } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
@@ -96,7 +97,7 @@ export class SacramentSettingsPage implements OnInit, OnDestroy {
         error: (err) => {
           this.loading = false;
           this.loaded = true;
-          this.error = err?.error?.message || 'Could not load sacrament settings.';
+          this.error = apiErrorMessage(err, 'Could not load sacrament settings.');
           this.cdr.markForCheck();
         },
       });
@@ -175,7 +176,7 @@ export class SacramentSettingsPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.savingId = null;
-          this.error = err?.error?.message || 'Could not update sacrament settings.';
+          this.error = apiErrorMessage(err, 'Could not update sacrament settings.');
           this.toast.error(this.error || 'Could not update sacrament settings.');
           this.cdr.markForCheck();
         },

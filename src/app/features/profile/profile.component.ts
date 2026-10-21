@@ -1,4 +1,5 @@
 import { Component, inject, OnDestroy, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -246,7 +247,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (error) => {
-          const message = error.error?.message || 'Unable to remove profile photo. Please try again.';
+          const message = apiErrorMessage(error, 'Unable to remove profile photo. Please try again.');
           this.profileImageError = message;
           this.toastService.error(message, 'Profile photo');
           this.cdr.markForCheck();
@@ -296,7 +297,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
         },
         error: (uploadError) => {
           this.clearProfileImagePreview();
-          const message = uploadError.error?.message || 'Unable to update profile photo. Please try again.';
+          const message = apiErrorMessage(uploadError, 'Unable to update profile photo. Please try again.');
           this.profileImageError = message;
           this.toastService.error(message, 'Profile photo');
           this.cdr.markForCheck();

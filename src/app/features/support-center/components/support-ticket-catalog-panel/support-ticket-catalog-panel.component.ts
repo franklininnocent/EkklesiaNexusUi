@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -142,7 +143,7 @@ export class SupportTicketCatalogPanelComponent implements OnInit {
         this.load();
       },
       error: (err) => {
-        this.error = err?.error?.message || err?.message || 'Could not save request type.';
+        this.error = apiErrorMessage(err, 'Could not save request type.');
         this.saving = false;
         this.cdr.markForCheck();
       },
@@ -160,7 +161,7 @@ export class SupportTicketCatalogPanelComponent implements OnInit {
       .subscribe({
         next: () => this.load(),
         error: (err) => {
-          this.error = err?.error?.message || err?.message || 'Could not update request type.';
+          this.error = apiErrorMessage(err, 'Could not update request type.');
           this.cdr.markForCheck();
         },
       });
@@ -230,7 +231,7 @@ export class SupportTicketCatalogPanelComponent implements OnInit {
         this.load();
       },
       error: (err) => {
-        this.error = err?.error?.message || err?.message || 'Could not save category.';
+        this.error = apiErrorMessage(err, 'Could not save category.');
         this.saving = false;
         this.cdr.markForCheck();
       },

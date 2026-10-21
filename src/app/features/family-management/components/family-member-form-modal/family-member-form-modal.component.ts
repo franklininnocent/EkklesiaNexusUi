@@ -739,9 +739,6 @@ export class FamilyMemberFormModalComponent implements OnInit, OnChanges {
     formValue.father_name = father?.name?.trim() || null;
     formValue.mother_person_id = mother?.linked ? mother.person_id ?? null : null;
     formValue.mother_name = mother?.name?.trim() || null;
-    // #region agent log
-    fetch('http://127.0.0.1:7590/ingest/fcdc8726-2655-43c0-b4d1-d6cb441fb521',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4efb69'},body:JSON.stringify({sessionId:'4efb69',runId:'pre-fix',hypothesisId:'C',location:'family-member-form-modal.component.ts:onSave',message:'parent payload on save',data:{motherLinked:!!mother?.linked,motherPersonIdSuffix:(mother?.person_id||'').slice(-8),fatherLinked:!!father?.linked,fatherPersonIdSuffix:(father?.person_id||'').slice(-8),childGender:formValue.gender??null,relationship:formValue.relationship_to_head??null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     delete formValue.father;
     delete formValue.mother;
     

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { NavMenuService } from '@core/services/nav-menu.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import { StewardshipWorkspaceShellComponent } from './stewardship-workspace-shell.component';
@@ -25,6 +26,7 @@ describe('StewardshipWorkspaceShellComponent', () => {
           provide: EntitlementService,
           useValue: { entitlements: () => ({}) },
         },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
       ],
     }).compileComponents();
 

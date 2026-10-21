@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { AuthService } from '@core/services/auth.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import {
   TaxonomyCrudPanelComponent,
@@ -24,7 +24,7 @@ import { MinistriesSubNavComponent } from '../components/ministries-sub-nav/mini
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaxonomySettingsPageComponent implements OnInit, OnDestroy {
-  private readonly authService = inject(AuthService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroy$ = new Subject<void>();
@@ -40,7 +40,7 @@ export class TaxonomySettingsPageComponent implements OnInit, OnDestroy {
   canConfigure = false;
 
   ngOnInit(): void {
-    this.canConfigure = this.authService.hasPermission('ministries.configure');
+    this.canConfigure = this.actions.allows('ministries.configure');
     this.initializeTabFromQuery();
   }
 

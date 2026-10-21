@@ -1,4 +1,6 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { DOCUMENT } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ChangeDetectionStrategy, ViewChild, inject } from '@angular/core';
@@ -9,6 +11,7 @@ import { filter, Subscription, switchMap } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
+import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { CfFamilyPickerLabelPipe } from '@shared/pipes/cf-family-picker-label.pipe';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { ToastService } from '@core/services/toast.service';
@@ -44,6 +47,7 @@ interface ApiErrorBody {
     LoadingSkeletonComponent,
     PageHeaderComponent,
     CfCurrencyPipe,
+    CfDatePipe,
     CfActionIconComponent,
     EditIconButtonComponent,
     CfFamilyPickerLabelPipe,
@@ -55,6 +59,7 @@ interface ApiErrorBody {
   styleUrl: './donations-plans.component.scss'
 })
 export class DonationsPlansComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   @ViewChild('fundSelect') fundSelect?: NgSelectComponent;
   @ViewChild('purposeNameInput') purposeNameInput?: ElementRef<HTMLInputElement>;
 
@@ -82,9 +87,16 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   private createPurposeSub?: Subscription;
   families: Family[] = [];
   draftAssignments: ContributionPlanAssignment[] = [];
+  savedExceptions: ContributionPlanAssignment[] = [];
   selectedFamilyId = '';
   assignmentAmount = 0;
   assignmentEffectiveFrom = localDateOnly();
+  exceptionFamilyId = '';
+  exceptionAmount = 0;
+  exceptionExempt = false;
+  exceptionEffectiveFrom = localDateOnly();
+  exceptionSaving = false;
+  billingSummary: string | null = null;
   showForm = false;
   editingPlanId: string | null = null;
   saving = false;
@@ -125,7 +137,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
     this.loadPlans();
     this.loadFunds();
     this.loadFamilies();
@@ -153,6 +165,10 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
 
   get sameAmountForAll(): boolean {
     return this.planForm.value.plan_type === 'uniform';
+  }
+
+  get editedPlan(): ContributionPlan | undefined {
+    return this.plans.find((plan) => plan.id === this.editingPlanId);
   }
 
   get formValidationSummary(): string {
@@ -241,13 +257,15 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   }
 
   onFrequencyChange(): void {
-    if (this.planForm.value.frequency !== 'one_time') {
+    if (this.planForm.value.frequency === 'one_time') {
+      this.planForm.patchValue({ auto_generate: false });
+      const start = this.planForm.value.start_date;
+      if (start && !this.planForm.value.end_date) {
+        this.planForm.patchValue({ end_date: start });
+      }
       return;
     }
-    const start = this.planForm.value.start_date;
-    if (start && !this.planForm.value.end_date) {
-      this.planForm.patchValue({ end_date: start });
-    }
+    this.planForm.patchValue({ auto_generate: true });
   }
 
   onStartDateChange(): void {
@@ -289,6 +307,8 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
     this.editingPlanId = null;
     this.formError = null;
     this.submitAttempted = false;
+    this.billingSummary = null;
+    this.savedExceptions = [];
   }
 
   loadPlans(): void {
@@ -310,7 +330,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
         }
         console.error('Failed to load contribution plans', err);
         this.plansLoaded = true;
-        this.plansLoadError = 'Unable to load contribution plans. Please try again.';
+        this.plansLoadError = apiErrorMessage(err, 'Unable to load contribution plans. Please try again.');
         this.toastService.error(this.plansLoadError, 'Error');
         this.cdr.detectChanges();
       }
@@ -329,14 +349,14 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Failed to load collection purposes', err);
         this.fundsLoaded = true;
-        this.fundsLoadError = 'Unable to load collection purposes. Please refresh and try again.';
+        this.fundsLoadError = apiErrorMessage(err, 'Unable to load collection purposes. Please refresh and try again.');
         this.toastService.error(this.fundsLoadError, 'Error');
       }
     });
   }
 
   onFundSelectOpen(): void {
-    this.canCreatePurpose = this.authService.hasPermission('donations.manage');
+    this.canCreatePurpose = this.actions.allows('donations.manage');
     this.purposeSearchTerm = '';
     this.attachPurposeFooterDocumentListener();
   }
@@ -405,7 +425,7 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
   }
 
   onAddPurposeFromFooter(searchTerm: string): void {
-    if (!this.authService.hasPermission('donations.manage') || this.creatingPurpose) {
+    if (!this.actions.allows('donations.manage') || this.creatingPurpose) {
       return;
     }
     const prefill = this.prefillPurposeNameFromSearch(searchTerm ?? '');
@@ -627,6 +647,9 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
           status: loaded.status
         });
         this.assignmentEffectiveFrom = toDateInputValue(loaded.start_date) || localDateOnly();
+        this.exceptionEffectiveFrom = this.assignmentEffectiveFrom;
+        this.billingSummary = null;
+        this.loadExceptions(plan.id);
         this.cdr.detectChanges();
         setTimeout(() => {
           document.getElementById('plan-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -649,6 +672,9 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
           status: plan.status
         });
         this.assignmentEffectiveFrom = toDateInputValue(plan.start_date) || localDateOnly();
+        this.exceptionEffectiveFrom = this.assignmentEffectiveFrom;
+        this.billingSummary = null;
+        this.loadExceptions(plan.id);
         this.cdr.detectChanges();
       }
     });
@@ -736,16 +762,21 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
           const without = this.plans.filter((p) => p.id !== saved.id);
           this.plans = [saved, ...without];
           this.highlightPlanId = saved.id;
+          this.editingPlanId = saved.id;
+          this.showForm = true;
+          if (saved.code) {
+            this.planForm.patchValue({ code: saved.code, status: saved.status });
+          }
+          this.loadExceptions(saved.id);
           setTimeout(() => { this.highlightPlanId = null; }, 4000);
         } else {
           this.loadPlans();
         }
-        this.showForm = false;
-        this.editingPlanId = null;
-        this.resetFormFields(false);
         this.toastService.success(
-          isEdit ? 'Contribution plan updated successfully.' : 'Contribution plan created successfully.',
-          'Success'
+          isEdit
+            ? 'Plan saved. Add any exceptions, then bill eligible families.'
+            : 'Plan saved. Add any exceptions, then bill eligible families.',
+          'Saved'
         );
         this.cdr.detectChanges();
       },
@@ -757,25 +788,35 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
     });
   }
 
+  billEligibleFamilies(): void {
+    const plan = this.plans.find((row) => row.id === this.editingPlanId);
+    if (!plan) {
+      this.toastService.error('Save the plan before billing families.', 'Save the plan');
+      return;
+    }
+    if (plan.status === 'inactive') {
+      this.toastService.error('This plan is closed. Reopen it before billing families.', 'Plan closed');
+      return;
+    }
+    this.generateDues(plan);
+  }
+
   generateDues(plan: ContributionPlan): void {
+    if (plan.status === 'inactive') {
+      this.toastService.error('This plan is closed. Reopen it before billing families.', 'Plan closed');
+      return;
+    }
     this.donationsService.previewPlanGeneration(plan.id).pipe(
       switchMap((previewRes) => {
         const preview = previewRes.data;
-        const periodCount = preview?.period_count ?? 0;
-        const familyCount = preview?.family_count ?? 0;
-        const firstPeriod = preview?.periods?.[0]?.period_label ?? '';
-        const lastPeriod = preview?.periods?.[preview.periods.length - 1]?.period_label ?? '';
-        const rangeLine = periodCount > 0
-          ? `\n\nEligible periods: ${firstPeriod} through ${lastPeriod} (${periodCount} period${periodCount === 1 ? '' : 's'}).`
-          : '\n\nNo eligible periods right now.';
-        const familyLine = familyCount > 0
-          ? `\nFamilies affected: about ${familyCount}.`
-          : '';
-
+        const eligible = preview?.eligible_family_count ?? 0;
+        const exempt = preview?.exempt_family_count ?? 0;
+        const already = preview?.already_billed_count ?? 0;
+        const expected = this.formatParishAmount(preview?.expected_new_amount ?? 0);
         return this.confirmationDialog.confirm({
-          title: 'Generate contribution schedule',
-          message: `Create installment dues for "${plan.name}"?${rangeLine}${familyLine}\n\nExisting installments will be skipped.`,
-          confirmText: 'Generate schedule',
+          title: 'Bill eligible families',
+          message: `Bill eligible families for "${plan.name}"?\n\nFamilies who will receive a new bill: ${eligible}.\nExempt: ${exempt}.\nAlready billed and left unchanged: ${already}.\nNew bills total: ${expected}.\n\nEach new bill is an outstanding expected amount. Cancel writes nothing.`,
+          confirmText: 'Bill eligible families',
           variant: 'primary',
         });
       }),
@@ -784,42 +825,129 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       next: () => {
         this.generatingPlanId = plan.id;
         this.donationsService.generatePlanDues(plan.id, { generate_full_schedule: true }).subscribe({
-          next: (res) => this.handleGenerateDuesResponse(res),
+          next: (res) => this.handleGenerateDuesResponse(plan.id, res),
           error: (err) => {
             this.generatingPlanId = null;
-            this.toastService.error(this.parseApiError(err), 'Could not generate dues');
+            this.toastService.error(this.parseApiError(err), 'Could not bill families');
           }
         });
       },
       error: (err) => {
-        this.toastService.error(this.parseApiError(err), 'Could not preview schedule');
+        this.toastService.error(this.parseApiError(err), 'Could not preview families');
       }
     });
   }
 
-  private handleGenerateDuesResponse(res: { data: { generated_count?: number; unchanged_count?: number; status?: string; period_count?: number; family_count?: number } | ContributionDue[] }): void {
+  closePlan(): void {
+    const plan = this.plans.find((row) => row.id === this.editingPlanId);
+    if (!plan || plan.status === 'inactive') {
+      return;
+    }
+    this.confirmationDialog.confirm({
+      title: 'Close plan',
+      message: `Stop new bills for "${plan.name}"? Existing bills and payments stay on file.`,
+      confirmText: 'Close plan',
+      variant: 'primary',
+    }).pipe(filter((result) => result.confirmed)).subscribe(() => {
+      this.donationsService.updatePlan(plan.id, { status: 'inactive' }).subscribe({
+        next: (res) => {
+          if (res.data) {
+            this.plans = this.plans.map((row) => row.id === res.data.id ? res.data : row);
+            this.planForm.patchValue({ status: 'inactive' });
+          }
+          this.toastService.success('Plan closed. Existing bills and payments stay on file.', 'Plan closed');
+          this.cdr.detectChanges();
+        },
+        error: (err) => this.toastService.error(this.parseApiError(err), 'Could not close plan'),
+      });
+    });
+  }
+
+  saveException(): void {
+    if (!this.editingPlanId || this.exceptionSaving) {
+      return;
+    }
+    if (!this.exceptionFamilyId) {
+      this.toastService.error('Choose the family who differs from the standard amount.', 'Family required');
+      return;
+    }
+    if (!this.exceptionExempt && this.exceptionAmount <= 0) {
+      this.toastService.error('Enter the amount for this family, or mark them exempt.', 'Amount required');
+      return;
+    }
+    this.exceptionSaving = true;
+    this.donationsService.savePlanAssignment(this.editingPlanId, {
+      family_id: this.exceptionFamilyId,
+      amount: this.exceptionExempt ? 0 : this.exceptionAmount,
+      effective_from: this.exceptionEffectiveFrom || this.planForm.value.start_date || localDateOnly(),
+      is_exempt: this.exceptionExempt,
+      status: 'active',
+    }).subscribe({
+      next: () => {
+        this.exceptionSaving = false;
+        this.exceptionFamilyId = '';
+        this.exceptionAmount = 0;
+        this.exceptionExempt = false;
+        this.loadExceptions(this.editingPlanId as string);
+        this.toastService.success('Exception saved. It applies the next time you bill families.', 'Exception saved');
+      },
+      error: (err) => {
+        this.exceptionSaving = false;
+        this.toastService.error(this.parseApiError(err), 'Could not save exception');
+      }
+    });
+  }
+
+  loadExceptions(planId: string): void {
+    this.donationsService.getPlanAssignments(planId).subscribe({
+      next: (res) => {
+        const page = res.data;
+        this.savedExceptions = Array.isArray(page?.data) ? page.data : [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.savedExceptions = [];
+      }
+    });
+  }
+
+  private handleGenerateDuesResponse(planId: string, res: { data: { generated_count?: number; unchanged_count?: number; exempt_skipped_count?: number; status?: string; period_count?: number; family_count?: number } | ContributionDue[] }): void {
     this.generatingPlanId = null;
     const data = res.data;
     if (Array.isArray(data)) {
-      this.toastService.success(`${data.length} dues created.`, 'Dues generated');
+      this.billingSummary = `Created ${data.length}.`;
+      this.toastService.success(this.billingSummary, 'Families billed');
+      this.refreshEditedPlan(planId);
       return;
     }
     if (data?.status === 'queued') {
-      this.toastService.success('Schedule generation queued in the background.', 'Dues generating');
+      this.billingSummary = 'Billing was queued because this parish has a large number of families.';
+      this.toastService.success(this.billingSummary, 'Billing queued');
       return;
     }
     const created = data?.generated_count ?? 0;
     const skipped = data?.unchanged_count ?? 0;
-    const periods = data?.period_count ?? 0;
-    const families = data?.family_count ?? 0;
-    if (created === 0 && skipped > 0) {
-      this.toastService.success(`No new dues — ${skipped} installment(s) already on file across ${periods} period(s).`, 'Schedule up to date');
-      return;
-    }
-    this.toastService.success(
-      `New: ${created}. Already on file: ${skipped}. Families: ${families}. Periods: ${periods}.`,
-      'Schedule generated'
-    );
+    const exempt = data?.exempt_skipped_count ?? 0;
+    this.billingSummary = `Created ${created}. Already on file: ${skipped}. Exempt and not billed: ${exempt}.`;
+    this.toastService.success(this.billingSummary, created === 0 ? 'Already billed' : 'Families billed');
+    this.refreshEditedPlan(planId);
+  }
+
+  private refreshEditedPlan(planId: string): void {
+    this.donationsService.getPlan(planId).subscribe({
+      next: (res) => {
+        if (!res.data) {
+          return;
+        }
+        this.plans = this.plans.map((row) => row.id === res.data.id ? { ...row, ...res.data } : row);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private formatParishAmount(amount: number): string {
+    const formatted = this.churchCurrency.formatAmount(amount);
+    return formatted || String(amount);
   }
 
   private parseApiError(err: unknown): string {
@@ -888,6 +1016,11 @@ export class DonationsPlansComponent implements OnInit, OnDestroy {
       this.showForm = false;
     }
     this.draftAssignments = [];
+    this.savedExceptions = [];
+    this.billingSummary = null;
+    this.exceptionFamilyId = '';
+    this.exceptionAmount = 0;
+    this.exceptionExempt = false;
     this.resetPurposeEntryState();
     this.planForm.reset({
       plan_type: 'uniform',

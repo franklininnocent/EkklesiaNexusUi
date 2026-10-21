@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError, apiErrorMessage } from '@core/errors/api-error';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -340,7 +341,7 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
       },
       error: (error: unknown) => {
         this.creating = false;
-        if (error instanceof HttpErrorResponse && error.status === 409 && error.error?.code === 'ROLE_ALREADY_EXISTS') {
+        if ((error instanceof HttpErrorResponse || error instanceof ApiError) && error.status === 409 && error.error?.code === 'ROLE_ALREADY_EXISTS') {
           this.refreshRolesAndSelect(title);
           this.toast.warning(
             `"${title}" is already available and has been selected.`,
@@ -349,8 +350,8 @@ export class LeadershipRoleComboboxComponent implements ControlValueAccessor, On
           this.cdr.markForCheck();
           return;
         }
-        const message = error instanceof HttpErrorResponse
-          ? error.error?.message || 'Could not create custom role.'
+        const message = (error instanceof HttpErrorResponse || error instanceof ApiError)
+          ? apiErrorMessage(error, 'Could not create custom role.')
           : 'Could not create custom role.';
         this.toast.error(message);
         this.cdr.markForCheck();

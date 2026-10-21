@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FormsModule } from '@angular/forms';
 import { Subject, Subscription, interval, switchMap, takeUntil, takeWhile } from 'rxjs';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -139,7 +140,7 @@ export class DataExportPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.loadingModules = false;
-          this.error = err?.error?.message || 'Could not load export modules.';
+          this.error = apiErrorMessage(err, 'Could not load export modules.');
           this.cdr.markForCheck();
         },
       });
@@ -166,7 +167,7 @@ export class DataExportPage implements OnInit, OnDestroy {
         error: (err) => {
           this.loadingHistory = false;
           this.loadedHistory = true;
-          this.error = err?.error?.message || 'Could not load export history.';
+          this.error = apiErrorMessage(err, 'Could not load export history.');
           this.cdr.markForCheck();
         },
       });
@@ -235,7 +236,7 @@ export class DataExportPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.starting = false;
-          this.error = err?.error?.message || 'Could not start export.';
+          this.error = apiErrorMessage(err, 'Could not start export.');
           this.cdr.markForCheck();
         },
       });
@@ -329,7 +330,7 @@ export class DataExportPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.actionId = null;
-          this.error = err?.error?.message || 'Could not cancel export.';
+          this.error = apiErrorMessage(err, 'Could not cancel export.');
           this.cdr.markForCheck();
         },
       });
@@ -355,7 +356,7 @@ export class DataExportPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.actionId = null;
-          this.error = err?.error?.message || 'Could not retry export.';
+          this.error = apiErrorMessage(err, 'Could not retry export.');
           this.cdr.markForCheck();
         },
       });

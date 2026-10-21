@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { ToastService } from '@core/services/toast.service';
@@ -41,6 +42,7 @@ describe('DonationsPlansComponent — collection purpose create', () => {
           provide: AuthService,
           useValue: { hasPermission },
         },
+        { provide: ActionAuthorizationService, useValue: { allows: (id: string) => hasPermission(id) } },
         {
           provide: ConfirmationDialogService,
           useValue: { confirm: jest.fn() },
@@ -202,6 +204,21 @@ describe('DonationsPlansComponent — new plan form layout & workflow', () => {
             getPlans: jest.fn().mockReturnValue(of({ success: true, data: [samplePlan] })),
             getFunds: jest.fn().mockReturnValue(of({ success: true, data: [existingFund] })),
             getPlan: jest.fn().mockReturnValue(of({ success: true, data: samplePlan })),
+            getPlanAssignments: jest.fn().mockReturnValue(of({ success: true, data: { data: [] } })),
+            savePlanAssignment: jest.fn().mockReturnValue(of({ success: true, data: { family_id: 'fam-1', amount: 0, is_exempt: true } })),
+            previewPlanGeneration: jest.fn().mockReturnValue(of({
+              success: true,
+              data: {
+                period_count: 1,
+                family_count: 5,
+                estimated_new_ops: 5,
+                eligible_family_count: 4,
+                exempt_family_count: 1,
+                already_billed_count: 2,
+                expected_new_amount: 1500,
+                periods: [],
+              },
+            })),
             createPlan: createPlan.mockReturnValue(
               of({ success: true, data: { ...samplePlan, id: 'plan-new', name: 'New Plan' } })
             ),
@@ -216,6 +233,7 @@ describe('DonationsPlansComponent — new plan form layout & workflow', () => {
           provide: AuthService,
           useValue: { hasPermission: jest.fn().mockReturnValue(true) },
         },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
         {
           provide: ConfirmationDialogService,
           useValue: { confirm: jest.fn() },
@@ -226,7 +244,7 @@ describe('DonationsPlansComponent — new plan form layout & workflow', () => {
         },
         {
           provide: ChurchCurrencyService,
-          useValue: { currencySymbol: () => '₹' },
+          useValue: { currencySymbol: () => '₹', formatAmount: (value: number) => `CUR ${value}` },
         },
       ],
     }).compileComponents();
@@ -274,21 +292,54 @@ describe('DonationsPlansComponent — new plan form layout & workflow', () => {
     expect(component.showForm).toBe(false);
   });
 
-  it('creates a plan and closes the form on successful save', () => {
+  it('keeps the form open after save and does not send uniform exceptions on the plan', () => {
     openForm();
     component.planForm.patchValue({
       name: 'New Plan',
       fund_id: existingFund.id,
       default_amount: 250,
       start_date: '2026-10-21',
-      frequency: 'monthly',
+      frequency: 'one_time',
+      plan_type: 'uniform',
     });
+    component.onFrequencyChange();
     fixture.detectChanges();
     const form = fixture.nativeElement.querySelector('form.plan-sheet__form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
     expect(createPlan).toHaveBeenCalled();
-    expect(component.showForm).toBe(false);
+    expect(component.showForm).toBe(true);
+    expect(component.editingPlanId).toBe('plan-new');
+    expect(createPlan.mock.calls[0][0].assignments).toEqual([]);
+    expect(component.planForm.value.auto_generate).toBe(false);
+  });
+
+  it('saves a uniform exception on the assignment endpoint', () => {
+    const donations = TestBed.inject(DonationsService) as unknown as { savePlanAssignment: jest.Mock };
+    component.editingPlanId = 'plan-1';
+    component.exceptionFamilyId = 'fam-1';
+    component.exceptionExempt = true;
+    component.exceptionEffectiveFrom = '2026-12-25';
+    component.saveException();
+    expect(donations.savePlanAssignment).toHaveBeenCalledWith('plan-1', expect.objectContaining({
+      family_id: 'fam-1',
+      amount: 0,
+      is_exempt: true,
+    }));
+  });
+
+  it('confirms billing with eligible, exempt, and already billed counts', () => {
+    const confirm = TestBed.inject(ConfirmationDialogService).confirm as jest.Mock;
+    confirm.mockReturnValue(of({ confirmed: false }));
+    component.plans = [samplePlan as never];
+    component.generateDues(samplePlan as never);
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('Families who will receive a new bill: 4'),
+    }));
+    const message = confirm.mock.calls[0][0].message as string;
+    expect(message).toContain('Exempt: 1');
+    expect(message).toContain('Already billed and left unchanged: 2');
+    expect(message).toContain('CUR 1500');
   });
 
   it('keeps edit workflow actions in the same right-aligned footer', () => {

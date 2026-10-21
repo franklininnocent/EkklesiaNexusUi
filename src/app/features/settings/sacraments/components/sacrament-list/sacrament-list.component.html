@@ -11,7 +11,7 @@
       (searchChange)="onSearchChange($event)"
       (filtersOpened)="openFilters()"
     >
-      <button type="button" class="cf-btn cf-btn-primary" cfDisableWhenReadOnly (click)="onCreateSacrament()">
+      <button *appCan="'sacraments.create'" type="button" class="cf-btn cf-btn-primary" cfDisableWhenReadOnly (click)="onCreateSacrament()">
         Add Sacrament
       </button>
       <div class="sacrament-list__overflow">
@@ -26,8 +26,9 @@
           More
         </button>
         <div class="sacrament-list__overflow-menu" *ngIf="showOverflowMenu" role="menu">
+          <ng-container *ngIf="holyOrdersEnabled">
           <a
-            *ngIf="holyOrdersEnabled"
+            *appCan="'sacraments.create'"
             role="menuitem"
             class="sacrament-list__overflow-item"
             routerLink="/sacraments/holy-orders/create"
@@ -35,6 +36,7 @@
           >
             Register Holy Orders
           </a>
+          </ng-container>
           <a
             *ngIf="canMigrate"
             role="menuitem"
@@ -233,7 +235,7 @@
                       Void
                     </button>
                     <button
-                      *ngIf="isTenantAdmin"
+                      *appCan="'sacraments.delete'"
                       type="button"
                       role="menuitem"
                       class="sacrament-list__overflow-item sacrament-list__overflow-item--danger"
@@ -270,8 +272,9 @@
             : 'Add the first baptism, marriage, or other sacrament to this parish register.'
         "
       >
+        <ng-container *ngIf="!hasActiveFilters">
         <button
-          *ngIf="!hasActiveFilters"
+          *appCan="'sacraments.create'"
           type="button"
           class="cf-btn cf-btn-primary"
           cfDisableWhenReadOnly
@@ -279,6 +282,7 @@
         >
           Add Sacrament
         </button>
+        </ng-container>
         <button
           *ngIf="hasActiveFilters"
           type="button"

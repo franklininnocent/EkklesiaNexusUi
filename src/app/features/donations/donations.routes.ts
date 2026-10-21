@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { entitlementGuard } from '@core/guards/entitlement.guard';
+import { permissionGuard } from '@core/guards/permission.guard';
 
 export const DONATIONS_ROUTES: Routes = [
   {
@@ -55,6 +56,8 @@ export const DONATIONS_ROUTES: Routes = [
       },
       {
         path: 'collection-day',
+        canActivate: [permissionGuard],
+        data: { permissionAction: 'donations.collect' },
         loadComponent: () =>
           import('./pages/collection-day.component').then((m) => m.CollectionDayComponent),
       },

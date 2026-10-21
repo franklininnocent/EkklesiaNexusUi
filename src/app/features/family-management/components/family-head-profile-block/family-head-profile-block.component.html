@@ -41,7 +41,7 @@
                 <span class="head-profile__avatar-camera" *ngIf="editingHeadImage" aria-hidden="true">📷</span>
               </button>
               <div class="head-profile__avatar-actions">
-                <button type="button" class="head-profile__text-btn" (click)="toggleHeadImageEdit.emit()">
+                <button *appCan="'families.edit'" type="button" class="head-profile__text-btn" (click)="toggleHeadImageEdit.emit()">
                   {{ editingHeadImage ? 'Done' : 'Change photo' }}
                 </button>
                 <button
@@ -136,6 +136,7 @@
       <div class="head-profile__col head-profile__col--details head-profile__col--lineage">
         <div class="head-profile__col-actions">
           <app-edit-icon-button
+            *appCan="'families.edit'"
             [ariaLabel]="'Edit ' + relationshipEyebrow + ' profile'"
             (clicked)="editProfile.emit()"
           />

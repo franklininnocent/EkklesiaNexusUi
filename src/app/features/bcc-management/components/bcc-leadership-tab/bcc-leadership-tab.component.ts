@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -443,7 +444,7 @@ export class BccLeadershipTabComponent implements OnChanges {
         },
         error: (err) => {
           this.saving = false;
-          this.toast.error(err?.error?.message || 'Could not assign leadership.');
+          this.toast.error(apiErrorMessage(err, 'Could not assign leadership.'));
           this.cdr.markForCheck();
         },
       });
@@ -472,7 +473,7 @@ export class BccLeadershipTabComponent implements OnChanges {
         },
         error: (err) => {
           this.saving = false;
-          this.toast.error(err?.error?.message || 'Could not update leadership.');
+          this.toast.error(apiErrorMessage(err, 'Could not update leadership.'));
           this.cdr.markForCheck();
         },
       });
@@ -506,7 +507,7 @@ export class BccLeadershipTabComponent implements OnChanges {
         },
         error: (err) => {
           this.saving = false;
-          this.toast.error(err?.error?.message || 'Could not hand over leadership.');
+          this.toast.error(apiErrorMessage(err, 'Could not hand over leadership.'));
           this.cdr.markForCheck();
         },
       });
@@ -531,7 +532,7 @@ export class BccLeadershipTabComponent implements OnChanges {
         },
         error: (err) => {
           this.saving = false;
-          this.toast.error(err?.error?.message || 'Could not end leadership.');
+          this.toast.error(apiErrorMessage(err, 'Could not end leadership.'));
           this.cdr.markForCheck();
         },
       });

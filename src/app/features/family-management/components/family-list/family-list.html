@@ -11,6 +11,7 @@
       (filtersOpened)="showAdvancedSearch = true"
     >
       <button
+        *appCan="'families.create'"
         type="button"
         class="cf-btn cf-btn-primary"
         cfDisableWhenReadOnly
@@ -180,16 +181,18 @@
           : 'Add your first family to get started.'
       "
     >
-      <button
-        *ngIf="!hasActiveFiltersOrSearch"
-        type="button"
-        class="cf-btn cf-btn-primary"
-        cfDisableWhenReadOnly
-        cfSubscriptionGuard
-        (click)="createFamily()"
-      >
-        Add Family
-      </button>
+      <ng-container *ngIf="!hasActiveFiltersOrSearch">
+        <button
+          *appCan="'families.create'"
+          type="button"
+          class="cf-btn cf-btn-primary"
+          cfDisableWhenReadOnly
+          cfSubscriptionGuard
+          (click)="createFamily()"
+        >
+          Add Family
+        </button>
+      </ng-container>
       <button
         *ngIf="hasActiveFiltersOrSearch"
         type="button"

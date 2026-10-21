@@ -23,6 +23,7 @@
       </button>
       <button type="button" class="cf-btn cf-btn--sm" (click)="manageFamilies()">Manage Families</button>
       <button
+        *appCan="'families.create'"
         type="button"
         class="cf-btn cf-btn-primary cf-btn--sm"
         cfDisableWhenReadOnly
@@ -69,6 +70,7 @@
     @if (s.kpis.total_families === 0) {
       <app-cf-empty-state title="No families yet" description="Add a family to see parish population here.">
         <button
+          *appCan="'families.create'"
           type="button"
           class="cf-btn cf-btn-primary cf-btn--sm"
           cfDisableWhenReadOnly

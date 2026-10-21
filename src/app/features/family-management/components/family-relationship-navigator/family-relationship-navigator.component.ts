@@ -12,6 +12,7 @@ import {
   ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { Family } from '@core/models/family.model';
 import { SacramentTypeDto } from '@core/services/sacrament-type-lookup.service';
 import {
@@ -50,6 +51,7 @@ const VIRTUAL_BUFFER_ROWS = 4;
     FamilyHierarchyGroupComponent,
     MemberNavRowComponent,
     AddMemberIconButtonComponent,
+    CanActionDirective,
     ImageViewerComponent
   ],
   templateUrl: './family-relationship-navigator.component.html',

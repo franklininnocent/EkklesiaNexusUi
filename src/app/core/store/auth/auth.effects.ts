@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { map, catchError, switchMap, tap, filter } from 'rxjs/operators';
 import { AuthService } from '@core/services/auth.service';
+import { apiErrorMessage, ApiErrorMessages } from '@core/errors/api-error';
 import { AppState } from '@core/store';
 import * as AuthActions from './auth.actions';
 import * as TenantActions from '../tenant/tenant.actions';
@@ -25,10 +26,9 @@ export class AuthEffects {
       switchMap(({ credentials }) =>
         this.authService.login(credentials).pipe(
           map(response => AuthActions.loginSuccess({ response })),
-          catchError(error => {
-            console.error('Login failed:', error);
-            return of(AuthActions.loginFailure({ error: error.message }));
-          })
+          catchError(error => of(AuthActions.loginFailure({
+            error: apiErrorMessage(error, ApiErrorMessages.loginInvalid),
+          })))
         )
       )
     )

@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Subject, combineLatest, takeUntil } from 'rxjs';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
@@ -141,14 +141,9 @@ export class MinistriesInsightsTenantDetailPageComponent implements OnInit, OnDe
           this.loading = false;
           this.cdr.markForCheck();
         },
-        error: (err: HttpErrorResponse) => {
+        error: (err: unknown) => {
           this.loading = false;
-          this.error =
-            err.status === 404
-              ? 'Tenant not found.'
-              : err.status === 401 || err.status === 403
-                ? 'You do not have permission to view this tenant.'
-                : 'Unable to load tenant detail.';
+          this.error = apiErrorMessage(err, 'Unable to load tenant detail.');
           this.cdr.markForCheck();
         },
       });

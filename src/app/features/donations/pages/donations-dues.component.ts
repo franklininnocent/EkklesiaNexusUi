@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ParamMap } from '@angular/router';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -39,7 +41,7 @@ import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-acti
 import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { SortableDirective, SortDirection, SortEvent } from '@shared/directives/sortable.directive';
 
-type DuesFilterChipKey = 'search' | 'schedule' | 'overdue' | 'status';
+type DuesFilterChipKey = 'search' | 'schedule' | 'overdue' | 'status' | 'plan';
 
 type DueSortColumn =
   | 'family_name'
@@ -82,6 +84,7 @@ function isDueStatusFilter(value: string | null | undefined): value is DueStatus
   styleUrls: ['./donations-dues.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsDuesComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   snapshot: DonationDashboardSnapshot | null = null;
   dues: ContributionDue[] = [];
   tableSearch = '';
@@ -97,6 +100,9 @@ export class DonationsDuesComponent implements OnInit {
   selectionActionBusy = false;
   selectedIds = new Set<string>();
   headlineFamilies = false;
+  planIdFilter = '';
+  planNameFilter = '';
+  rosterMode = false;
   overdueFamilyCountFromApi: number | null = null;
   duesListTotal = 0;
   page = 1;
@@ -127,7 +133,7 @@ export class DonationsDuesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
     this.canNotify = this.authService.hasPermission('donations.notifications');
     this.applyRouteQueryParams(this.route.snapshot.queryParamMap, true);
     this.initSearchFields();
@@ -159,6 +165,9 @@ export class DonationsDuesComponent implements OnInit {
     if (this.statusFilter) {
       count += 1;
     }
+    if (this.planIdFilter) {
+      count += 1;
+    }
     return count;
   }
 
@@ -175,6 +184,9 @@ export class DonationsDuesComponent implements OnInit {
     }
     if (this.statusFilter) {
       chips.push({ key: 'status', label: `Status: ${this.statusFilterLabel(this.statusFilter)}` });
+    }
+    if (this.planIdFilter) {
+      chips.push({ key: 'plan', label: this.planNameFilter ? `Plan: ${this.planNameFilter}` : 'This plan' });
     }
     return chips;
   }
@@ -261,6 +273,13 @@ export class DonationsDuesComponent implements OnInit {
         queryParams: { status: null, page: null },
         queryParamsHandling: 'merge',
       });
+      return;
+    }
+    if (key === 'plan') {
+      void this.router.navigate(['/donations/dues'], {
+        queryParams: { plan_id: null, plan_name: null, roster: null, page: null },
+        queryParamsHandling: 'merge',
+      });
     }
   }
 
@@ -274,6 +293,9 @@ export class DonationsDuesComponent implements OnInit {
         status: null,
         page: null,
         per_page: null,
+        plan_id: null,
+        plan_name: null,
+        roster: null,
       },
     });
   }
@@ -553,7 +575,7 @@ export class DonationsDuesComponent implements OnInit {
     };
     if (this.dueScheduleFilter) {
       filters['due_schedule'] = this.dueScheduleFilter;
-    } else {
+    } else if (!this.rosterMode) {
       filters['actionable'] = true;
       if (this.overdueOnly) {
         filters['overdue_only'] = true;
@@ -561,6 +583,9 @@ export class DonationsDuesComponent implements OnInit {
     }
     if (this.statusFilter) {
       filters['status'] = this.statusFilter;
+    }
+    if (this.planIdFilter) {
+      filters['plan_id'] = this.planIdFilter;
     }
     filters['sort'] = this.sortColumn;
     filters['direction'] = this.sortDirection ?? 'asc';
@@ -578,8 +603,8 @@ export class DonationsDuesComponent implements OnInit {
         this.pruneSelection();
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
-        this.error = 'Failed to load contribution dues.';
+      error: (err) => {
+        this.error = apiErrorMessage(err, 'Failed to load contribution dues.');
         this.loading = false;
         refreshStewardshipView(this.cdr);
       },
@@ -607,7 +632,7 @@ export class DonationsDuesComponent implements OnInit {
       },
       error: (err) => {
         this.whatsAppQueueing = false;
-        this.toast.error(err?.error?.message || 'Unable to queue WhatsApp reminders right now.', 'Could not remind');
+        this.toast.error(apiErrorMessage(err, 'Unable to queue WhatsApp reminders right now.'), 'Could not remind');
         refreshStewardshipView(this.cdr);
       },
     });
@@ -623,7 +648,7 @@ export class DonationsDuesComponent implements OnInit {
         this.loadDues();
       },
       error: (err) => {
-        this.toast.error(err?.error?.message || 'Scheduled generation failed.', 'Could not catch up plans');
+        this.toast.error(apiErrorMessage(err, 'Scheduled generation failed.'), 'Could not catch up plans');
       },
     });
   }
@@ -656,7 +681,7 @@ export class DonationsDuesComponent implements OnInit {
           },
           error: (err) => {
             this.selectionActionBusy = false;
-            this.toast.error(err?.error?.message || 'Failed to waive dues.', 'Could not waive');
+            this.toast.error(apiErrorMessage(err, 'Failed to waive dues.'), 'Could not waive');
             refreshStewardshipView(this.cdr);
           },
         });
@@ -677,7 +702,7 @@ export class DonationsDuesComponent implements OnInit {
       },
       error: (err) => {
         this.selectionActionBusy = false;
-        this.toast.error(err?.error?.message || 'Failed to queue reminders.', 'Could not remind');
+        this.toast.error(apiErrorMessage(err, 'Failed to queue reminders.'), 'Could not remind');
         refreshStewardshipView(this.cdr);
       },
     });
@@ -700,7 +725,7 @@ export class DonationsDuesComponent implements OnInit {
         this.loadDues();
       },
       error: (err) => {
-        this.toast.error(err?.error?.message || 'Failed to cancel due.', 'Could not cancel');
+        this.toast.error(apiErrorMessage(err, 'Failed to cancel due.'), 'Could not cancel');
       },
     });
   }
@@ -749,6 +774,22 @@ export class DonationsDuesComponent implements OnInit {
     const status = isDueStatusFilter(statusParam) ? statusParam : '';
     if (this.statusFilter !== status) {
       this.statusFilter = status;
+      changed = true;
+    }
+
+    const planId = params.get('plan_id') ?? '';
+    const planName = params.get('plan_name') ?? '';
+    const roster = params.get('roster') === '1' || params.get('roster') === 'true';
+    if (this.planIdFilter !== planId) {
+      this.planIdFilter = planId;
+      changed = true;
+    }
+    if (this.planNameFilter !== planName) {
+      this.planNameFilter = planName;
+      changed = true;
+    }
+    if (this.rosterMode !== roster) {
+      this.rosterMode = roster;
       changed = true;
     }
 

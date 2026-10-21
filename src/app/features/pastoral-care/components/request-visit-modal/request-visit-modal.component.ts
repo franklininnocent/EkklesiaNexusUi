@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -87,7 +88,7 @@ export class RequestVisitModalComponent {
         },
         error: (error: HttpErrorResponse) => {
           this.saving = false;
-          this.formError = error.error?.message || 'Could not save this visit request.';
+          this.formError = apiErrorMessage(error, 'Could not save this visit request.');
           this.cdr.markForCheck();
         },
       });

@@ -1,4 +1,6 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, DestroyRef, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -303,6 +305,7 @@ const KPI_FOCUS_VALUES: KpiFocus[] = ['amount', 'families', 'average', 'completi
   `]
 })
 export class TodaysCollectionsComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly destroyRef = inject(DestroyRef);
   payments: DonationPayment[] = [];
   search = '';
@@ -354,9 +357,9 @@ export class TodaysCollectionsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.canView = this.authService.hasPermission('donations.view');
-    this.canCollect = this.authService.hasPermission('donations.collect');
-    this.canReverse = this.authService.hasPermission('donations.reverse');
-    this.canRefund = this.authService.hasPermission('donations.refund');
+    this.canCollect = this.actions.allows('donations.collect');
+    this.canReverse = this.actions.allows('donations.reverse');
+    this.canRefund = this.actions.allows('donations.refund');
     this.readQuery(this.route.snapshot.queryParamMap);
     this.initSearchFields();
     this.route.queryParamMap.pipe(skip(1), takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -396,7 +399,7 @@ export class TodaysCollectionsComponent implements OnInit, OnDestroy {
     };
   }
 
-  readonly pageSubtitle = 'Every payment recorded for this parish on the current business date.';
+  readonly pageSubtitle = 'Day book for this business date. The Payment Register is the full book.';
 
   get drawerFilterCount(): number {
     return [this.status, this.method, this.bccId, this.projectId, this.collectionDate].filter(Boolean).length;
@@ -640,7 +643,7 @@ export class TodaysCollectionsComponent implements OnInit, OnDestroy {
           this.canView = false;
           this.loadError = null;
         } else {
-          this.loadError = err.error?.message || 'Unable to load today\'s collections. Try again.';
+          this.loadError = apiErrorMessage(err, 'Unable to load today\'s collections. Try again.');
         }
         this.cdr.markForCheck();
       }
@@ -656,7 +659,7 @@ export class TodaysCollectionsComponent implements OnInit, OnDestroy {
 
   private afterLedgerError(err: { error?: { message?: string } }): void {
     this.actionSaving = false;
-    this.actionError = err?.error?.message || 'Unable to complete this action.';
+    this.actionError = apiErrorMessage(err, 'Unable to complete this action.');
     this.cdr.markForCheck();
   }
 

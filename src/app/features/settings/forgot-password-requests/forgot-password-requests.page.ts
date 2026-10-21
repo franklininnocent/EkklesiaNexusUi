@@ -7,6 +7,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, finalize, takeUntil } from 'rxjs';
 
@@ -170,8 +171,8 @@ export class ForgotPasswordRequestsPage implements OnInit, OnDestroy {
         next: (response) => {
           this.rows = response.data ?? [];
         },
-        error: () => {
-          this.error = 'Unable to load password recovery requests.';
+        error: (err) => {
+          this.error = apiErrorMessage(err, 'Unable to load password recovery requests.');
         },
       });
   }
@@ -288,7 +289,7 @@ export class ForgotPasswordRequestsPage implements OnInit, OnDestroy {
           this.reload();
         },
         error: (err) => {
-          this.error = err.error?.message || 'Unable to process this request.';
+          this.error = apiErrorMessage(err, 'Unable to process this request.');
         },
       });
   }
@@ -378,8 +379,8 @@ export class ForgotPasswordRequestsPage implements OnInit, OnDestroy {
         next: (response) => {
           this.selected = response.data;
         },
-        error: () => {
-          this.error = 'Unable to load request details.';
+        error: (err) => {
+          this.error = apiErrorMessage(err, 'Unable to load request details.');
           this.closeDetail();
         },
       });

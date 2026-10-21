@@ -1,4 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -38,12 +41,14 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
     AdvancedSearchPanelComponent,
     PageHeaderComponent,
     BishopAvatarComponent,
+    CanActionDirective,
   ],
   templateUrl: './bishop-list.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './bishop-list.component.scss'
 })
 export class BishopListComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   bishops: Bishop[] = [];
   dioceses: any[] = [];
   titles: EcclesiasticalTitle[] = [];
@@ -153,7 +158,7 @@ export class BishopListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading bishops:', error);
-        this.toastService.error('Failed to load bishops');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load bishops'));
         this.loading = false;
         this.cdr.detectChanges();
       }
@@ -419,11 +424,19 @@ export class BishopListComponent implements OnInit {
   }
 
   onCreateBishop(): void {
+    if (!this.actions.allows('bishops.create')) {
+      this.toastService.warning('You do not have permission to add a bishop.', 'Permission');
+      return;
+    }
     this.selectedBishop = null;
     this.showFormModal = true;
   }
 
   onEditBishop(bishop: Bishop): void {
+    if (!this.actions.allows('bishops.update')) {
+      this.toastService.warning('You do not have permission to edit bishops.', 'Permission');
+      return;
+    }
     this.loadingEditBishop = true;
     this.bishopService.getBishop(bishop.id).subscribe({
       next: (response) => {
@@ -434,7 +447,7 @@ export class BishopListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading bishop for edit:', error);
-        this.toastService.error('Failed to load bishop details for editing');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load bishop details for editing'));
         this.loadingEditBishop = false;
         this.cdr.detectChanges();
       }
@@ -458,11 +471,19 @@ export class BishopListComponent implements OnInit {
   }
 
   onDeleteBishop(bishop: Bishop): void {
+    if (!this.actions.allows('bishops.archive')) {
+      this.toastService.warning('You do not have permission to remove bishops.', 'Permission');
+      return;
+    }
     this.bishopToDelete = bishop;
     this.showDeleteModal = true;
   }
 
   confirmDelete(): void {
+    if (!this.actions.allows('bishops.archive')) {
+      this.toastService.warning('You do not have permission to remove bishops.', 'Permission');
+      return;
+    }
     if (this.bishopToDelete) {
       this.bishopService.deleteBishop(this.bishopToDelete.id).subscribe({
         next: () => {
@@ -473,7 +494,7 @@ export class BishopListComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting bishop:', error);
-          this.toastService.error('Failed to delete bishop');
+          this.toastService.error(apiErrorMessage(error, 'Failed to delete bishop'));
         }
       });
     }

@@ -12,6 +12,7 @@ import { Subject, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, tap, catchError, finalize } from 'rxjs/operators';
 import { trapFocus, restoreActiveElement } from '@shared/utils/focus-trap.util';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { ApiError, apiErrorMessage } from '@core/errors/api-error';
 import {
   USER_PROFILE_IMAGE_ACCEPT,
   resolveUserProfileImageUrl,
@@ -260,7 +261,7 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
       },
       error: (error) => {
         console.error('Error loading roles:', error);
-        this.rolesError = 'Failed to load roles. Please try again.';
+        this.rolesError = apiErrorMessage(error, 'Failed to load roles. Please try again.');
         this.loadingRoles = false;
         this.cdr.markForCheck();
       }
@@ -386,7 +387,7 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
     switch (fieldName) {
       case 'name':
         if (!value || (typeof value === 'string' && value.trim() === '')) {
-          this.validationErrors['name'] = 'Name is required';
+          this.validationErrors['name'] = "Enter the user's name.";
         } else if (typeof value === 'string' && value.length < 2) {
           this.validationErrors['name'] = 'Name must be at least 2 characters';
         } else {
@@ -396,7 +397,7 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
         
       case 'email':
         if (!value || (typeof value === 'string' && value.trim() === '')) {
-          this.validationErrors['email'] = 'Email is required';
+          this.validationErrors['email'] = 'Enter an email address.';
         } else if (typeof value === 'string' && !this.isValidEmail(value)) {
           this.validationErrors['email'] = 'Invalid email format';
         } else {
@@ -407,7 +408,7 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
       case 'password':
         if (!this.isEditMode) {
           if (!value || (typeof value === 'string' && value.trim() === '')) {
-            this.validationErrors['password'] = 'Password is required';
+            this.validationErrors['password'] = 'Enter a password.';
           } else if (typeof value === 'string' && value.length < this.passwordMinLength) {
             this.validationErrors['password'] = `Password must be at least ${this.passwordMinLength} characters`;
           } else if (typeof value === 'string' && !this.passwordPattern.test(value)) {
@@ -594,7 +595,7 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
       return this.usersService.deleteProfileImage(userId).pipe(
         catchError((error) => {
           this.toastService.warning(
-            error.error?.message || 'User saved, but removing the profile image failed.',
+            apiErrorMessage(error, 'User saved, but removing the profile image failed.'),
             'Profile image'
           );
           return of(null);
@@ -606,7 +607,7 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
       return this.usersService.uploadProfileImage(userId, this.selectedProfileImage).pipe(
         catchError((error) => {
           this.toastService.warning(
-            error.error?.message || 'User saved, but uploading the profile image failed.',
+            apiErrorMessage(error, 'User saved, but uploading the profile image failed.'),
             'Profile image'
           );
           return of(null);
@@ -633,10 +634,20 @@ export class UserFormModalComponent implements OnInit, OnChanges, AfterViewCheck
   }
 
   private handleSaveError(error: unknown, fallbackMessage: string): void {
-    console.error(fallbackMessage, error);
-    const err = error as { error?: { message?: string } };
-    this.errorMessage = err.error?.message || fallbackMessage;
-    if (this.errorMessage) {
+    const api = ApiError.fromUnknown(error);
+    console.error(fallbackMessage, api.status, api.code || '');
+    this.errorMessage = api.message || fallbackMessage;
+    if (api.fieldErrors) {
+      const nextErrors: { [key: string]: string } = { ...this.validationErrors };
+      for (const [field, messages] of Object.entries(api.fieldErrors)) {
+        if (messages[0]) {
+          nextErrors[field] = messages[0];
+          this.markFieldAsTouched(field);
+        }
+      }
+      this.validationErrors = nextErrors;
+    }
+    if (this.errorMessage && !api.handled) {
       this.toastService.error(this.errorMessage);
     }
     this.isSubmitting = false;

@@ -1,7 +1,8 @@
-import { HttpInterceptorFn, HttpErrorResponse, HttpRequest } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, shareReplay, switchMap, throwError } from 'rxjs';
+import { ApiError, ApiErrorMessages } from '@core/errors/api-error';
 import { AuthService } from '@core/services/auth.service';
 import { ToastService } from '@core/services/toast.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
@@ -36,7 +37,64 @@ function isPublicPasswordRecoveryRequest(url: string): boolean {
   return url.includes('/auth/password/recovery/request');
 }
 
+function isAuthExchange(url: string): boolean {
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/logout') ||
+    url.includes('/auth/refresh') ||
+    /\/refresh(?:\?|$)/.test(url) ||
+    isPublicPasswordRecoveryRequest(url)
+  );
+}
+
+function isSilent(req: HttpRequest<unknown>): boolean {
+  return req.headers.get('X-Silent-Error') === '1';
+}
+
+function canRefresh(req: HttpRequest<unknown>): boolean {
+  const method = req.method.toUpperCase();
+  return (method === 'GET' || method === 'HEAD') && !isAuthExchange(req.url);
+}
+
 let planLimitDialogOpen = false;
+let refreshInFlight: Observable<boolean> | null = null;
+let sessionNoticeAt = 0;
+
+function refreshSession(auth: AuthService): Observable<boolean> {
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+  const refreshToken = auth.getRefreshToken();
+  if (!refreshToken) {
+    return of(false);
+  }
+  refreshInFlight = auth.refreshTokens(refreshToken).pipe(
+    map(() => true),
+    catchError(() => of(false)),
+    finalize(() => {
+      refreshInFlight = null;
+    }),
+    shareReplay(1)
+  );
+  return refreshInFlight;
+}
+
+function notifySessionExpired(auth: AuthService, toast: ToastService, silent: boolean): ApiError {
+  const now = Date.now();
+  if (!silent && now - sessionNoticeAt > 2000) {
+    toast.error(ApiErrorMessages.sessionExpired, 'Session expired', 8000);
+    sessionNoticeAt = now;
+  }
+  auth.clearAuthState();
+  const error = new ApiError({
+    message: ApiErrorMessages.sessionExpired,
+    category: 'authentication',
+    status: 401,
+    code: 'UNAUTHENTICATED',
+    handled: !silent,
+  });
+  return error;
+}
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
@@ -46,9 +104,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const dialogs = inject(ConfirmationDialogService);
   const subscriptionAccess = inject(SubscriptionAccessService);
   const subscriptionRestriction = inject(SubscriptionRestrictionService);
+  const silent = isSilent(req);
 
   const showPlanLimitDialog = (message: string, limit: unknown, usage: unknown): void => {
-    if (planLimitDialogOpen) return;
+    if (planLimitDialogOpen || silent) return;
     planLimitDialogOpen = true;
     const canSeePlan = auth.canViewMySubscription();
     const usageLine =
@@ -74,98 +133,61 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      let errorMessage = 'An unknown error occurred';
-      const reason = error.error?.reason as string | undefined;
-      const code = error.error?.code as string | undefined;
-      const subscriptionStatus = error.error?.subscription_status as string | undefined;
+      if (error.status === 401 && canRefresh(req)) {
+        return refreshSession(auth).pipe(
+          switchMap((refreshed) => {
+            if (!refreshed) {
+              return throwError(() => notifySessionExpired(auth, toast, silent));
+            }
+            const token = auth.getToken();
+            const retry = token
+              ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+              : req;
+            return next(retry);
+          })
+        );
+      }
 
-      if (error.error instanceof ErrorEvent) {
-        errorMessage = 'A network error occurred while processing your request. Please try again.';
-      } else {
-        switch (error.status) {
-          case 0:
-            errorMessage = 'Unable to reach the server right now. Please check your internet connection and try again.';
-            break;
-          case 400:
-            errorMessage = error.error?.message || 'Bad Request';
-            break;
-          case 401:
-            errorMessage = 'Unauthorized. Please login again.';
-            if (
-              !req.url.includes('/auth/logout') &&
-              !req.url.includes('/auth/login') &&
-              !isPublicPasswordRecoveryRequest(req.url)
-            ) {
-              auth.clearAuthState();
+      const apiError = ApiError.fromHttp(error, req);
+
+      if (error.status === 401 && !isAuthExchange(req.url)) {
+        return throwError(() => notifySessionExpired(auth, toast, silent));
+      }
+
+      if (error.status === 403 && !silent) {
+        const code = apiError.code;
+        const reason = apiError.reason;
+        if (code === 'FEATURE_NOT_AVAILABLE') {
+          toast.warning(apiError.message, 'Not in your plan');
+          apiError.handled = true;
+        } else if (code === 'ENTITLEMENT_LIMIT_REACHED') {
+          showPlanLimitDialog(apiError.message, apiError.limit, apiError.current_usage);
+          apiError.handled = true;
+        } else if (code === 'SUBSCRIPTION_VIEW_ONLY' || code === 'SUBSCRIPTION_LOCKED') {
+          subscriptionAccess.refresh().subscribe();
+          subscriptionRestriction.handleRestrictedAction(code === 'SUBSCRIPTION_LOCKED' ? 'locked' : 'view_only');
+          apiError.handled = true;
+        } else if (reason === 'subscription_blocked' || code === 'SUBSCRIPTION_READ_ONLY' || code === 'SUBSCRIPTION_EXPIRED') {
+          toast.error(apiError.message, 'Read-only');
+          apiError.handled = true;
+        } else if (isSupportSessionAuthFailure(apiError.message)) {
+          const invalidated = supportSessions.invalidateIfMatchesCurrent(requestSupportSessionId(req));
+          if (invalidated && !isSupportSessionEventsRequest(req.url)) {
+            toast.error(
+              'Your support session is no longer valid. Start a new session from Support Center.',
+              'Support session ended'
+            );
+            apiError.handled = true;
+            if (!req.url.includes('/support-center')) {
+              void router.navigate(['/support-center']);
             }
-            break;
-          case 403:
-            if (code === 'FEATURE_NOT_AVAILABLE') {
-              errorMessage = error.error?.message || 'This feature is not included in your current plan.';
-              toast.warning(errorMessage, 'Not in your plan');
-            } else if (code === 'ENTITLEMENT_LIMIT_REACHED') {
-              errorMessage = error.error?.message || 'Your current plan limit has been reached.';
-              showPlanLimitDialog(errorMessage, error.error?.limit, error.error?.current_usage);
-            } else if (
-              code === 'SUBSCRIPTION_VIEW_ONLY' ||
-              code === 'SUBSCRIPTION_LOCKED'
-            ) {
-              subscriptionAccess.refresh().subscribe();
-              subscriptionRestriction.handleRestrictedAction(
-                code === 'SUBSCRIPTION_LOCKED' ? 'locked' : 'view_only'
-              );
-              errorMessage = error.error?.message || 'Subscription access is restricted.';
-            } else if (reason === 'subscription_blocked' || code === 'SUBSCRIPTION_READ_ONLY' || code === 'SUBSCRIPTION_EXPIRED') {
-              errorMessage =
-                error.error?.message ||
-                'Your subscription has ended. You can view records, but you cannot save changes.';
-              toast.error(errorMessage, 'Read-only');
-            } else {
-              errorMessage = error.error?.message || 'Forbidden. You do not have permission.';
-              if (isSupportSessionAuthFailure(errorMessage)) {
-                const invalidated = supportSessions.invalidateIfMatchesCurrent(
-                  requestSupportSessionId(req)
-                );
-                if (invalidated && !isSupportSessionEventsRequest(req.url)) {
-                  toast.error(
-                    'Your support session is no longer valid. Start a new session from Support Center.',
-                    'Support session ended'
-                  );
-                  if (!req.url.includes('/support-center')) {
-                    void router.navigate(['/support-center']);
-                  }
-                }
-              }
-            }
-            break;
-          case 404:
-            errorMessage = 'Resource not found';
-            break;
-          case 422:
-            errorMessage = error.error?.message || 'Validation error';
-            break;
-          case 500:
-            errorMessage = 'Internal server error. Please try again later.';
-            break;
-          default:
-            errorMessage = error.error?.message || 'Something went wrong. Please try again.';
+          }
         }
       }
 
-      console.error('HTTP Error:', errorMessage, error);
+      console.error('HTTP Error:', apiError.status, apiError.code || apiError.category, apiError.requestId || '');
 
-      return throwError(() => ({
-        message: errorMessage,
-        status: error.status,
-        errors: error.error?.errors,
-        code: error.error?.code,
-        context: error.error?.context,
-        reason,
-        subscription_status: subscriptionStatus,
-        feature: error.error?.feature as string | undefined,
-        limit: error.error?.limit as number | undefined,
-        current_usage: error.error?.current_usage as number | undefined,
-      }));
+      return throwError(() => apiError);
     })
   );
 };

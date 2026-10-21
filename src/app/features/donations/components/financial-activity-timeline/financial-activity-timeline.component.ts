@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectorRef, Component, DestroyRef, Input, OnChanges, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
@@ -298,9 +299,9 @@ export class FinancialActivityTimelineComponent implements OnChanges {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
-        this.error = 'Unable to load activity timeline.';
+        this.error = apiErrorMessage(err, 'Unable to load activity timeline.');
         this.events = [];
         this.activeFilter = 'all';
         this.cdr.detectChanges();

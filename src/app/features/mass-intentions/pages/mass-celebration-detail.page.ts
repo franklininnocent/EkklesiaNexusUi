@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -227,6 +228,7 @@ import {
   ],
 })
 export class MassCelebrationDetailPageComponent implements OnInit {
+  protected readonly massActions = inject(ActionAuthorizationService);
   private readonly api = inject(MassIntentionsApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -257,15 +259,15 @@ export class MassCelebrationDetailPageComponent implements OnInit {
   }
 
   canFulfil(): boolean {
-    return canFulfilMasses(this.auth);
+    return canFulfilMasses(this.massActions);
   }
 
   canSchedule(): boolean {
-    return canScheduleMasses(this.auth);
+    return canScheduleMasses(this.massActions);
   }
 
   canCreate(): boolean {
-    return canCreateMassIntention(this.auth);
+    return canCreateMassIntention(this.massActions);
   }
 
   onIntentionAdded(): void {

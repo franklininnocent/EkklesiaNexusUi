@@ -3,6 +3,7 @@
  */
 
 import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -222,7 +223,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
           } else if (status === 403) {
             this.error = 'You do not have permission to view this tenant.';
           } else {
-            this.error = err.error?.message || err.message || 'Failed to load tenant details';
+            this.error = apiErrorMessage(err, 'Failed to load tenant details');
           }
           this.loading = false;
           this.cdr.markForCheck();
@@ -324,7 +325,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.auditsError = err?.message || err?.error?.message || 'Unable to load subscription history.';
+        this.auditsError = err?.message || apiErrorMessage(err, 'Unable to load subscription history.');
         this.subscriptionAudits = [];
         this.auditsLoading = false;
         this.cdr.markForCheck();
@@ -446,7 +447,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.toastService.error(err.message || err.error?.message || 'Failed to update tenant', 'Error');
+          this.toastService.error(err.message || apiErrorMessage(err, 'Failed to update tenant'), 'Error');
           this.saving = false;
           this.cdr.markForCheck();
         },
@@ -606,7 +607,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.toastService.error(err.error?.message || 'Failed to upload logo', 'Error');
+          this.toastService.error(apiErrorMessage(err, 'Failed to upload logo'), 'Error');
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -642,7 +643,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
           },
           error: (err) => {
-            this.toastService.error(err.error?.message || 'Failed to delete logo', 'Error');
+            this.toastService.error(apiErrorMessage(err, 'Failed to delete logo'), 'Error');
             this.loading = false;
             this.cdr.markForCheck();
           },
@@ -956,9 +957,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
   }
 
   private extractErrorMessage(err: unknown, fallback: string): string {
-    if (!err || typeof err !== 'object') return fallback;
-    const e = err as { message?: string; error?: { message?: string } };
-    return e.message || e.error?.message || fallback;
+    return apiErrorMessage(err, fallback);
   }
 
   getUserPreviewPhotoUrl(user: TenantDetailsUserPreview): string | null {
@@ -1022,7 +1021,7 @@ export class TenantDetailComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
           },
           error: (err) => {
-            this.toastService.error(err.error?.message || 'Unable to reset tenant administrator password.', 'Security');
+            this.toastService.error(apiErrorMessage(err, 'Unable to reset tenant administrator password.'), 'Security');
           },
         });
     });

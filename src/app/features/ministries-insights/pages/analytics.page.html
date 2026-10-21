@@ -38,7 +38,7 @@
 
   <app-cf-empty-state
     *ngIf="!loading && error"
-    [title]="unauthorized ? 'Access denied' : 'Something went wrong'"
+    [title]="unauthorized ? 'Access denied' : 'Analytics could not be loaded'"
     [description]="error"
     [hasActions]="false"
   ></app-cf-empty-state>

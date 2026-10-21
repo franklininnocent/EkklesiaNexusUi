@@ -10,13 +10,15 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterModule } from '@angular/router';
 import { Subject, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { apiErrorMessage, isTechnicalMessage } from '@core/errors/api-error';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { CfBrandLoaderComponent } from '@shared/components/cf-brand-loader/cf-brand-loader.component';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { EntitlementService } from '@core/services/entitlement.service';
 import { DashboardCollectedTrendComponent } from '../dashboard/dashboard-collected-trend.component';
 import {
@@ -90,6 +92,7 @@ interface DashboardActiveFilterChip {
           <span *ngIf="dashboardFilterCount > 0" class="dashboard-header__filter-badge">{{ dashboardFilterCount }}</span>
         </button>
         <button
+          *ngIf="canQuickCollect"
           type="button"
           class="cf-btn cf-btn-icon cf-btn-primary"
           (click)="openQuickCollect()"
@@ -805,6 +808,7 @@ interface DashboardActiveFilterChip {
 })
 export class DonationsDashboardComponent implements OnInit {
   private readonly donationsService = inject(DonationsService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly quickCollectService = inject(QuickCollectService);
   private readonly entitlements = inject(EntitlementService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -1188,10 +1192,25 @@ export class DonationsDashboardComponent implements OnInit {
         this.loading = true;
         this.error = null;
         this.cdr.markForCheck();
-        return this.donationsService.getDashboardSummary(this.currentRangeQuery()).pipe(catchError(() => of(null)));
+        return this.donationsService.getDashboardSummary(this.currentRangeQuery()).pipe(
+          map((body) => ({ ok: true as const, body })),
+          catchError((err: unknown) => of({ ok: false as const, err })),
+        );
       }),
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe((res) => {
+    ).subscribe((result) => {
+      if (!result.ok) {
+        this.error = apiErrorMessage(
+          result.err,
+          this.summary
+            ? 'The financial dashboard could not be refreshed. Try again.'
+            : 'The financial dashboard did not load. Refresh the page and try again.'
+        );
+        this.loading = false;
+        this.cdr.markForCheck();
+        return;
+      }
+      const res = result.body;
       if (res?.data?.snapshot) {
         this.summary = res.data;
         if (res.data.applied_bcc?.name) {
@@ -1210,10 +1229,13 @@ export class DonationsDashboardComponent implements OnInit {
           this.customFrom = windows.date_from;
           this.customTo = windows.date_to;
         }
-      } else if (!this.summary) {
-        this.error = 'Failed to load financial dashboard.';
       } else {
-        this.error = 'Failed to refresh financial dashboard.';
+        const fallback = this.summary
+          ? 'The financial dashboard could not be refreshed. Try again.'
+          : 'The financial dashboard did not return a summary. Refresh the page and try again.';
+        const payload = res as { message?: unknown };
+        const message = typeof payload.message === 'string' ? payload.message : '';
+        this.error = message && !isTechnicalMessage(message) ? message : fallback;
       }
       this.loading = false;
       this.cdr.markForCheck();
@@ -1349,6 +1371,10 @@ export class DonationsDashboardComponent implements OnInit {
   closeDrillDown(): void {
     this.drillDownRequest = null;
     this.cdr.markForCheck();
+  }
+
+  get canQuickCollect(): boolean {
+    return this.actions.allows('donations.collect');
   }
 
   openQuickCollect(): void {

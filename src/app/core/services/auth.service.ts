@@ -831,11 +831,6 @@ export class AuthService {
       return true;
     }
 
-    // Keep donations menu/route behavior aligned with working RBAC visibility.
-    if (this.canAccessRbac(user)) {
-      return true;
-    }
-
     const permissionNames = [
       'donations.view',
       'donations.collect',

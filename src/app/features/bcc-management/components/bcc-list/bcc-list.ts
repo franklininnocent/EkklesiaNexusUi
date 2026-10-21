@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
@@ -21,6 +22,8 @@ import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empt
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { BccSubNavComponent } from '../bcc-sub-nav/bcc-sub-nav.component';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 
@@ -42,6 +45,7 @@ import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-acti
     CfEmptyStateComponent,
     LoadingSkeletonComponent,
     BccSubNavComponent,
+    CanActionDirective,
     DisableWhenReadOnlyDirective,
     CfActionIconComponent,
   ],
@@ -55,6 +59,7 @@ export class BCCListComponent implements OnInit, OnDestroy {
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly supportSessions = inject(SupportSessionService);
   private readonly confirmationDialog = inject(ConfirmationDialogService);
+  private readonly actions = inject(ActionAuthorizationService);
 
   bccs: BCC[] = [];
   statistics: BCCStatistics | null = null;
@@ -123,7 +128,7 @@ export class BCCListComponent implements OnInit, OnDestroy {
     this.setupSearchDebounce();
 
     this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      if (params.get('create') === '1' && this.authService.hasPermission('bcc.create')) {
+      if (params.get('create') === '1' && this.actions.allows('bcc.create')) {
         this.createBCC();
         void this.router.navigate([], {
           relativeTo: this.route,
@@ -261,7 +266,7 @@ export class BCCListComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (error) => {
-          this.error = 'Failed to load BCCs. Please try again.';
+          this.error = apiErrorMessage(error, 'Failed to load BCCs. Please try again.');
           this.loading = false;
           this.loaded = true;
           console.error('Error loading BCCs:', error);
@@ -435,7 +440,7 @@ export class BCCListComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error loading BCC details:', error);
           this.loadingDetail = false;
-          this.toastService.error('Failed to load BCC details', 'Error');
+          this.toastService.error(apiErrorMessage(error, 'Failed to load BCC details'), 'Error');
           this.cdr.markForCheck();
         }
       });
@@ -463,6 +468,10 @@ export class BCCListComponent implements OnInit, OnDestroy {
   }
 
   createBCC(): void {
+    if (!this.actions.allows('bcc.create')) {
+      this.toastService.warning('You do not have permission to add a BCC.', 'Permission');
+      return;
+    }
     if (this.subscriptionAccess.isReadOnly()) {
       this.toastService.warning('Read-only mode: renew subscription to add BCCs.', 'Read-only');
       return;
@@ -476,8 +485,8 @@ export class BCCListComponent implements OnInit, OnDestroy {
       this.toastService.warning('Read-only mode: renew subscription to delete BCCs.', 'Read-only');
       return;
     }
-    if (!this.isTenantAdmin) {
-      this.toastService.error('Only Tenant Administrators can delete BCCs.', 'Permission Denied', 5000);
+    if (!this.actions.allows('bcc.delete')) {
+      this.toastService.warning('You do not have permission to delete BCCs.', 'Permission');
       return;
     }
 
@@ -515,7 +524,7 @@ export class BCCListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error deleting BCC:', err);
-          this.toastService.error(err.error?.message || 'Failed to delete BCC', 'Error', 6000);
+          this.toastService.error(apiErrorMessage(err, 'Failed to delete BCC'), 'Error', 6000);
           this.loading = false;
           this.cdr.markForCheck();
         }

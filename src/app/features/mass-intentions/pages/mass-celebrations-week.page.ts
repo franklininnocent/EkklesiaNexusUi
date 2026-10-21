@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -37,6 +38,7 @@ import {
   styleUrl: './mass-celebrations-week.page.scss',
 })
 export class MassCelebrationsWeekPageComponent {
+  protected readonly massActions = inject(ActionAuthorizationService);
   private readonly api = inject(MassIntentionsApiService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
@@ -98,7 +100,7 @@ export class MassCelebrationsWeekPageComponent {
   }
 
   canScheduleMass(): boolean {
-    return canScheduleMasses(this.auth);
+    return canScheduleMasses(this.massActions);
   }
 
   dismissScheduleDenied(): void {

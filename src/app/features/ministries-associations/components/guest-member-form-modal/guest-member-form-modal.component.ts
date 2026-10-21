@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError } from '@core/errors/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -234,7 +235,7 @@ export class GuestMemberFormModalComponent implements OnInit, OnDestroy {
   }
 
   private applySubmitError(error: unknown): void {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       this.formError = 'Could not save guest. Please try again.';
       return;
     }

@@ -19,6 +19,7 @@ import { of, Subject, takeUntil } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { Tenant } from '@core/models/tenant.model';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { TenantSubscriptionAccessPolicyEditorComponent } from './tenant-subscription-access-policy-editor.component';
 
 interface DurationOption {
@@ -475,14 +476,14 @@ export class SubscriptionManagementComponent implements OnInit, OnDestroy {
   }
 
   private extractErrorMessage(err: unknown): string | null {
-    if (!err || typeof err !== 'object') {
-      return null;
-    }
-    const e = err as { message?: string; error?: { message?: string } };
-    return e.message || e.error?.message || null;
+    const message = apiErrorMessage(err);
+    return message || null;
   }
 
   private friendlyError(message: string | null | undefined, fallback: string): string {
+    if (message === '') {
+      return '';
+    }
     if (message && !/exception|stack|sqlstate|\bSQL\b|internal server/i.test(message)) {
       return message;
     }

@@ -160,6 +160,16 @@ describe('AuthService RBAC access helpers', () => {
     expect(service.canAccessDonations(user, { hasActiveSupportSession: true })).toBe(true);
   });
 
+  it('does not open Donations for a roles.view user without a donations permission', () => {
+    const user = {
+      role_name: 'Reader',
+      tenant_id: 42,
+      permissions: [{ name: 'roles.view' }],
+    } as any;
+    (service as any).currentUserSubject.next(user);
+    expect(service.canAccessDonations(user)).toBe(false);
+  });
+
   it('allows Donations for SuperAdmin with home tenant_id', () => {
     const user = { role_name: 'SuperAdmin', tenant_id: 7, permissions: [] } as any;
     (service as any).currentUserSubject.next(user);

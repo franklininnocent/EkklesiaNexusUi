@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '@environments/environment';
+import { apiErrorMessage, ApiError, ApiErrorMessages } from '@core/errors/api-error';
 import {
   AdminTenantSubscription,
   ApiEnvelope,
@@ -324,7 +325,7 @@ export class SubscriptionAdminService {
  * object that the app-wide error interceptor re-throws.
  */
 function readSubscriptionError(error: unknown): { status: number; body: SubscriptionApiError } | null {
-  if (error instanceof HttpErrorResponse) {
+  if ((error instanceof HttpErrorResponse || error instanceof ApiError)) {
     return { status: error.status, body: (error.error ?? {}) as SubscriptionApiError };
   }
   if (error && typeof error === 'object' && typeof (error as { status?: unknown }).status === 'number') {
@@ -334,16 +335,8 @@ function readSubscriptionError(error: unknown): { status: number; body: Subscrip
   return null;
 }
 
-export function subscriptionErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
-  const parsed = readSubscriptionError(error);
-  if (!parsed) return fallback;
-  const { status, body } = parsed;
-  const firstField = body.errors ? Object.values(body.errors)[0]?.[0] : undefined;
-  if (status === 422 && firstField) return firstField;
-  if (typeof body.message === 'string' && body.message.trim() !== '' && status > 0 && status < 500) return body.message;
-  if (status === 403) return 'You do not have permission to do this.';
-  if (status === 404) return 'This item no longer exists.';
-  return fallback;
+export function subscriptionErrorMessage(error: unknown, fallback: string = ApiErrorMessages.unexpected): string {
+  return apiErrorMessage(error, fallback);
 }
 
 export function subscriptionErrorCode(error: unknown): string | null {

@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { ToastService } from '@core/services/toast.service';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { MassIntentionsApiService } from '../services/mass-intentions-api.service';
 import {
   massIntentionsSettingsBackLabel,
@@ -13,7 +15,7 @@ import {
 @Component({
   selector: 'app-mass-intentions-settings-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PageHeaderComponent, CanActionDirective],
   template: `
     <div class="cf-page">
       <app-page-header
@@ -39,7 +41,7 @@ import {
           (Mass intention types), or add new types while recording an intention.
         </p>
         <div class="mass-settings__actions">
-          <button type="submit" class="cf-btn cf-btn-primary" [disabled]="form.invalid || saving()">Save</button>
+          <button *appCan="'mass.intentions.configure'" type="submit" class="cf-btn cf-btn-primary" [disabled]="form.invalid || saving()">Save</button>
         </div>
       </form>
     </div>
@@ -81,6 +83,7 @@ export class MassIntentionsSettingsPageComponent {
   private readonly api = inject(MassIntentionsApiService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  private readonly actions = inject(ActionAuthorizationService);
 
   readonly saving = signal(false);
 
@@ -101,7 +104,7 @@ export class MassIntentionsSettingsPageComponent {
   }
 
   save(): void {
-    if (this.form.invalid) {
+    if (!this.actions.allows('mass.intentions.configure') || this.form.invalid) {
       return;
     }
     this.saving.set(true);

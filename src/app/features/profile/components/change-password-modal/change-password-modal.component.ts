@@ -10,6 +10,7 @@ import {
   Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import {
   AbstractControl,
   FormBuilder,
@@ -173,7 +174,7 @@ export class ChangePasswordModalComponent implements OnInit, OnDestroy {
       }
     }
 
-    const apiMessage = (error?.message || error?.error?.message || '').trim();
+    const apiMessage = (error?.message || apiErrorMessage(error, '')).trim();
     if (apiMessage) {
       return this.toUserFacingPasswordMessage(apiMessage);
     }

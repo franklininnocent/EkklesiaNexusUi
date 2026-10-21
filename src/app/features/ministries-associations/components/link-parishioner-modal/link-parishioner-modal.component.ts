@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError } from '@core/errors/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -112,7 +113,7 @@ export class LinkParishionerModalComponent implements OnInit {
   }
 
   private mapError(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       return 'Could not link parishioner. Please try again.';
     }
 

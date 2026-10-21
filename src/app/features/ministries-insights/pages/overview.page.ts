@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Subject, takeUntil } from 'rxjs';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
@@ -134,12 +134,16 @@ export class MinistriesInsightsOverviewPageComponent implements OnInit, OnDestro
           this.unauthorized = false;
           this.cdr.markForCheck();
         },
-        error: (err: HttpErrorResponse) => {
+        error: (err: unknown) => {
           this.loading = false;
-          this.unauthorized = err.status === 401 || err.status === 403;
-          this.error = this.unauthorized
-            ? 'You do not have permission to view Ministries Insights.'
-            : 'Unable to load Ministries Insights overview.';
+          const status = (err as { status?: number })?.status;
+          this.unauthorized = status === 401 || status === 403;
+          this.error = apiErrorMessage(
+            err,
+            this.unauthorized
+              ? 'You do not have permission to view Ministries Insights.'
+              : 'Unable to load Ministries Insights overview.'
+          );
           this.cdr.markForCheck();
         },
       });

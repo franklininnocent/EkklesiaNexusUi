@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Subject, takeUntil } from 'rxjs';
 import { Chart } from '@shared/charts/ekklesia-chart';
 import {
@@ -391,12 +391,11 @@ export class MinistriesInsightsAnalyticsPageComponent implements OnInit, AfterVi
     this.cdr.markForCheck();
   }
 
-  private handleError(err: HttpErrorResponse): void {
+  private handleError(err: unknown): void {
     this.loading = false;
-    this.unauthorized = err.status === 403;
-    this.error = this.unauthorized
-      ? 'You do not have permission to view analytics.'
-      : 'Unable to load analytics.';
+    const message = apiErrorMessage(err, 'Unable to load analytics.');
+    this.unauthorized = message.toLowerCase().includes('permission') || (err as { status?: number })?.status === 403;
+    this.error = message;
     this.cdr.markForCheck();
   }
 

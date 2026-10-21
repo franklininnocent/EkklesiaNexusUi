@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Component, EventEmitter, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -113,7 +114,7 @@ export class SupportTicketCreateModalComponent implements OnInit {
           this.created.emit(ticket.ticket_number);
         },
         error: (err) => {
-          this.error = err?.error?.message || 'Could not create ticket.';
+          this.error = apiErrorMessage(err, 'Could not create ticket.');
           this.saving = false;
         },
       });
