@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { User } from '@core/models';
 import { ApplicationContextService } from '@core/services/application-context.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
 import { EntitlementService } from '@core/services/entitlement.service';
@@ -81,6 +82,7 @@ export class NavMenuService {
   };
 
   private readonly auth = inject(AuthService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly appContext = inject(ApplicationContextService);
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
   private readonly entitlements = inject(EntitlementService);
@@ -281,8 +283,9 @@ export class NavMenuService {
       case 'support':
         return this.auth.canAccessSupport(user);
       case 'sacraments':
+        return this.actions.allows('sacraments.view');
       case 'users':
-        return true;
+        return this.actions.allows('users.view');
       case 'mass-intentions':
         return this.canAccessMassIntentions(user, hasActiveSupportSession);
       default:

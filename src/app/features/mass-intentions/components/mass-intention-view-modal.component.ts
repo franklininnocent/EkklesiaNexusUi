@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
@@ -30,6 +31,7 @@ import { massIntentionStageLabel, massIntentionStageTone } from '../utils/mass-i
   styleUrl: './mass-intention-view-modal.component.scss',
 })
 export class MassIntentionViewModalComponent implements OnChanges {
+  protected readonly massActions = inject(ActionAuthorizationService);
   private readonly api = inject(MassIntentionsApiService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
@@ -95,12 +97,12 @@ export class MassIntentionViewModalComponent implements OnChanges {
   }
 
   canEdit(): boolean {
-    return canCreateMassIntention(this.auth);
+    return canCreateMassIntention(this.massActions);
   }
 
   canMove(r: MassIntentionRecord): boolean {
     return (
-      canScheduleMasses(this.auth) &&
+      canScheduleMasses(this.massActions) &&
       r.status === 'open' &&
       !r.needs_a_mass &&
       !!r.mass_celebration?.id

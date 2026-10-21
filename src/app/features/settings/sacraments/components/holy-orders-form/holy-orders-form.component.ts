@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -247,7 +248,7 @@ export class HolyOrdersFormComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.saving = false;
-          const msg = err?.error?.message || 'Failed to register Holy Orders.';
+          const msg = apiErrorMessage(err, 'Failed to register Holy Orders.');
           this.toast.error(msg);
         },
       });

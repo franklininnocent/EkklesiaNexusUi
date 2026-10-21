@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -221,7 +222,7 @@ export class MembershipStatusModalComponent implements OnInit, OnDestroy {
   }
 
   private mapError(error: unknown): string {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       return 'Could not update status. Please try again.';
     }
 

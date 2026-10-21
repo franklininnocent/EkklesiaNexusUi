@@ -76,7 +76,7 @@
       <div class="topbar-right" *ngIf="headerUser$ | async as headerUser">
         <app-notification-bell *ngIf="headerUser"></app-notification-bell>
         <button
-          *ngIf="isVisible('donations', headerUser)"
+          *ngIf="canCollectPayments()"
           type="button"
           class="collect-btn"
           [disabled]="isSubscriptionReadOnly()"

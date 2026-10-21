@@ -25,7 +25,7 @@
         Filters
         <span *ngIf="getActiveFilterCount() > 0" class="filter-badge">{{ getActiveFilterCount() }}</span>
       </button>
-      <button class="cf-btn cf-btn-primary" (click)="onCreateBishop()">
+      <button *appCan="'bishops.create'" class="cf-btn cf-btn-primary" (click)="onCreateBishop()">
         <span class="btn-icon">➕</span>
         Add Bishop
       </button>
@@ -107,9 +107,24 @@
     icon="👤"
     [title]="searchTerm || selectedDiocese || selectedTitle ? 'No bishops match your filters' : 'No bishops found'"
     [description]="searchTerm || selectedDiocese || selectedTitle ? 'Try adjusting your search or filters to find what you\'re looking for.' : 'Get started by adding your first bishop to the system.'">
-    <button type="button" class="cf-btn cf-btn-primary" (click)="searchTerm || selectedDiocese || selectedTitle ? clearFilters() : onCreateBishop()">
-      {{ searchTerm || selectedDiocese || selectedTitle ? 'Clear Filters' : 'Add First Bishop' }}
+    <button
+      *ngIf="searchTerm || selectedDiocese || selectedTitle"
+      type="button"
+      class="cf-btn cf-btn-primary"
+      (click)="clearFilters()"
+    >
+      Clear Filters
     </button>
+    <ng-container *ngIf="!(searchTerm || selectedDiocese || selectedTitle)">
+    <button
+      *appCan="'bishops.create'"
+      type="button"
+      class="cf-btn cf-btn-primary"
+      (click)="onCreateBishop()"
+    >
+      Add First Bishop
+    </button>
+    </ng-container>
   </app-cf-empty-state>
 
   <!-- Table -->
@@ -165,10 +180,10 @@
             <button (click)="onViewBishop(bishop)" class="action-btn view" title="View Details">
               👁️
             </button>
-            <button (click)="onEditBishop(bishop)" class="action-btn edit" title="Edit">
+            <button *appCan="'bishops.update'" (click)="onEditBishop(bishop)" class="action-btn edit" title="Edit">
               ✏️
             </button>
-            <button (click)="onDeleteBishop(bishop)" class="action-btn delete" title="Delete">
+            <button *appCan="'bishops.archive'" (click)="onDeleteBishop(bishop)" class="action-btn delete" title="Delete">
               🗑️
             </button>
           </td>

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
@@ -358,8 +359,8 @@ export class DonationsNotificationsComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
-        this.error = 'Failed to load notifications.';
+      error: (err) => {
+        this.error = apiErrorMessage(err, 'Failed to load notifications.');
         this.loading = false;
         this.cdr.detectChanges();
       }

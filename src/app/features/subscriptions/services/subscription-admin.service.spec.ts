@@ -82,7 +82,9 @@ describe('SubscriptionAdminService', () => {
 
     it('maps 403 without a message to a plain-language permission error', () => {
       const err = new HttpErrorResponse({ status: 403, error: {} });
-      expect(subscriptionErrorMessage(err)).toBe('You do not have permission to do this.');
+      expect(subscriptionErrorMessage(err)).toBe(
+        'You do not have permission to perform this action. Please contact your parish administrator if you need access.'
+      );
     });
 
     it('reads the flattened error the app-wide interceptor re-throws', () => {

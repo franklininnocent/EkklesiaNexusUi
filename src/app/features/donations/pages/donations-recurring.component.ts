@@ -1,4 +1,6 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -61,6 +63,7 @@ export const RECURRING_DONOR_SELECT_PANEL_CLASS = 'recurring-donor-create-panel'
   styleUrl: './donations-recurring.component.scss',
 })
 export class DonationsRecurringComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   @ViewChild('donorSelect') donorSelect?: NgSelectComponent;
   @ViewChild('donorModalNameInput') donorModalNameInput?: ElementRef<HTMLInputElement>;
 
@@ -111,7 +114,7 @@ export class DonationsRecurringComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.canCollect = this.authService.hasPermission('donations.collect');
+    this.canCollect = this.actions.allows('donations.collect');
     this.loadDonors();
     this.donationsService.getCategories().subscribe({
       next: (res) => {
@@ -176,11 +179,11 @@ export class DonationsRecurringComponent implements OnInit, OnDestroy {
         this.donorsLoaded = true;
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadDonorsSeq) {
           return;
         }
-        this.donorsLoadError = 'Unable to load donors. Please try again.';
+        this.donorsLoadError = apiErrorMessage(err, 'Unable to load donors. Please try again.');
         this.donorsLoaded = true;
         refreshStewardshipView(this.cdr);
       },
@@ -205,7 +208,7 @@ export class DonationsRecurringComponent implements OnInit, OnDestroy {
   }
 
   onDonorSelectOpen(): void {
-    this.canCreateDonor = this.authService.hasPermission('donations.manage');
+    this.canCreateDonor = this.actions.allows('donations.manage');
     this.donorSearchTerm = '';
     this.attachDonorFooterDocumentListener();
   }
@@ -265,7 +268,7 @@ export class DonationsRecurringComponent implements OnInit, OnDestroy {
   }
 
   onAddDonorFromFooter(): void {
-    if (!this.authService.hasPermission('donations.manage') || this.creatingDonor) {
+    if (!this.actions.allows('donations.manage') || this.creatingDonor) {
       return;
     }
     const prefill = this.prefillDonorNameFromSearch(this.donorSearchTerm);

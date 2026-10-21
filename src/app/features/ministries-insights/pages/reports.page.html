@@ -4,7 +4,7 @@
 
 <app-cf-empty-state
   *ngIf="!loadingCatalog && error && !report"
-  [title]="unauthorized ? 'Access denied' : 'Something went wrong'"
+  [title]="unauthorized ? 'Access denied' : 'Reports could not be loaded'"
   [description]="error"
   [hasActions]="false"
 ></app-cf-empty-state>
@@ -41,7 +41,7 @@
               {{ w.label }}
             </button>
           </div>
-          <button type="button" class="cf-btn cf-btn-secondary" (click)="exportCsv()" [disabled]="exporting || !selectedType">
+          <button *ngIf="canExportCsv()" type="button" class="cf-btn cf-btn-secondary" (click)="exportCsv()" [disabled]="exporting || !selectedType">
             {{ exporting ? 'Exporting…' : 'Export CSV' }}
           </button>
         </div>

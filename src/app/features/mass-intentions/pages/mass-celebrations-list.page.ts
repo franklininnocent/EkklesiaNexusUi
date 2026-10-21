@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -49,6 +50,7 @@ const LIST_PAGE_SIZE = 100;
   styleUrl: './mass-celebrations-list.page.scss',
 })
 export class MassCelebrationsListPageComponent {
+  protected readonly massActions = inject(ActionAuthorizationService);
   readonly pageSize = signal(LIST_PAGE_SIZE);
 
   private readonly api = inject(MassIntentionsApiService);
@@ -93,7 +95,7 @@ export class MassCelebrationsListPageComponent {
   searchFields: SearchField[] = [];
 
   canScheduleMass(): boolean {
-    return canScheduleMasses(this.auth);
+    return canScheduleMasses(this.massActions);
   }
 
   constructor() {

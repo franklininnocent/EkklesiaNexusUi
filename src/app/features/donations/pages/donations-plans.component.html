@@ -1,7 +1,7 @@
 <section class="plans-page cf-page cf-financial-dashboard">
   <app-page-header
     title="Contribution Plans"
-    subtitle="Define what families owe and how often — create and manage plans side by side.">
+    subtitle="Set an amount for eligible families, then bill them in one step.">
     <ng-container *ngIf="canManage && plansLoaded && !showForm">
       <a routerLink="/donations/dues" class="cf-btn cf-btn-icon" *ngIf="plans.length" aria-label="Outstanding" title="Outstanding">
         <app-cf-action-icon name="clipboard-list" />
@@ -196,6 +196,10 @@
                 <input type="checkbox" [checked]="sameAmountForAll" (change)="onSameAmountToggle($event)" />
                 <span>Same amount for every family</span>
               </label>
+              <p class="plan-field__hint" *ngIf="sameAmountForAll">
+                This amount will be expected from each active family. Saving does not bill anyone.
+                <a routerLink="/donations/categories">Use an offering category</a> when families may give any amount.
+              </p>
             </section>
 
             <section class="plan-section" aria-labelledby="plan-section-schedule">
@@ -226,9 +230,54 @@
                 <input type="checkbox" formControlName="auto_generate" />
                 <span>
                   Automatically generate dues
-                  <small>The system will create due records automatically.</small>
+                  <small *ngIf="planForm.value.frequency === 'one_time'">A one-time plan is billed when you press Bill eligible families. Turn this on only if the start date should bill families without another visit.</small>
+                  <small *ngIf="planForm.value.frequency !== 'one_time'">The system will create due records automatically.</small>
                 </span>
               </label>
+            </section>
+
+            <section class="plan-section" *ngIf="editingPlanId && sameAmountForAll" aria-labelledby="plan-section-exceptions">
+              <h3 id="plan-section-exceptions" class="plan-section__title">Families who differ</h3>
+              <p class="plan-field__hint">Everyone else keeps the standard amount. Save an exception before you bill.</p>
+              <p class="plan-field__hint" *ngIf="(editedPlan?.dues_count || 0) > 0">
+                A new exception does not change bills already created. Waive that family from the family list.
+              </p>
+              <div class="plan-assign cf-form-grid">
+                <select [(ngModel)]="exceptionFamilyId" [ngModelOptions]="{standalone: true}" aria-label="Family who differs">
+                  <option value="">Family</option>
+                  <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
+                </select>
+                <input [(ngModel)]="exceptionAmount" [ngModelOptions]="{standalone: true}" type="number" min="0" step="0.01" placeholder="Amount" aria-label="Exception amount" [disabled]="exceptionExempt" />
+                <app-cf-date-field [(ngModel)]="exceptionEffectiveFrom" [ngModelOptions]="{standalone: true}" aria-label="Effective from" />
+                <label class="plan-toggle">
+                  <input type="checkbox" [(ngModel)]="exceptionExempt" [ngModelOptions]="{standalone: true}" />
+                  <span>Exempt</span>
+                </label>
+                <button type="button" class="cf-btn" (click)="saveException()" [disabled]="exceptionSaving">
+                  {{ exceptionSaving ? 'Saving…' : 'Save exception' }}
+                </button>
+              </div>
+              <table *ngIf="savedExceptions.length" class="cf-table plan-assign-table">
+                <tbody>
+                  <tr *ngFor="let row of savedExceptions">
+                    <td>{{ row.family?.family_name || familyName(row.family_id) }}</td>
+                    <td>{{ row.is_exempt ? 'Exempt' : (row.amount | cfCurrency : null : 0) }}</td>
+                    <td>{{ row.effective_from | cfDate }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section class="plan-section" *ngIf="editingPlanId" aria-labelledby="plan-section-bill">
+              <h3 id="plan-section-bill" class="plan-section__title">Bill families</h3>
+              <p class="plan-field__hint" *ngIf="billingSummary" role="status">{{ billingSummary }}</p>
+              <div class="plan-billing-actions">
+                <button type="button" class="cf-btn cf-btn-primary" (click)="billEligibleFamilies()" [disabled]="generatingPlanId === editingPlanId || editedPlan?.status === 'inactive'">
+                  {{ generatingPlanId === editingPlanId ? 'Billing…' : 'Bill eligible families' }}
+                </button>
+                <a class="cf-btn" [routerLink]="['/donations/dues']" [queryParams]="{ plan_id: editingPlanId, roster: 1, plan_name: planForm.value.name }">Review families</a>
+                <button type="button" class="cf-btn" *ngIf="editedPlan?.status !== 'inactive'" (click)="closePlan()">Close plan</button>
+              </div>
             </section>
 
             <details class="plan-more">
@@ -256,7 +305,7 @@
                   <tr *ngFor="let row of draftAssignments; let i = index">
                     <td>{{ familyName(row.family_id) }}</td>
                     <td>{{ row.amount | cfCurrency : null : 0 }}</td>
-                    <td>{{ row.effective_from }}</td>
+                    <td>{{ row.effective_from | cfDate }}</td>
                     <td>
                       <button
                         type="button"
@@ -395,7 +444,12 @@
                     </td>
                     <td>{{ frequencyLabel(plan.frequency) }}</td>
                     <td>{{ plan.default_amount | cfCurrency : null : 0 }}</td>
-                    <td>{{ plan.assignments_count || '—' }}</td>
+                    <td>
+                      <ng-container *ngIf="plan.plan_type !== 'individual'; else individualFamilyCount">
+                        All active families<span *ngIf="plan.dues_count"> · {{ plan.dues_count }} billed</span>
+                      </ng-container>
+                      <ng-template #individualFamilyCount>{{ plan.assignments_count || '—' }}</ng-template>
+                    </td>
                     <td class="cf-table__actions-cell">
                       <div class="cf-row-actions" *ngIf="canManage">
                         <app-edit-icon-button
@@ -406,14 +460,18 @@
                         ></app-edit-icon-button>
                         <button
                           type="button"
-                          class="cf-btn cf-btn-icon cf-btn--sm"
-                          [disabled]="generatingPlanId === plan.id"
+                          class="cf-btn cf-btn--sm"
+                          [disabled]="generatingPlanId === plan.id || plan.status === 'inactive'"
                           (click)="generateDues(plan)"
-                        
-          aria-label="Run due schedules"
-          title="Run due schedules">
-          <app-cf-action-icon name="play" />
+                          [attr.aria-label]="'Bill eligible families for ' + plan.name"
+                        >
+                          {{ generatingPlanId === plan.id ? 'Billing…' : 'Bill eligible families' }}
                         </button>
+                        <a
+                          class="cf-btn cf-btn--sm"
+                          [routerLink]="['/donations/dues']"
+                          [queryParams]="{ plan_id: plan.id, roster: 1, plan_name: plan.name }"
+                        >Review families</a>
                       </div>
                     </td>
                   </tr>

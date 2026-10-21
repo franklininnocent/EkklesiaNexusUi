@@ -1,4 +1,5 @@
 import { FamilyMember } from '@core/models/family.model';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FamilyMemberFormValue } from '../components/family-member-form-modal/family-member-form-modal.component';
 
 export function formatPhoneForApi(
@@ -121,28 +122,7 @@ export function prepareFamilyMemberPayload(
 }
 
 export function extractMemberApiError(error: unknown, fallback: string): string {
-  const err = error as {
-    error?: { message?: string; error?: string; errors?: Record<string, string | string[]> };
-    message?: string;
-  };
-
-  if (err?.error?.errors && typeof err.error.errors === 'object') {
-    const messages = Object.values(err.error.errors).flatMap((entry) =>
-      Array.isArray(entry) ? entry : [entry]
-    );
-    const first = messages.find((m) => typeof m === 'string' && m.trim().length > 0);
-    if (first) {
-      return first;
-    }
-  }
-
-  const detail = err?.error?.error?.trim();
-  if (detail) {
-    return detail;
-  }
-
-  const message = err?.error?.message?.trim() || err?.message?.trim();
-  return message || fallback;
+  return apiErrorMessage(error, fallback);
 }
 
 export const MARRIAGE_DATE_CONFLICT_CODE = 'marriage_date_conflict';
@@ -206,7 +186,7 @@ export function getMemberApiMessage(res: unknown, fallback: string): string {
   if (res && typeof res === 'object') {
     const message = (res as { message?: string }).message;
     if (typeof message === 'string' && message.trim().length > 0) {
-      return message.trim();
+      return apiErrorMessage({ status: 422, message }, fallback);
     }
   }
   return fallback;

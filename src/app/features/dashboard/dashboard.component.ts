@@ -5,7 +5,7 @@
 import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable, Subject, of } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, map, switchMap, take, takeUntil } from 'rxjs/operators';
@@ -22,6 +22,8 @@ import { TenantService } from '@core/services/tenant.service';
 import { TenantStatisticsResponse } from '@core/models/tenant.model';
 import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { cfFormatDate,  cfFormatMoney } from '@shared/utils/cf-intl.util';
+import { isTechnicalMessage } from '@core/errors/api-error';
+import { ToastService } from '@core/services/toast.service';
 import { PastoralCareService } from '@features/pastoral-care/services/pastoral-care.service';
 import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import {
@@ -111,6 +113,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private pastoralCare = inject(PastoralCareService);
   private tenantService = inject(TenantService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
   private executiveDashboard = inject(ExecutiveDashboardService);
   private quickCollect = inject(QuickCollectService);
@@ -183,7 +187,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.currentUser$ = this.store.select(selectCurrentUser);
   }
 
+  /** Guards send people here with a safe message. Show it once, then drop it from the address bar. */
+  private showRouteAccessNotice(): void {
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const code = params.get('error') || params.get('notice');
+      const raw = (params.get('message') || '').trim();
+      if (!code || !raw) {
+        return;
+      }
+      const message = !isTechnicalMessage(raw) && raw.length <= 240
+        ? raw
+        : 'You do not have permission to open this page.';
+      if (params.get('error')) {
+        this.toast.warning(message);
+      } else {
+        this.toast.info(message);
+      }
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { error: null, notice: null, message: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    });
+  }
+
   ngOnInit(): void {
+    this.showRouteAccessNotice();
     this.setupFinancialHubLoader();
 
     this.supportSessions.session$

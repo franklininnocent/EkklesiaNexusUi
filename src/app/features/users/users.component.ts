@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { PaginationComponent } from '@shared/components';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -19,6 +20,8 @@ import { UserFormModalComponent } from './user-form-modal/user-form-modal.compon
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { trackByEntityId, trackByIndex } from '@shared/utils/cf-track-by.util';
 
@@ -36,6 +39,7 @@ import { trackByEntityId, trackByIndex } from '@shared/utils/cf-track-by.util';
     StatusBadgeComponent,
     CfEmptyStateComponent,
     LoadingSkeletonComponent,
+    CanActionDirective,
     DisableWhenReadOnlyDirective,
     ImageViewerComponent,
     UserAvatarComponent,
@@ -76,6 +80,7 @@ export class UsersComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly confirmationDialog = inject(ConfirmationDialogService);
 
   constructor(
@@ -118,7 +123,7 @@ export class UsersComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error loading users:', err);
-          this.error = err.error?.message || 'Failed to load users';
+          this.error = apiErrorMessage(err, 'Failed to load users');
           this.loading = false;
           this.cdr.markForCheck();
         }
@@ -173,6 +178,10 @@ export class UsersComponent implements OnInit, OnDestroy {
   }
 
   toggleUserStatus(user: User): void {
+    if (!this.actions.allows('users.update')) {
+      this.toastService.warning('You do not have permission to update this user.', 'Permission');
+      return;
+    }
     const newStatus = user.active === 1 ? 0 : 1;
 
     if (user.is_primary_admin && newStatus === 0) {
@@ -195,15 +204,15 @@ export class UsersComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error updating user status:', err);
-          this.toastService.error(err.error?.message || 'Failed to update user status', 'Error', 6000);
+          this.toastService.error(apiErrorMessage(err, 'Failed to update user status'), 'Error', 6000);
           this.cdr.markForCheck();
         }
       });
   }
 
   deleteUser(user: User): void {
-    if (!this.isTenantAdmin) {
-      this.toastService.error('Only Tenant Administrators can delete users.', 'Permission Denied', 5000);
+    if (!this.actions.allows('users.delete')) {
+      this.toastService.warning('You do not have permission to delete users.', 'Permission');
       return;
     }
 
@@ -242,7 +251,7 @@ export class UsersComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Error deleting user:', err);
-          this.toastService.error(err.error?.message || 'Failed to delete user', 'Error', 6000);
+          this.toastService.error(apiErrorMessage(err, 'Failed to delete user'), 'Error', 6000);
           this.loading = false;
           this.cdr.markForCheck();
         }
@@ -354,6 +363,10 @@ export class UsersComponent implements OnInit, OnDestroy {
   }
 
   openCreateUserModal(): void {
+    if (!this.actions.allows('users.create')) {
+      this.toastService.warning('You do not have permission to add users.', 'Permission');
+      return;
+    }
     if (this.subscriptionAccess.isReadOnly()) {
       this.toastService.warning('Read-only mode: renew subscription to add users.', 'Read-only');
       return;
@@ -363,6 +376,10 @@ export class UsersComponent implements OnInit, OnDestroy {
   }
 
   openEditUserModal(user: User): void {
+    if (!this.actions.allows('users.update')) {
+      this.toastService.warning('You do not have permission to edit users.', 'Permission');
+      return;
+    }
     if (this.subscriptionAccess.isReadOnly()) {
       this.toastService.warning('Read-only mode: renew subscription to edit users.', 'Read-only');
       return;
@@ -410,7 +427,7 @@ export class UsersComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
           },
           error: (err) => {
-            this.toastService.error(err.error?.message || 'Unable to reset password.', 'Security');
+            this.toastService.error(apiErrorMessage(err, 'Unable to reset password.'), 'Security');
           },
         });
     });

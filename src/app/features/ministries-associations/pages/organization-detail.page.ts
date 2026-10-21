@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError } from '@core/errors/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -474,7 +475,7 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
         error: (error: unknown) => {
           this.statusBusy = false;
           const message =
-            error instanceof HttpErrorResponse
+            (error instanceof HttpErrorResponse || error instanceof ApiError)
               ? (error.error as { message?: string } | null)?.message
               : null;
           this.toastService.error(message || 'Could not update status. Please try again.');
@@ -518,13 +519,13 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
         error: (error: unknown) => {
           this.archiveBusy = false;
           this.showArchiveConfirm = false;
-          if (error instanceof HttpErrorResponse && error.status === 409) {
+          if ((error instanceof HttpErrorResponse || error instanceof ApiError) && error.status === 409) {
             this.toastService.error(
               'Clear active members and office bearers before archiving.',
             );
           } else {
             const message =
-              error instanceof HttpErrorResponse
+              (error instanceof HttpErrorResponse || error instanceof ApiError)
                 ? (error.error as { message?: string } | null)?.message
                 : null;
             this.toastService.error(message || 'Could not archive organization. Please try again.');
@@ -561,7 +562,7 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
         error: (error: unknown) => {
           this.restoreBusy = false;
           const message =
-            error instanceof HttpErrorResponse
+            (error instanceof HttpErrorResponse || error instanceof ApiError)
               ? (error.error as { message?: string } | null)?.message
               : null;
           this.toastService.error(message || 'Could not restore organization. Please try again.');
@@ -742,7 +743,7 @@ export class OrganizationDetailPageComponent implements OnInit, OnDestroy {
   }
 
   private applySubmitError(error: unknown, fallback: string): void {
-    if (!(error instanceof HttpErrorResponse)) {
+    if (!((error instanceof HttpErrorResponse || error instanceof ApiError))) {
       this.formError = fallback;
       return;
     }

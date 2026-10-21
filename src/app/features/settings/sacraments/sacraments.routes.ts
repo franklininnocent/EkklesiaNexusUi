@@ -1,5 +1,6 @@
 import { Routes, Router, ActivatedRouteSnapshot, UrlTree } from '@angular/router';
 import { inject } from '@angular/core';
+import { permissionGuard } from '@core/guards/permission.guard';
 import { tenantReadOnlyBlockGuard } from '@core/guards/tenant-read-only.guard';
 import { sacramentsDashboardGuard } from './guards/sacraments-dashboard.guard';
 
@@ -47,7 +48,8 @@ export const SACRAMENTS_ROUTES: Routes = [
   },
   {
     path: 'holy-orders/create',
-    canActivate: [tenantReadOnlyBlockGuard],
+    canActivate: [permissionGuard, tenantReadOnlyBlockGuard],
+    data: { permissionAction: 'sacraments.create' },
     loadComponent: () =>
       import('./components/holy-orders-form/holy-orders-form.component').then(
         (m) => m.HolyOrdersFormComponent

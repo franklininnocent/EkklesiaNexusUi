@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -19,6 +20,8 @@ import { StatusBadgeComponent } from '@shared/components/status-badge/status-bad
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { SubscriptionAccessService } from '@core/services/subscription-access.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { CfSubscriptionGuardDirective } from '@shared/directives/cf-subscription-guard.directive';
 import { ImageViewerComponent } from '@shared/components/image-viewer/image-viewer.component';
@@ -40,6 +43,7 @@ import { trackByEntityId } from '@shared/utils/cf-track-by.util';
     StatusBadgeComponent,
     CfEmptyStateComponent,
     LoadingSkeletonComponent,
+    CanActionDirective,
     DisableWhenReadOnlyDirective,
     CfSubscriptionGuardDirective,
     ImageViewerComponent,
@@ -52,6 +56,7 @@ export class FamilyListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
   private readonly subscriptionAccess = inject(SubscriptionAccessService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly supportSessions = inject(SupportSessionService);
 
   families: Family[] = [];
@@ -406,7 +411,7 @@ export class FamilyListComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (error) => {
-          this.error = 'Failed to load families. Please try again.';
+          this.error = apiErrorMessage(error, 'Failed to load families. Please try again.');
           this.loading = false;
           this.loaded = true;
           console.error('Error loading families:', error);
@@ -652,6 +657,10 @@ export class FamilyListComponent implements OnInit, OnDestroy {
   }
 
   createFamily(): void {
+    if (!this.actions.allows('families.create')) {
+      this.toastService.warning('You do not have permission to add a family.', 'Permission');
+      return;
+    }
     if (this.isReadOnly()) {
       this.toastService.warning('Read-only mode: renew subscription to add families.', 'Read-only');
       return;

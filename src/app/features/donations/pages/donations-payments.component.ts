@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { NavigationEnd, Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
@@ -40,7 +42,7 @@ type PaymentSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'met
     <section class="payments cf-page cf-financial-dashboard">
       <app-page-header
         title="Payment Register"
-        subtitle="Review today's collections and reprint receipts in one click."
+        subtitle="Full book of every payment. Today's Collections is the day book for this business date."
       >
         <app-list-toolbar
           [showSearch]="false"
@@ -161,13 +163,13 @@ type PaymentSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'met
         </tbody>
       </app-data-table>
 
-      <p *ngIf="payments.length && !displayPayments.length" class="cf-meta stewardship-table-panel__empty">
+      <p *ngIf="paymentsLoaded && tableSearch.trim() && !payments.length" class="cf-meta stewardship-table-panel__empty">
         No payments match your search. Try another term or clear filters.
       </p>
       </div>
 
       <app-cf-empty-state
-        *ngIf="!paymentsLoadError && !payments.length"
+        *ngIf="!paymentsLoadError && paymentsLoaded && !payments.length && !tableSearch.trim()"
         icon="💳"
         title="No payments recorded yet"
         description="Start collecting with Quick Collect or Collection Day mode for high-volume Sundays."
@@ -224,6 +226,7 @@ type PaymentSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'met
   `]
 })
 export class DonationsPaymentsComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   payments: DonationPayment[] = [];
   displayPayments: DonationPayment[] = [];
   paymentsLoaded = false;
@@ -257,9 +260,9 @@ export class DonationsPaymentsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.canCollectPayments = this.authService.hasPermission('donations.collect');
-    this.canReverse = this.authService.hasPermission('donations.reverse');
-    this.canRefund = this.authService.hasPermission('donations.refund');
+    this.canCollectPayments = this.actions.allows('donations.collect');
+    this.canReverse = this.actions.allows('donations.reverse');
+    this.canRefund = this.actions.allows('donations.refund');
     this.initSearchFields();
     this.load();
     this.ledgerSub = this.donationsService.ledgerMutated$.subscribe(() => this.load());
@@ -314,8 +317,7 @@ export class DonationsPaymentsComponent implements OnInit, OnDestroy {
   }
 
   onTableSearchChange(): void {
-    this.syncDisplayPayments();
-    this.cdr.markForCheck();
+    this.load();
   }
 
   onAdvancedSearch(values: { [key: string]: unknown }): void {
@@ -356,20 +358,7 @@ export class DonationsPaymentsComponent implements OnInit, OnDestroy {
   }
 
   private syncDisplayPayments(): void {
-    const query = this.tableSearch.trim().toLowerCase();
-    if (!query) {
-      this.displayPayments = this.payments;
-      return;
-    }
-    this.displayPayments = this.payments.filter((payment) => {
-      const haystack = [
-        payment.payment_number,
-        payment.payer_name,
-        payment.method,
-        payment.status
-      ].join(' ').toLowerCase();
-      return haystack.includes(query);
-    });
+    this.displayPayments = this.payments;
   }
 
   load(): void {
@@ -386,6 +375,9 @@ export class DonationsPaymentsComponent implements OnInit, OnDestroy {
     if (this.paidFrom || this.paidTo) {
       filters['per_page'] = '100';
     }
+    if (this.tableSearch.trim()) {
+      filters['search'] = this.tableSearch.trim();
+    }
     filters['sort'] = this.sortColumn;
     filters['direction'] = this.sortDirection || 'desc';
     this.donationsService.getPayments(filters).subscribe({
@@ -398,12 +390,12 @@ export class DonationsPaymentsComponent implements OnInit, OnDestroy {
         this.paymentsLoaded = true;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadPaymentsSeq) {
           return;
         }
         this.paymentsLoaded = true;
-        this.paymentsLoadError = 'Unable to load payments. Please try again.';
+        this.paymentsLoadError = apiErrorMessage(err, 'Unable to load payments. Please try again.');
         this.cdr.detectChanges();
       }
     });
@@ -468,7 +460,7 @@ export class DonationsPaymentsComponent implements OnInit, OnDestroy {
 
   private afterLedgerError(err: { error?: { message?: string } }): void {
     this.actionSaving = false;
-    this.actionError = err?.error?.message || 'Unable to complete this action.';
+    this.actionError = apiErrorMessage(err, 'Unable to complete this action.');
     this.cdr.markForCheck();
   }
 

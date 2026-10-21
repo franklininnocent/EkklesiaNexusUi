@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -109,7 +110,7 @@ export class SacramentFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading sacrament types:', error);
-        this.toastService.error('Failed to load sacrament types.');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load sacrament types.'));
       }
     });
   }
@@ -180,7 +181,7 @@ export class SacramentFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading sacrament:', error);
-        this.toastService.error('Failed to load sacrament.');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load sacrament.'));
         this.loading = false;
         this.router.navigate(['/sacraments']);
       }
@@ -228,7 +229,7 @@ export class SacramentFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error creating sacrament:', error);
-        this.toastService.error(error.error?.message || 'Failed to create sacrament.');
+        this.toastService.error(apiErrorMessage(error, 'Failed to create sacrament.'));
         this.saving = false;
       }
     });
@@ -250,7 +251,7 @@ export class SacramentFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating sacrament:', error);
-        this.toastService.error(error.error?.message || 'Failed to update sacrament.');
+        this.toastService.error(apiErrorMessage(error, 'Failed to update sacrament.'));
         this.saving = false;
       }
     });

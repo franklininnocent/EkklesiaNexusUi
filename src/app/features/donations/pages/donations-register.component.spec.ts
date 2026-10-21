@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
 import { FamilyService } from '@core/services/family.service';
 import { ChurchCurrencyService } from '@core/services/church-currency.service';
@@ -36,6 +37,7 @@ describe('DonationsRegisterComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: { hasPermission: () => true, hasAnyPermission: () => false } },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
         { provide: QuickCollectService, useValue: { open: jest.fn() } },
         { provide: ReceiptPrintService, useValue: { viewPaymentReceipt: jest.fn() } },
         { provide: FamilyService, useValue: { getFamilies: jest.fn().mockReturnValue(of({ data: [] })) } },
@@ -69,18 +71,42 @@ describe('DonationsRegisterComponent', () => {
     );
   });
 
-  it('opens voluntary donation modal from toolbar instead of inline disclosure', () => {
+  it('shows Record a gift when the user can collect', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('details.cf-disclosure')).toBeNull();
-
-    const openBtn = el.querySelector(
-      'button[aria-label="Record voluntary donation"]'
-    ) as HTMLButtonElement;
+    expect(el.textContent).toContain('Record a gift');
+    const openBtn = el.querySelector('button[aria-label="Record a gift"]') as HTMLButtonElement;
     expect(openBtn).toBeTruthy();
     openBtn.click();
     fixture.detectChanges();
-
     expect(el.querySelector('app-modal-shell')).toBeTruthy();
-    expect(el.textContent).toContain('Record voluntary donation');
+  });
+
+  it('hides Record a gift when the user cannot collect', async () => {
+    await TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [DonationsRegisterComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { hasPermission: () => false, hasAnyPermission: () => false } },
+        { provide: ActionAuthorizationService, useValue: { allows: () => false } },
+        { provide: QuickCollectService, useValue: { open: jest.fn() } },
+        { provide: ReceiptPrintService, useValue: { viewPaymentReceipt: jest.fn() } },
+        { provide: FamilyService, useValue: { getFamilies: jest.fn().mockReturnValue(of({ data: [] })) } },
+        {
+          provide: DonationsService,
+          useValue: {
+            getCategories: jest.fn().mockReturnValue(of({ data: [] })),
+            getDonors: jest.fn().mockReturnValue(of({ data: { data: [] } })),
+            getDonationEntries: jest.fn().mockReturnValue(of({ data: { data: [] } })),
+            getPayments: jest.fn().mockReturnValue(of({ data: { data: [] } })),
+          },
+        },
+        { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD' } },
+      ],
+    }).compileComponents();
+
+    const noCollectFixture = TestBed.createComponent(DonationsRegisterComponent);
+    noCollectFixture.detectChanges();
+    expect(noCollectFixture.nativeElement.querySelector('button[aria-label="Record a gift"]')).toBeNull();
   });
 });

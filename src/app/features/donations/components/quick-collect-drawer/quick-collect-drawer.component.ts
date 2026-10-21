@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, ViewChild, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -390,9 +391,9 @@ interface ActivityRow {
                   </label>
 
                   <label class="qc-field">
-                    <span>Contribution category <span class="req" aria-hidden="true">*</span></span>
+                    <span>Collection purpose <span class="req" aria-hidden="true">*</span></span>
                     <select [(ngModel)]="fundId" aria-required="true" [class.is-invalid]="submitAttempted && !fundId">
-                      <option value="">Choose category</option>
+                      <option value="">Choose purpose</option>
                       <option *ngFor="let fund of funds" [value]="fund.id">{{ fund.name }}</option>
                     </select>
                   </label>
@@ -881,9 +882,9 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.searchResults = response?.data ?? [];
         this.highlightedIndex = this.searchResults.length ? 0 : -1;
       },
-      error: () => {
+      error: (err) => {
         this.searchResults = [];
-        this.error = 'Unable to search families. Please try again.';
+        this.error = apiErrorMessage(err, 'Unable to search families. Please try again.');
       }
     });
   }
@@ -1031,11 +1032,11 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         setTimeout(() => this.amountInput?.nativeElement.focus(), 0);
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         if (generation !== this.familyLoadGeneration) {
           return;
         }
-        this.error = 'Unable to load family financial details.';
+        this.error = apiErrorMessage(err, 'Unable to load family financial details.');
       }
     });
 
@@ -1202,9 +1203,9 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.loadingInstallments = false;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         this.loadingInstallments = false;
-        this.error = 'Unable to load installments for bulk selection.';
+        this.error = apiErrorMessage(err, 'Unable to load installments for bulk selection.');
         this.cdr.markForCheck();
       }
     });
@@ -1276,7 +1277,7 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     } else if (!this.canSubmit || !this.selectedFamily || this.saving) {
       this.submitAttempted = true;
       if (!this.fundId) {
-        this.error = 'Select a contribution category.';
+        this.error = 'Select a collection purpose.';
       } else if (!this.amount || this.amount <= 0) {
         this.error = 'Enter a valid amount.';
       }
@@ -1424,11 +1425,11 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.collectDues = res.data ?? null;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         if (generation !== this.familyLoadGeneration) {
           return;
         }
-        this.error = 'Unable to load collectible dues for this family.';
+        this.error = apiErrorMessage(err, 'Unable to load collectible dues for this family.');
         this.cdr.markForCheck();
       }
     });
@@ -1453,12 +1454,12 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
         this.loadingInstallments = false;
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         if (generation !== this.familyLoadGeneration) {
           return;
         }
         this.loadingInstallments = false;
-        this.error = 'Unable to load project installments.';
+        this.error = apiErrorMessage(err, 'Unable to load project installments.');
         this.cdr.markForCheck();
       }
     });
@@ -1658,8 +1659,8 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
           }
         }
       },
-      error: () => {
-        this.toastService.error('Unable to load contribution categories.', 'Quick Collect');
+      error: (err) => {
+        this.toastService.error(apiErrorMessage(err, 'Unable to load contribution categories.'), 'Quick Collect');
       }
     });
   }
@@ -1743,8 +1744,8 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
           this.selectFamily(response.data);
         }
       },
-      error: () => {
-        this.error = 'Unable to load family. Please search manually.';
+      error: (err) => {
+        this.error = apiErrorMessage(err, 'Unable to load family. Please search manually.');
         this.toastService.error(this.error, 'Quick Collect');
       }
     });
@@ -1844,33 +1845,11 @@ export class QuickCollectDrawerComponent implements OnInit, OnDestroy {
     this.previousActiveElement = null;
   }
 
-  private parseApiError(err: {
-    message?: string;
-    status?: number;
-    error?: { message?: string; errors?: Record<string, string[]> };
-  }): string {
-    if (err?.status === 0) {
+  private parseApiError(err: unknown): string {
+    const status = (err as { status?: number })?.status;
+    if (status === 0) {
       return 'The payment could not be confirmed. Check the payment register before submitting again.';
     }
-
-    const errors = err?.error?.errors;
-    if (errors) {
-      const firstField = Object.keys(errors)[0];
-      const firstMessage = firstField ? errors[firstField]?.[0] : undefined;
-      if (firstMessage) {
-        return firstMessage;
-      }
-    }
-
-    const apiMessage = err?.error?.message;
-    if (apiMessage && apiMessage !== 'Validation error') {
-      return apiMessage;
-    }
-
-    if (err?.message && err.message !== 'Validation error') {
-      return err.message;
-    }
-
-    return 'Unable to save payment. Please try again.';
+    return apiErrorMessage(err, 'Unable to save payment. Please try again.');
   }
 }

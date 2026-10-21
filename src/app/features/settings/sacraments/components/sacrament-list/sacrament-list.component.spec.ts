@@ -7,7 +7,9 @@ import { SacramentListComponent } from './sacrament-list.component';
 import { SacramentService } from '../../services/sacrament.service';
 import { SacramentDefinitionService } from '../../services/sacrament-definition.service';
 import { selectCurrentUser } from '@core/store/auth/auth.selectors';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
+import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { ToastService } from '@core/services/toast.service';
 
 describe('SacramentListComponent', () => {
@@ -68,7 +70,14 @@ describe('SacramentListComponent', () => {
           useValue: {
             isTenantAdmin: () => true,
             hasPermission: () => true,
+            currentUser$: of(null),
+            currentUserValue: null,
           },
+        },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
+        {
+          provide: SupportSessionService,
+          useValue: { session$: of(null), currentSession: null, isSessionLive: false },
         },
         { provide: ToastService, useValue: { success: () => undefined, error: () => undefined, info: () => undefined } },
         provideMockStore({ initialState: {} })

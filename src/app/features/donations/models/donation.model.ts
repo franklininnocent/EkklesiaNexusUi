@@ -901,6 +901,17 @@ export interface ContributionPlan {
   assignments?: ContributionPlanAssignment[];
 }
 
+export interface PlanGenerationPreview {
+  period_count: number;
+  family_count: number;
+  estimated_new_ops: number;
+  eligible_family_count?: number;
+  exempt_family_count?: number;
+  already_billed_count?: number;
+  expected_new_amount?: number;
+  periods: Array<{ period_label: string; period_start: string; period_end: string; due_date: string }>;
+}
+
 export interface ContributionPlanAssignment {
   id?: string;
   plan_id?: string;

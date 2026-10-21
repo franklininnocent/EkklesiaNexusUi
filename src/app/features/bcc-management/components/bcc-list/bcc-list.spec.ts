@@ -3,7 +3,9 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { BCCListComponent } from './bcc-list';
 import { BCCService } from '../../../../core/services/bcc.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { AuthService } from '@core/services/auth.service';
+import { SupportSessionService } from '@features/support-center/services/support-session.service';
 import { ToastService } from '@core/services/toast.service';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -43,7 +45,16 @@ describe('BCCListComponent', () => {
         { provide: AuthService, useValue: {
           hasPermission: jest.fn(() => true),
           hasParishContext: jest.fn(() => true),
-          canViewTenantAuditLogs: jest.fn(() => false), isTenantAdmin: () => true } },
+          canViewTenantAuditLogs: jest.fn(() => false),
+          isTenantAdmin: () => true,
+          currentUser$: of(null),
+          currentUserValue: null,
+        } },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
+        {
+          provide: SupportSessionService,
+          useValue: { session$: of(null), currentSession: null, isSessionLive: false },
+        },
         { provide: ToastService, useValue: { success: jest.fn(), error: jest.fn() } },
       ]
     }).compileComponents();

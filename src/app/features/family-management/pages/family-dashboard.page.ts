@@ -23,6 +23,7 @@ import {
   FamilyMetricSlice,
 } from '../components/family-metric-chart/family-metric-chart.component';
 import { cfFormatDate } from '@shared/utils/cf-intl.util';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { DisableWhenReadOnlyDirective } from '@shared/directives/disable-when-read-only.directive';
 import { CfSubscriptionGuardDirective } from '@shared/directives/cf-subscription-guard.directive';
 
@@ -39,6 +40,7 @@ import { CfSubscriptionGuardDirective } from '@shared/directives/cf-subscription
     CfEmptyStateComponent,
     MemberAgeDistributionChartComponent,
     FamilyMetricChartComponent,
+    CanActionDirective,
     DisableWhenReadOnlyDirective,
     CfSubscriptionGuardDirective,
   ],

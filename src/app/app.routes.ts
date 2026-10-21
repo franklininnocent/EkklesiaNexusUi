@@ -15,6 +15,7 @@ import { MainLayoutComponent } from './layout/main-layout/main-layout.component'
 import { bccGuard } from './core/guards/bcc.guard';
 import { supportGuard } from './core/guards/support.guard';
 import { parishResourceGuard } from './core/guards/parish-resource.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 import { subscriptionLockedGuard } from './core/guards/subscription-locked.guard';
 
 export const routes: Routes = [
@@ -81,12 +82,14 @@ export const routes: Routes = [
       },
       {
         path: 'sacraments',
-        canActivate: [parishResourceGuard],
+        canActivate: [parishResourceGuard, permissionGuard],
+        data: { permissionAction: 'sacraments.view' },
         loadChildren: () => import('./features/settings/sacraments/sacraments.routes').then(m => m.SACRAMENTS_ROUTES)
       },
       {
         path: 'users',
-        canActivate: [parishResourceGuard],
+        canActivate: [parishResourceGuard, permissionGuard],
+        data: { permissionAction: 'users.view' },
         loadChildren: () => import('./features/users/users.routes').then(m => m.USERS_ROUTES)
       },
       {
@@ -201,10 +204,14 @@ export const routes: Routes = [
       },
       {
         path: 'sacraments',
+        canActivate: [permissionGuard],
+        data: { permissionAction: 'sacraments.view' },
         loadChildren: () => import('./features/settings/sacraments/sacraments.routes').then(m => m.SACRAMENTS_ROUTES)
       },
       {
         path: 'users',
+        canActivate: [permissionGuard],
+        data: { permissionAction: 'users.view' },
         loadChildren: () => import('./features/users/users.routes').then(m => m.USERS_ROUTES)
       },
       {

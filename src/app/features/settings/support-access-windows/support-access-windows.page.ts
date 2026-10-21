@@ -7,6 +7,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { PageHeaderComponent } from '@shared/components/page-header/page-header.component';
@@ -128,7 +129,7 @@ export class SupportAccessWindowsPage implements OnInit, OnDestroy {
         error: (err) => {
           this.loading = false;
           this.loaded = true;
-          this.error = err?.error?.message || 'Could not load support access windows.';
+          this.error = apiErrorMessage(err, 'Could not load support access windows.');
           this.cdr.markForCheck();
         },
       });
@@ -179,7 +180,7 @@ export class SupportAccessWindowsPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.saving = false;
-          this.error = err?.error?.message || 'Could not create access window.';
+          this.error = apiErrorMessage(err, 'Could not create access window.');
           this.cdr.markForCheck();
         },
       });
@@ -230,7 +231,7 @@ export class SupportAccessWindowsPage implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.error = err?.error?.message || 'Could not revoke access window.';
+          this.error = apiErrorMessage(err, 'Could not revoke access window.');
           this.cdr.markForCheck();
         },
       });

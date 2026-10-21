@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -84,6 +85,7 @@ const SORT_COLUMNS: MassIntentionSortColumn[] = [
   styleUrl: './mass-intentions-list.page.scss',
 })
 export class MassIntentionsListPageComponent {
+  protected readonly massActions = inject(ActionAuthorizationService);
   readonly pageSizeOptions = [10, 20, 50];
   readonly pageSize = signal(20);
 
@@ -155,11 +157,11 @@ export class MassIntentionsListPageComponent {
   }
 
   canCreate(): boolean {
-    return canCreateMassIntention(this.auth);
+    return canCreateMassIntention(this.massActions);
   }
 
   canSchedule(): boolean {
-    return canScheduleMasses(this.auth);
+    return canScheduleMasses(this.massActions);
   }
 
   canExport(): boolean {

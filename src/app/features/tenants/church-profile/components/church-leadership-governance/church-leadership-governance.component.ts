@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { ApiError } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -1453,7 +1454,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
 
   private handleAssignError(error: unknown): void {
     this.saving = false;
-    if (error instanceof HttpErrorResponse && error.status === 409) {
+    if ((error instanceof HttpErrorResponse || error instanceof ApiError) && error.status === 409) {
       const incumbent = error.error?.errors?.incumbent as LeadershipAssignment | undefined;
       if (incumbent) {
         this.incumbent = incumbent;
@@ -1467,7 +1468,7 @@ export class ChurchLeadershipGovernanceComponent implements OnInit, OnDestroy {
   }
 
   private extractError(error: unknown, fallback: string): string {
-    if (error instanceof HttpErrorResponse) {
+    if ((error instanceof HttpErrorResponse || error instanceof ApiError)) {
       return error.error?.message || fallback;
     }
     return fallback;

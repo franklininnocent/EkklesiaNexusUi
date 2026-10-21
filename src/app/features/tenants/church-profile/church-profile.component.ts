@@ -11,6 +11,7 @@
  */
 
 import { Component, OnInit, OnDestroy, inject, Injector, afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -1082,7 +1083,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
         console.error('Failed to load archdioceses:', err);
         this.archdioceses = [];
         this.filteredArchdioceses = [];
-        this.toastService.error('Failed to load archdioceses. Please refresh the page.', 'Error');
+        this.toastService.error(apiErrorMessage(err, 'Failed to load archdioceses. Please refresh the page.'), 'Error');
         this.cdr.markForCheck();
       }
     });
@@ -1113,7 +1114,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       },
       error: (err: Error) => {
         console.error('Failed to load countries:', err);
-        this.toastService.error('Failed to load countries', 'Error');
+        this.toastService.error(apiErrorMessage(err, 'Failed to load countries'), 'Error');
         this.loadingCountries = false;
         this.cdr.markForCheck();
       }
@@ -1370,9 +1371,9 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
           }
           this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
           this.uploadingLogo = false;
-          this.toastService.error('Failed to upload the church logo. Please try again.', 'Error');
+          this.toastService.error(apiErrorMessage(err, 'Failed to upload the church logo. Please try again.'), 'Error');
           this.cdr.markForCheck();
         },
       });
@@ -1408,9 +1409,9 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
           }
           this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
           this.uploadingLogo = false;
-          this.toastService.error('Failed to remove the church logo. Please try again.', 'Error');
+          this.toastService.error(apiErrorMessage(err, 'Failed to remove the church logo. Please try again.'), 'Error');
           this.cdr.markForCheck();
         },
       });
@@ -1493,7 +1494,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         console.error('Error uploading patron image:', err);
-        this.toastService.error('Failed to upload patron image. Please try again.', 'Error');
+        this.toastService.error(apiErrorMessage(err, 'Failed to upload patron image. Please try again.'), 'Error');
         this.uploadingPatronImage = false;
       }
     });
@@ -1558,7 +1559,7 @@ export class ChurchProfileComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         console.error('Error deleting patron image:', err);
-        this.toastService.error('Failed to remove patron image. Please try again.', 'Error');
+        this.toastService.error(apiErrorMessage(err, 'Failed to remove patron image. Please try again.'), 'Error');
         this.uploadingPatronImage = false;
       }
     });

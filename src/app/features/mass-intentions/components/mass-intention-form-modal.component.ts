@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -28,6 +29,7 @@ export const MASS_INTENTION_ADD_CATEGORY = '__add_new__';
   styleUrl: './mass-intention-form-modal.component.scss',
 })
 export class MassIntentionFormModalComponent implements OnChanges {
+  protected readonly massActions = inject(ActionAuthorizationService);
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(MassIntentionsApiService);
   private readonly persons = inject(ParishPersonService);
@@ -120,7 +122,7 @@ export class MassIntentionFormModalComponent implements OnChanges {
     const r = this.loadedRecord();
     return (
       !!this.recordId &&
-      canScheduleMasses(this.auth) &&
+      canScheduleMasses(this.massActions) &&
       !!r &&
       r.status === 'open' &&
       !r.needs_a_mass &&
@@ -151,11 +153,11 @@ export class MassIntentionFormModalComponent implements OnChanges {
   }
 
   canAddCategory(): boolean {
-    return canCreateMassIntention(this.auth);
+    return canCreateMassIntention(this.massActions);
   }
 
   canScheduleMass(): boolean {
-    return canScheduleMasses(this.auth);
+    return canScheduleMasses(this.massActions);
   }
 
   openCreateMass(): void {

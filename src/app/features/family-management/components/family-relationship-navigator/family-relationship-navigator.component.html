@@ -11,6 +11,7 @@
   <div class="family-relationship-navigator__list-header">
     <span class="family-relationship-navigator__list-title">Members</span>
     <app-add-member-icon-button
+      *appCan="'families.edit'"
       ariaLabel="Add family member"
       title="Add family member"
       (clicked)="addMember.emit()"

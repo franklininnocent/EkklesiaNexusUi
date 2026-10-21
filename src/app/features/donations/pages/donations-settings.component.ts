@@ -1,5 +1,7 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrategy, inject} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
@@ -19,6 +21,7 @@ import { refreshStewardshipView, setupStewardshipRouteReload } from '../utils/st
   styleUrl: './donations-settings.component.scss'
 })
 export class DonationsSettingsComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   saving = false;
   message = '';
   canEditSettings = false;
@@ -51,7 +54,7 @@ export class DonationsSettingsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.canEditSettings = this.authService.hasPermission('church.settings.edit');
+    this.canEditSettings = this.actions.allows('church.settings.edit');
     if (this.canEditSettings) {
       this.loadSettings();
       setupStewardshipRouteReload(this.router, this.destroyRef, '/donations/settings', () => this.loadSettings());
@@ -159,9 +162,9 @@ export class DonationsSettingsComponent implements OnInit {
         });
         refreshStewardshipView(this.cdr);
       },
-      error: () => {
+      error: (err) => {
         this.saving = false;
-        this.message = 'Failed to save settings.';
+        this.message = apiErrorMessage(err, 'Failed to save settings.');
         refreshStewardshipView(this.cdr);
       }
     });

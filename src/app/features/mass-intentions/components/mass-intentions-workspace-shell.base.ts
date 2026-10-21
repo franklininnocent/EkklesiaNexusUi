@@ -1,3 +1,4 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { inject } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
@@ -17,6 +18,7 @@ import {
 } from '../utils/mass-intentions-auth.util';
 
 export class MassIntentionsWorkspaceShellBase {
+  protected readonly massActions = inject(ActionAuthorizationService);
   protected readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
 
@@ -64,10 +66,10 @@ export class MassIntentionsWorkspaceShellBase {
       return canExportMassRegister(this.auth);
     }
     if (link.access === 'configure') {
-      return canConfigureMassIntentions(this.auth);
+      return canConfigureMassIntentions(this.massActions);
     }
     if (link.access === 'schedule') {
-      return canScheduleMasses(this.auth);
+      return canScheduleMasses(this.massActions);
     }
     return true;
   }

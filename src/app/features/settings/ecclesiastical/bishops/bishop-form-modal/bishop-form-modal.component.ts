@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -139,7 +140,7 @@ export class BishopFormModalComponent implements OnInit, OnChanges {
         console.error('Error loading dioceses:', error);
         this.dioceses = [];
         this.loadingDioceses = false;
-        this.toastService.error('Failed to load dioceses');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load dioceses'));
         this.cdr.detectChanges();
       }
     });

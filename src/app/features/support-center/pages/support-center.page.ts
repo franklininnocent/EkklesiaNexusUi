@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -507,7 +508,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.starting = false;
-          this.error = err?.error?.message || 'Could not start support session.';
+          this.error = apiErrorMessage(err, 'Could not start support session.');
           this.cdr.markForCheck();
         },
       });
@@ -556,7 +557,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.requestingApproval = false;
-          this.error = err?.error?.message || 'Could not request approval.';
+          this.error = apiErrorMessage(err, 'Could not request approval.');
           this.cdr.markForCheck();
         },
       });
@@ -750,7 +751,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.creatingGrant = false;
-          this.error = err?.error?.message || 'Could not create grant.';
+          this.error = apiErrorMessage(err, 'Could not create grant.');
           this.cdr.markForCheck();
         },
       });
@@ -891,7 +892,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.endingSession = false;
-          const message = err?.message || err?.error?.message || 'Could not end session.';
+          const message = err?.message || apiErrorMessage(err, 'Could not end session.');
           this.error = message;
           this.toast.error(message, 'Could not exit session');
           this.confirmOpen = false;
@@ -911,7 +912,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.error = err?.message || err?.error?.message || 'Could not force-end session.';
+          this.error = err?.message || apiErrorMessage(err, 'Could not force-end session.');
           this.cdr.markForCheck();
         },
       });
@@ -925,7 +926,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.error = err?.error?.message || 'Could not revoke grant.';
+          this.error = apiErrorMessage(err, 'Could not revoke grant.');
           this.cdr.markForCheck();
         },
       });
@@ -940,7 +941,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.error = err?.error?.message || 'Could not approve request.';
+          this.error = apiErrorMessage(err, 'Could not approve request.');
           this.cdr.markForCheck();
         },
       });
@@ -954,7 +955,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.error = err?.error?.message || 'Could not reject request.';
+          this.error = apiErrorMessage(err, 'Could not reject request.');
           this.cdr.markForCheck();
         },
       });
@@ -969,7 +970,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.error = err?.error?.message || 'Could not cancel request.';
+          this.error = apiErrorMessage(err, 'Could not cancel request.');
           this.cdr.markForCheck();
         },
       });
@@ -1432,7 +1433,7 @@ export class SupportCenterPage implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.savingSettings = false;
-        this.error = err?.error?.message || 'Could not save settings.';
+        this.error = apiErrorMessage(err, 'Could not save settings.');
         this.cdr.markForCheck();
       },
     });

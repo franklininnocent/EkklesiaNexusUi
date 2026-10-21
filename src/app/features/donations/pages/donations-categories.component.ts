@@ -1,4 +1,6 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CommonModule } from '@angular/common';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
@@ -23,6 +25,7 @@ import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-acti
   styleUrl: './donations-categories.component.scss'
 })
 export class DonationsCategoriesComponent implements OnInit, OnDestroy {
+  private readonly actions = inject(ActionAuthorizationService);
   categories: DonationCategory[] = [];
   categoriesLoaded = false;
   categoriesLoadError: string | null = null;
@@ -35,6 +38,7 @@ export class DonationsCategoriesComponent implements OnInit, OnDestroy {
   saving = false;
   deletingId: string | null = null;
   canManage = false;
+  canCollect = false;
 
   form = this.fb.group({
     name: ['', Validators.required],
@@ -56,7 +60,8 @@ export class DonationsCategoriesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
+    this.canCollect = this.actions.allows('donations.collect');
     this.load();
     this.routerSub = this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => {
       if (!e.urlAfterRedirects.includes('/donations/categories')) {
@@ -101,12 +106,12 @@ export class DonationsCategoriesComponent implements OnInit, OnDestroy {
         this.categoriesLoaded = true;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
         if (seq !== this.loadCategoriesSeq) {
           return;
         }
         this.categoriesLoaded = true;
-        this.categoriesLoadError = 'Unable to load offering categories. Please try again.';
+        this.categoriesLoadError = apiErrorMessage(err, 'Unable to load offering categories. Please try again.');
         this.cdr.detectChanges();
       }
     });
@@ -199,7 +204,6 @@ export class DonationsCategoriesComponent implements OnInit, OnDestroy {
   }
 
   private parseError(err: unknown): string {
-    const body = (err as { error?: { message?: string } })?.error;
-    return body?.message || 'Something went wrong. Please try again.';
+    return apiErrorMessage(err, 'The offering category could not be saved. Review the details and try again.');
   }
 }

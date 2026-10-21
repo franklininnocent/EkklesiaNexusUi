@@ -173,9 +173,17 @@ export function getErrorMessage(controlName: string, form: FormGroup): string {
   const errors = control.errors;
   const fieldLabel = getFieldLabel(controlName);
 
+  if (typeof errors['backend'] === 'string' && errors['backend']) {
+    return errors['backend'];
+  }
+
+  if (typeof errors['server'] === 'string' && errors['server']) {
+    return errors['server'];
+  }
+
   // Required validation
   if (errors['required']) {
-    return `${fieldLabel} is required`;
+    return `Enter the ${fieldLabel.toLowerCase()}.`;
   }
 
   // Email validation
@@ -338,4 +346,42 @@ export function markFormGroupTouched(form: FormGroup, fieldSelectorPrefix: strin
   }
 
   return null;
+}
+
+/**
+ * Apply a Laravel 422 `errors` map onto matching form controls.
+ * Keeps the user's values and focuses the first invalid field.
+ */
+export function applyServerValidation(
+  form: FormGroup,
+  fieldErrors: Record<string, string[] | string> | undefined | null
+): boolean {
+  if (!fieldErrors) {
+    return false;
+  }
+
+  let applied = false;
+  Object.entries(fieldErrors).forEach(([key, messages]) => {
+    const control = form.get(key);
+    const text = Array.isArray(messages) ? messages.find((message) => !!message) : messages;
+    if (!control || !text) {
+      return;
+    }
+    control.setErrors({ ...(control.errors || {}), backend: text });
+    control.markAsTouched();
+    applied = true;
+  });
+
+  if (applied) {
+    const firstInvalid = Object.keys(fieldErrors).find((key) => form.get(key)?.invalid);
+    if (firstInvalid) {
+      setTimeout(() => {
+        const element = document.querySelector(`[formControlName="${firstInvalid}"]`) as HTMLElement | null;
+        element?.focus();
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }
+
+  return applied;
 }

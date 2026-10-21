@@ -1,4 +1,5 @@
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges, ViewChild, ElementRef, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -114,7 +115,7 @@ export class DioceseFormModalComponent implements OnInit, OnChanges, AfterViewIn
       },
       error: (error) => {
         console.error('Error loading countries:', error);
-        this.toastService.error('Failed to load countries');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load countries'));
       }
     });
 
@@ -125,7 +126,7 @@ export class DioceseFormModalComponent implements OnInit, OnChanges, AfterViewIn
       },
       error: (error) => {
         console.error('Error loading denominations:', error);
-        this.toastService.error('Failed to load denominations');
+        this.toastService.error(apiErrorMessage(error, 'Failed to load denominations'));
       }
     });
   }

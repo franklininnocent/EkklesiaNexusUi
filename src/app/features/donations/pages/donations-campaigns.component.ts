@@ -1,4 +1,6 @@
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
 import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
+import { apiErrorMessage } from '@core/errors/api-error';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -65,6 +67,7 @@ type CampaignScheduleFilter = '' | 'upcoming' | 'in_progress' | 'ended';
   styleUrls: ['./donations-campaigns.component.scss', '../styles/stewardship-dashboard-shared.scss'],
 })
 export class DonationsCampaignsComponent implements OnInit {
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly churchCurrency = inject(ChurchCurrencyService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -93,7 +96,7 @@ export class DonationsCampaignsComponent implements OnInit {
 
   readonly pageTitle = 'Fundraising Campaigns';
   readonly pageSubtitle =
-    'Time-bound appeals — track progress toward goals, spot gaps, and collect gifts before deadlines.';
+    'Parish target for an appeal. Money recorded here is not added to family dues.';
 
   readonly campaignForm = this.fb.group({
     name: ['', Validators.required],
@@ -215,7 +218,7 @@ export class DonationsCampaignsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.canManage = this.authService.hasPermission('donations.manage');
+    this.canManage = this.actions.allows('donations.manage');
     this.initSearchFields();
     this.loadCampaigns();
     this.donationsService.ledgerMutated$
@@ -506,9 +509,9 @@ export class DonationsCampaignsComponent implements OnInit {
             this.dashboard = res.data;
           }
         },
-        error: () => {
+        error: (err) => {
           if (this.selectedCampaignId === campaignId) {
-            this.dashboardLoadError = 'Unable to load campaign summary. Please try again.';
+            this.dashboardLoadError = apiErrorMessage(err, 'Unable to load campaign summary. Please try again.');
           }
         },
       });
@@ -537,9 +540,9 @@ export class DonationsCampaignsComponent implements OnInit {
             this.familyRows = res.data?.data ?? [];
           }
         },
-        error: () => {
+        error: (err) => {
           if (this.selectedCampaignId === campaignId) {
-            this.familyLoadError = 'Unable to load family balances for this campaign.';
+            this.familyLoadError = apiErrorMessage(err, 'Unable to load family balances for this campaign.');
           }
         },
       });
@@ -564,7 +567,7 @@ export class DonationsCampaignsComponent implements OnInit {
         },
         error: (err: HttpErrorResponse) => {
           this.campaignsLoadError =
-            err.error?.message || err.message || 'Unable to load campaigns. Please check your connection and try again.';
+            apiErrorMessage(err, 'Unable to load campaigns. Please check your connection and try again.');
         },
       });
   }
@@ -591,7 +594,7 @@ export class DonationsCampaignsComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         this.saving = false;
-        this.createError = err.error?.message || 'Unable to create campaign.';
+        this.createError = apiErrorMessage(err, 'Unable to create campaign.');
         this.cdr.detectChanges();
       },
     });

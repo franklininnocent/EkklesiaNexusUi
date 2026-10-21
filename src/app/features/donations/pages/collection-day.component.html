@@ -297,6 +297,22 @@
               </div>
             </label>
 
+            <label class="coc-field" *ngIf="collectType === 'offering'">
+              <span>Gift type</span>
+              <select [(ngModel)]="offeringCategoryId" (ngModelChange)="onAmountChange()">
+                <option value="">Choose a gift type</option>
+                <option *ngFor="let category of offeringCategories" [value]="category.id">{{ category.name }}</option>
+              </select>
+            </label>
+
+            <label class="coc-field" *ngIf="collectType === 'general'">
+              <span>Collection purpose</span>
+              <select [(ngModel)]="generalPurposeId" (ngModelChange)="onAmountChange()">
+                <option value="">Family credit until a purpose is chosen</option>
+                <option *ngFor="let purpose of collectionPurposes" [value]="purpose.id">{{ purpose.name }}</option>
+              </select>
+            </label>
+
             <label class="coc-field">
               <span>Payer Name</span>
               <input type="text" [(ngModel)]="payerName" placeholder="Contributor name" />
@@ -331,8 +347,17 @@
                 <strong>{{ formatCurrency(row.amount) }}</strong>
               </li>
             </ul>
-            <p class="coc-advance-note">
-              Amount not applied to a due, project, or pledge is stored as family credit and can be used on the next collection.
+            <p class="coc-advance-note" *ngIf="collectType === 'general' && !generalPurposeId">
+              This amount is stored as family credit. Choose a collection purpose to file it.
+            </p>
+            <p class="coc-advance-note" *ngIf="collectType === 'general' && generalPurposeId">
+              This amount is filed under the collection purpose. It does not pay a family due.
+            </p>
+            <p class="coc-advance-note" *ngIf="collectType === 'offering' && !offeringCategoryId">
+              Choose a gift type. An offering is not stored as family credit.
+            </p>
+            <p class="coc-advance-note" *ngIf="collectType === 'mandatory'">
+              The amount is applied to open dues only. Anything above those dues is not posted.
             </p>
           </div>
 
@@ -358,10 +383,11 @@
               class="coc-btn coc-btn--primary"
               [disabled]="saving || !canSubmit"
               (click)="submit()"
-              [attr.aria-label]="saving ? 'Processing…' : 'Post Collection'"
-              [attr.title]="saving ? 'Processing…' : 'Post Collection (F4)'"
+              [attr.aria-label]="postActionLabel"
+              [attr.title]="postActionLabel"
             >
               <app-cf-action-icon name="collect-payment" />
+              <span>{{ postActionLabel }}</span>
             </button>
           </div>
 

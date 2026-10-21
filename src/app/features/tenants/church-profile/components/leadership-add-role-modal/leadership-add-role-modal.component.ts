@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ApiError, apiErrorMessage } from '@core/errors/api-error';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -121,12 +122,12 @@ export class LeadershipAddRoleModalComponent implements OnInit, AfterViewInit {
       },
       error: (error: unknown) => {
         this.creating = false;
-        if (error instanceof HttpErrorResponse && error.status === 409 && error.error?.code === 'ROLE_ALREADY_EXISTS') {
+        if ((error instanceof HttpErrorResponse || error instanceof ApiError) && error.status === 409 && error.error?.code === 'ROLE_ALREADY_EXISTS') {
           this.refreshRolesAndSelect(title);
           return;
         }
-        const message = error instanceof HttpErrorResponse
-          ? error.error?.message || 'Could not create custom role.'
+        const message = (error instanceof HttpErrorResponse || error instanceof ApiError)
+          ? apiErrorMessage(error, 'Could not create custom role.')
           : 'Could not create custom role.';
         this.error = message;
         this.toast.error(message);

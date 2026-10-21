@@ -53,6 +53,9 @@ describe('CollectionDayComponent', () => {
             getSettings: jest.fn().mockReturnValue(of({ success: true, data: { default_currency: 'INR' } })),
             getFamilyFinancialProfile: jest.fn().mockReturnValue(of({ success: true, data: null })),
             createPayment: jest.fn(),
+            collectVoluntaryDonation: jest.fn(),
+            getCategories: jest.fn().mockReturnValue(of({ success: true, data: [] })),
+            getFunds: jest.fn().mockReturnValue(of({ success: true, data: [{ id: 'fund-1', name: 'General', code: 'GEN' }] })),
             getReceiptPreview: jest.fn()
           }
         },
@@ -114,6 +117,95 @@ describe('CollectionDayComponent', () => {
     component.amount = 250;
     component.collectType = 'general';
     expect(component.allocationPreview[0].label).toContain('Family credit');
+  });
+
+  it('requires a gift type before an offering can be posted', () => {
+    component.selectedFamily = { id: 'f1', family_name: 'Ward Family', family_code: 'FAM001' } as any;
+    component.payerName = 'Jane Ward';
+    component.amount = 100;
+    component.collectType = 'offering';
+    component.offeringCategoryId = '';
+
+    expect(component.canSubmit).toBe(false);
+    expect(component.postActionLabel).toBe('Choose a gift type');
+
+    component.offeringCategoryId = 'cat-1';
+    expect(component.canSubmit).toBe(true);
+    expect(component.postActionLabel).toBe('Post gift');
+  });
+
+  it('loads active collection purposes only', () => {
+    const donations = TestBed.inject(DonationsService) as unknown as { getFunds: jest.Mock };
+    expect(donations.getFunds).toHaveBeenCalledWith({ status: 'active' });
+  });
+
+  it('updates preview and button when the purpose changes', () => {
+    component.amount = 100;
+    component.collectType = 'general';
+    component.collectionPurposes = [
+      { id: 'fund-a', name: 'Festival' },
+      { id: 'fund-b', name: 'Building' },
+    ];
+    component.generalPurposeId = 'fund-a';
+    expect(component.allocationPreview[0].label).toBe('Festival');
+    expect(component.postActionLabel).toBe('Post to Festival');
+
+    component.generalPurposeId = 'fund-b';
+    expect(component.allocationPreview[0].label).toBe('Building');
+    expect(component.postActionLabel).toBe('Post to Building');
+  });
+
+  it('uses a new idempotency key when the posting details change', () => {
+    const donations = TestBed.inject(DonationsService) as unknown as { createPayment: jest.Mock };
+    donations.createPayment.mockReturnValue({
+      subscribe: (handlers: { next: (res: unknown) => void }) => handlers.next({ message: 'ok', data: {} })
+    });
+
+    component.selectedFamily = { id: 'f1', family_name: 'Ward Family', family_code: 'FAM001' } as any;
+    component.payerName = 'Jane Ward';
+    component.amount = 50;
+    component.collectType = 'general';
+
+    component.submit();
+    const firstKey = donations.createPayment.mock.calls[0]?.[1]?.idempotencyKey;
+
+    component.amount = 75;
+    component.submit();
+    const secondKey = donations.createPayment.mock.calls[1]?.[1]?.idempotencyKey;
+
+    expect(firstKey).toBeTruthy();
+    expect(secondKey).toBeTruthy();
+    expect(secondKey).not.toBe(firstKey);
+  });
+
+  it('reuses the same idempotency key when payment submit is retried after failure', () => {
+    const donations = TestBed.inject(DonationsService) as unknown as { createPayment: jest.Mock };
+    donations.createPayment.mockReturnValue({
+      subscribe: (handlers: { error: (err: unknown) => void }) => handlers.error({ error: { message: 'Network' } })
+    });
+
+    component.selectedFamily = { id: 'f1', family_name: 'Ward Family', family_code: 'FAM001' } as any;
+    component.payerName = 'Jane Ward';
+    component.amount = 50;
+    component.collectType = 'general';
+
+    component.submit();
+    const firstKey = donations.createPayment.mock.calls[0]?.[1]?.idempotencyKey;
+    component.submit();
+    const secondKey = donations.createPayment.mock.calls[1]?.[1]?.idempotencyKey;
+
+    expect(firstKey).toBeTruthy();
+    expect(secondKey).toBe(firstKey);
+  });
+
+  it('files a chosen collection purpose instead of family credit', () => {
+    component.amount = 250;
+    component.collectType = 'general';
+    component.generalPurposeId = 'fund-1';
+    component.collectionPurposes = [{ id: 'fund-1', name: 'Festival 2026' }];
+
+    expect(component.allocationPreview[0].label).toBe('Festival 2026');
+    expect(component.postActionLabel).toBe('Post to Festival 2026');
   });
 
   it('makes Today\'s Collections a navigable KPI and loads parish-today payments', () => {

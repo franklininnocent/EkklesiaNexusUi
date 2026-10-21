@@ -10,7 +10,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { AuthService } from '@core/services/auth.service';
+import { ActionAuthorizationService } from '@core/authorization/action-authorization.service';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
 import { CfEmptyStateComponent } from '@shared/components/cf-empty-state/cf-empty-state.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { PaginationComponent } from '@shared/components/pagination/pagination.component';
@@ -70,6 +71,7 @@ const TABLE_SORT_COLUMNS: SortBy[] = [
     StatusBadgeComponent,
     MinistriesSubNavComponent,
     SortableDirective,
+    CanActionDirective,
   ],
   templateUrl: './organization-list.page.html',
   styleUrl: './organization-list.page.scss',
@@ -78,7 +80,7 @@ const TABLE_SORT_COLUMNS: SortBy[] = [
 export class OrganizationListPageComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly api = inject(MinistriesApiService);
-  private readonly authService = inject(AuthService);
+  private readonly actions = inject(ActionAuthorizationService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -143,7 +145,7 @@ export class OrganizationListPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.canCreate = this.authService.hasPermission('ministries.create');
+    this.canCreate = this.actions.allows('ministries.create');
     this.initSearchFields();
     this.loadFilterOptions();
     this.loadOrganizations();
