@@ -74,6 +74,12 @@ export class FormFieldComponent implements AfterContentInit, OnChanges {
       return;
     }
 
+    const dateField = this.host.nativeElement.querySelector('app-cf-date-field, app-cf-month-field') as HTMLElement | null;
+    if (dateField) {
+      this.syncCustomDateFieldA11y(dateField);
+      return;
+    }
+
     const control = this.host.nativeElement.querySelector(
       'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea'
     ) as HTMLElement | null;
@@ -91,6 +97,15 @@ export class FormFieldComponent implements AfterContentInit, OnChanges {
 
     const controls = datetimeField.querySelectorAll('input');
     controls.forEach((control) => this.applyControlA11y(control, invalid));
+  }
+
+  private syncCustomDateFieldA11y(dateField: HTMLElement): void {
+    const invalid = !!this.errorText;
+    dateField.classList.toggle('cf-date-field--invalid', invalid);
+    const control = dateField.querySelector('input.cf-date-field__control') as HTMLElement | null;
+    if (control) {
+      this.applyControlA11y(control, invalid);
+    }
   }
 
   private applyControlA11y(control: HTMLElement, invalidOverride?: boolean): void {

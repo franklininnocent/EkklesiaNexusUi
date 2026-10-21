@@ -76,9 +76,8 @@
           <label for="date_administered">
             Date Administered <span class="cf-split-req" aria-hidden="true">*</span>
           </label>
-          <input
-            type="date"
-            id="date_administered"
+          <app-cf-date-field
+            inputId="date_administered"
             [(ngModel)]="formData['date_administered']"
             name="date_administered"
             aria-required="true"
@@ -223,9 +222,8 @@
             <span class="cf-split-req" *ngIf="requiresRecipientIdentityFields()" aria-hidden="true">*</span>
             <span class="cf-split-optional" *ngIf="!requiresRecipientIdentityFields()">optional</span>
           </label>
-          <input
-            type="date"
-            id="recipient_birth_date"
+          <app-cf-date-field
+            inputId="recipient_birth_date"
             data-testid="recipient-dob"
             [(ngModel)]="formData['recipient_birth_date']"
             name="recipient_birth_date"
@@ -289,9 +287,8 @@
           <label for="baptism_date">
             Baptism Date <span class="cf-split-req" aria-hidden="true">*</span>
           </label>
-          <input
-            type="date"
-            id="baptism_date"
+          <app-cf-date-field
+            inputId="baptism_date"
             [(ngModel)]="formData['baptism_date']"
             name="baptism_date"
             aria-required="true"
@@ -1056,7 +1053,7 @@
         </div>
         <div class="cf-split-field">
           <label for="dispensation_date">Date granted</label>
-          <input id="dispensation_date" name="dispensation_date" type="date" [(ngModel)]="dispensationDraft.date_granted" />
+          <app-cf-date-field inputId="dispensation_date" name="dispensation_date" [(ngModel)]="dispensationDraft.date_granted" />
         </div>
       </div>
     </section>

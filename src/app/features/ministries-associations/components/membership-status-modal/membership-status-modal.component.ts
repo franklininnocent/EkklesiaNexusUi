@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -39,7 +40,7 @@ const EXIT_STATUSES: MembershipStatus[] = [
 @Component({
   selector: 'app-membership-status-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent, FormFieldComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent, FormFieldComponent],
   templateUrl: './membership-status-modal.component.html',
   styleUrl: './membership-status-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

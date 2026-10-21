@@ -102,7 +102,7 @@
             <input type="checkbox" [(ngModel)]="scheduleLater" [disabled]="submitting" />
             <span class="cf-switch-field__copy"><span class="cf-switch-field__label">Change on a later date</span></span>
           </label>
-          <input *ngIf="scheduleLater" type="datetime-local" aria-label="Change date" [(ngModel)]="scheduledFor" [disabled]="submitting" />
+          <app-cf-datetime-field *ngIf="scheduleLater" dateInputId="sa-scheduled-for" dateAriaLabel="Change date" [(ngModel)]="scheduledFor" [disabled]="submitting" />
         </div>
         <div class="sa-field sa-field--full">
           <label for="sa-cp-reason">Reason <span class="required" aria-hidden="true">*</span></label>

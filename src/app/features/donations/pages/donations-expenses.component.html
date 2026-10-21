@@ -42,7 +42,7 @@
           </div>
           <div class="cf-split-field">
             <label for="disb-date">Date <span class="cf-split-req" aria-hidden="true">*</span></label>
-            <input id="disb-date" type="date" [(ngModel)]="form.expense_date" name="expense_date" required aria-required="true" />
+            <app-cf-date-field inputId="disb-date" [(ngModel)]="form.expense_date" name="expense_date" required aria-required="true" />
           </div>
           <div class="cf-split-field">
             <label for="disb-payee">Payee <span class="cf-split-optional">optional</span></label>

@@ -141,7 +141,7 @@
     </div>
     <div class="sa-field">
       <label for="sa-grant-until">Ends on (optional)</label>
-      <input id="sa-grant-until" name="until" type="datetime-local" [(ngModel)]="grant.effective_until" [disabled]="grantSaving" />
+      <app-cf-datetime-field dateInputId="sa-grant-until" name="until" [(ngModel)]="grant.effective_until" [disabled]="grantSaving" />
     </div>
     <div class="sa-field sa-field--full">
       <label for="sa-grant-reason">Reason <span class="required" aria-hidden="true">*</span></label>

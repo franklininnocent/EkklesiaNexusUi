@@ -1,4 +1,5 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { provideRouter, withPreloading } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -30,6 +31,7 @@ export const appConfig: ApplicationConfig = {
       ])
     ),
     provideAnimationsAsync(),
+    importProvidersFrom(OverlayModule),
     provideStore(reducers, { metaReducers }),
     provideEffects([AuthEffects, TenantEffects]),
     ...(environment.enableDevTools

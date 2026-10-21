@@ -1,0 +1,15 @@
+<button
+  type="button"
+  class="cf-select-create__btn"
+  [attr.aria-label]="ariaLabel"
+  [disabled]="disabled"
+  (mousedown)="onMouseDown($event)"
+  (click)="onClick($event)"
+  (keydown.enter)="$event.preventDefault(); onClick($event)"
+  (keydown.space)="$event.preventDefault(); onClick($event)"
+>
+  <span class="cf-select-create__icon-wrap" aria-hidden="true">
+    <app-cf-action-icon name="plus" />
+  </span>
+  <span class="cf-select-create__label">{{ label }}</span>
+</button>

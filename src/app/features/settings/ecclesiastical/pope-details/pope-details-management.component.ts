@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 /**
  * Pope Details Management Component
  *
@@ -23,7 +24,7 @@ import { cfFormatDate } from '@shared/utils/cf-intl.util';
 @Component({
   selector: 'app-pope-details-management',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     ReactiveFormsModule,
     PageHeaderComponent,

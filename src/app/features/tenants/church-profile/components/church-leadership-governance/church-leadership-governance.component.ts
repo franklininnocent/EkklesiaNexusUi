@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -54,7 +55,7 @@ type LeadershipContentView = 'current-governance' | 'leadership-history';
 @Component({
   selector: 'app-church-leadership-governance',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

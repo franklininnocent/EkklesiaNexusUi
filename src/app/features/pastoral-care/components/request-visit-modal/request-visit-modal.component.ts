@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -19,7 +20,7 @@ import { PastoralCareType } from '../../models/pastoral-care.model';
 @Component({
   selector: 'app-request-visit-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent, CfBusyLabelComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent, CfBusyLabelComponent],
   templateUrl: './request-visit-modal.component.html',
   styleUrl: './request-visit-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

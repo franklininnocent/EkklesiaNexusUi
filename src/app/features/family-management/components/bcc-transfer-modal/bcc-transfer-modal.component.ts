@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -26,7 +27,7 @@ function createTransitionId(): string {
 @Component({
   selector: 'app-bcc-transfer-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ModalShellComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, ModalShellComponent],
   templateUrl: './bcc-transfer-modal.component.html',
   styleUrl: './bcc-transfer-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -23,7 +23,7 @@
       <div class="form-grid form-section">
         <label class="form-field">
           <span class="label">Baptism Date</span>
-          <input type="date" formControlName="baptism_date">
+          <app-cf-date-field formControlName="baptism_date" />
         </label>
 
         <div class="form-field">
@@ -83,7 +83,7 @@
           <div class="form-grid form-section">
             <label class="form-field">
               <span class="label">First Communion Date</span>
-              <input type="date" formControlName="first_communion_date">
+              <app-cf-date-field formControlName="first_communion_date" />
             </label>
 
             <div class="form-field">
@@ -131,7 +131,7 @@
           <div class="form-grid form-section three-column">
             <label class="form-field">
               <span class="label">Marriage Date</span>
-              <input type="date" formControlName="marriage_date">
+              <app-cf-date-field formControlName="marriage_date" />
             </label>
 
             <label class="form-field">
@@ -247,7 +247,7 @@
           <div class="form-grid form-section small">
             <label class="form-field">
               <span class="label">{{ sacramentDisplayName }} Date</span>
-              <input type="date" [formControlName]="sacrament + '_date'">
+              <app-cf-date-field [formControlName]="sacrament + '_date'" />
             </label>
 
             <label class="form-field">

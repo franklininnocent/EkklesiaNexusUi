@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -32,7 +33,7 @@ import {
 @Component({
   selector: 'app-church-leader-workspace',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgSelectModule, PhoneInputComponent, ChurchLeaderRoleSelectorComponent],
+  imports: [CfDateFieldComponent, CommonModule, ReactiveFormsModule, NgSelectModule, PhoneInputComponent, ChurchLeaderRoleSelectorComponent],
   templateUrl: './church-leader-workspace.component.html',
   styleUrl: './church-leader-workspace.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

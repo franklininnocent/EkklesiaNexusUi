@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { ToastService } from '@core/services/toast.service';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
+import { CfDateTimeFieldComponent } from '@shared/components/cf-datetime-field/cf-datetime-field.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { CfCurrencyPipe } from '@shared/pipes/cf-currency.pipe';
 import {
@@ -34,7 +35,7 @@ const INTERVAL_LABELS: Record<BillingInterval, string> = { MONTHLY: 'Monthly', A
 @Component({
   selector: 'app-change-plan-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalShellComponent, LoadingSkeletonComponent, CfCurrencyPipe],
+  imports: [CommonModule, FormsModule, CfDateTimeFieldComponent, ModalShellComponent, LoadingSkeletonComponent, CfCurrencyPipe],
   templateUrl: './change-plan-dialog.component.html',
   styleUrls: ['../../styles/subscription-admin.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

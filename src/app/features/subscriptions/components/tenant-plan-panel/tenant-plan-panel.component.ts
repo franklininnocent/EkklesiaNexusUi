@@ -16,6 +16,7 @@ import { Subject, filter, switchMap, takeUntil } from 'rxjs';
 import { AuthService } from '@core/services/auth.service';
 import { ConfirmationDialogService } from '@core/services/confirmation-dialog.service';
 import { ToastService } from '@core/services/toast.service';
+import { CfDateTimeFieldComponent } from '@shared/components/cf-datetime-field/cf-datetime-field.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
 import { StatusBadgeComponent, StatusBadgeTone } from '@shared/components/status-badge/status-badge.component';
@@ -59,6 +60,7 @@ interface GrantForm {
   standalone: true,
   imports: [
     CfDatePipe,
+    CfDateTimeFieldComponent,
     CommonModule,
     FormsModule,
     LoadingSkeletonComponent,

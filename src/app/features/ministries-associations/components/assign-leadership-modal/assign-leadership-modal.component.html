@@ -48,7 +48,7 @@
         fieldId="assign-appointment-date"
         [errorText]="submitted && form.controls.appointment_date.invalid ? 'Appointment date is required.' : null"
       >
-        <input id="assign-appointment-date" type="date" formControlName="appointment_date" />
+        <app-cf-date-field inputId="assign-appointment-date" formControlName="appointment_date" />
       </app-form-field>
 
       <app-form-field
@@ -57,7 +57,7 @@
         fieldId="assign-effective-from"
         [errorText]="submitted && form.controls.effective_from.invalid ? 'Effective from date is required.' : null"
       >
-        <input id="assign-effective-from" type="date" formControlName="effective_from" />
+        <app-cf-date-field inputId="assign-effective-from" formControlName="effective_from" />
       </app-form-field>
     </div>
 
@@ -75,7 +75,7 @@
         fieldId="assign-effective-to"
         [errorText]="submitted && form.hasError('effectiveToBeforeFrom') ? 'Effective to must be on or after the effective from date.' : null"
       >
-        <input id="assign-effective-to" type="date" formControlName="effective_to" />
+        <app-cf-date-field inputId="assign-effective-to" formControlName="effective_to" />
       </app-form-field>
 
       <app-form-field label="Term label" fieldId="assign-term-label">

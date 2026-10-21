@@ -200,10 +200,9 @@
           <div class="cf-split-field">
             <label for="project-start-date">Start date</label>
             <div class="proj-date-input">
-              <input
-                id="project-start-date"
+              <app-cf-date-field
+                inputId="project-start-date"
                 formControlName="start_date"
-                type="date"
                 aria-label="Select project start date"
                 [class.cf-form-field__control--invalid]="isFieldInvalid('start_date')"
               />
@@ -222,10 +221,9 @@
           <div class="cf-split-field">
             <label for="project-end-date">End date</label>
             <div class="proj-date-input">
-              <input
-                id="project-end-date"
+              <app-cf-date-field
+                inputId="project-end-date"
                 formControlName="end_date"
-                type="date"
                 aria-label="Select project end date"
                 [class.cf-form-field__control--invalid]="isFieldInvalid('end_date')"
               />
@@ -282,7 +280,7 @@
           </div>
           <label class="checkbox"><input [(ngModel)]="assignmentExempt" [ngModelOptions]="{standalone: true}" type="checkbox" /> Exempt</label>
           <div class="cf-split-field">
-            <input [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" type="date" aria-label="Effective from" />
+            <app-cf-date-field [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" aria-label="Effective from" />
           </div>
           <button type="button" class="cf-btn cf-btn-icon" (click)="addAssignment()" aria-label="Add" title="Add"><app-cf-action-icon name="plus" /></button>
         </div>

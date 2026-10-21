@@ -95,7 +95,7 @@
         fieldId="enroll-joined-date"
         [errorText]="submitted && form.controls.joined_date.invalid ? 'Joined date is required.' : null"
       >
-        <input id="enroll-joined-date" type="date" formControlName="joined_date" />
+        <app-cf-date-field inputId="enroll-joined-date" formControlName="joined_date" />
       </app-form-field>
 
       <app-form-field label="Member type" fieldId="enroll-member-type">

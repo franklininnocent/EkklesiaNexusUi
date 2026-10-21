@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
@@ -44,7 +45,7 @@ import {
 @Component({
   selector: 'app-donations-reports-workbench',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CfDatePipe,
     CommonModule,
     FormsModule,
@@ -159,18 +160,18 @@ import {
         >
           <label class="reports-workbench__control reports-workbench__control--date">
             <span class="reports-workbench__control-prefix">From</span>
-            <input type="date" [(ngModel)]="dateFrom" (change)="onToolbarDatesChange()" aria-label="From date" />
+            <app-cf-date-field [(ngModel)]="dateFrom" (change)="onToolbarDatesChange()" aria-label="From date" />
           </label>
           <span class="reports-workbench__date-sep" aria-hidden="true">–</span>
           <label class="reports-workbench__control reports-workbench__control--date">
             <span class="reports-workbench__control-prefix">To</span>
-            <input type="date" [(ngModel)]="dateTo" (change)="onToolbarDatesChange()" aria-label="To date" />
+            <app-cf-date-field [(ngModel)]="dateTo" (change)="onToolbarDatesChange()" aria-label="To date" />
           </label>
         </div>
 
         <label class="reports-workbench__control reports-workbench__control--date" *ngIf="showAsOf">
           <span class="reports-workbench__control-prefix">As of</span>
-          <input type="date" [(ngModel)]="asOfDate" (change)="onToolbarDatesChange()" aria-label="As of date" />
+          <app-cf-date-field [(ngModel)]="asOfDate" (change)="onToolbarDatesChange()" aria-label="As of date" />
         </label>
 
         <input
@@ -546,7 +547,8 @@ import {
       line-height: 1;
       user-select: none;
     }
-    .reports-workbench__control--date input[type='date'] {
+    .reports-workbench__control--date app-cf-date-field,
+    .reports-workbench__control--date .cf-date-field {
       width: 9.25rem;
       min-width: 9.25rem;
       max-width: 9.25rem;

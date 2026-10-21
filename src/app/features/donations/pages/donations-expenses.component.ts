@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +19,7 @@ import { StewardshipTablePanelComponent } from '../components/stewardship-table-
 @Component({
   selector: 'app-donations-expenses',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CfDatePipe,
     CommonModule,
     FormsModule,

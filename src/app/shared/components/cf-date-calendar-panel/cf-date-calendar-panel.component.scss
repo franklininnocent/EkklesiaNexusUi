@@ -1,0 +1,86 @@
+.cf-date-calendar {
+  background: var(--cf-panel-bg, #fff);
+  border: 1px solid var(--cf-panel-border, #e2e8f0);
+  border-radius: var(--cf-radius-sm, 6px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: var(--cf-space-2, 0.5rem);
+  min-width: 16rem;
+  z-index: var(--z-popover, 1060);
+}
+
+.cf-date-calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cf-space-2);
+  margin-bottom: var(--cf-space-2);
+}
+
+.cf-date-calendar__title {
+  font-weight: 600;
+  font-size: var(--cf-text-sm);
+  color: var(--cf-slate-900);
+}
+
+.cf-date-calendar__nav {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--cf-radius-sm);
+  color: var(--cf-slate-700);
+}
+
+.cf-date-calendar__nav:hover {
+  background: var(--cf-slate-50);
+}
+
+.cf-date-calendar__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cf-date-calendar__row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cf-date-calendar__cell--head {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--cf-slate-500);
+  padding: 0.25rem 0;
+}
+
+.cf-date-calendar__cell--day {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--cf-text-sm);
+  padding: 0.35rem 0;
+  border-radius: var(--cf-radius-sm);
+  color: var(--cf-slate-900);
+}
+
+.cf-date-calendar__cell--day:hover:not(:disabled) {
+  background: var(--cf-slate-100);
+}
+
+.cf-date-calendar__cell--selected {
+  background: var(--cf-indigo, #4f46e5) !important;
+  color: #fff !important;
+}
+
+.cf-date-calendar__cell--day:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cf-date-calendar__cell--outside {
+  visibility: hidden;
+}

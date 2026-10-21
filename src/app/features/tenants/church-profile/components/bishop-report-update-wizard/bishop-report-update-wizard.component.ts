@@ -1,3 +1,4 @@
+import { CfDateFieldComponent } from '@shared/components/cf-date-field/cf-date-field.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -33,7 +34,7 @@ interface RequestTypeOption {
 @Component({
   selector: 'app-bishop-report-update-wizard',
   standalone: true,
-  imports: [
+  imports: [CfDateFieldComponent, 
     CfDatePipe,CommonModule, ReactiveFormsModule, ModalShellComponent, BishopPhotoControlComponent],
   templateUrl: './bishop-report-update-wizard.component.html',
   styleUrl: './bishop-report-update-wizard.component.scss',
