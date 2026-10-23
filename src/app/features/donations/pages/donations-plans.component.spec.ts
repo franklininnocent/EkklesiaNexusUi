@@ -351,3 +351,311 @@ describe('DonationsPlansComponent — new plan form layout & workflow', () => {
     expect(actions.querySelector('button[aria-label="Cancel"]')).toBeTruthy();
   });
 });
+
+describe('DonationsPlansComponent — family-specific contribution plans', () => {
+  let fixture: ComponentFixture<DonationsPlansComponent>;
+  let component: DonationsPlansComponent;
+  let createPlan: jest.Mock;
+  let updatePlan: jest.Mock;
+  let getPlan: jest.Mock;
+
+  const existingFund = { id: 'fund-1', name: 'Sunday Offering', code: 'SUN' };
+  const familyA = {
+    id: 'fam-a',
+    family_code: 'FAM000001',
+    family_name: 'Wilson',
+    head_of_family: 'Leonard Wilson',
+  };
+  const familyB = {
+    id: 'fam-b',
+    family_code: 'FAM000002',
+    family_name: 'K',
+    head_of_family: 'Robbin K',
+  };
+
+  beforeEach(async () => {
+    createPlan = jest.fn();
+    updatePlan = jest.fn();
+    getPlan = jest.fn();
+
+    await TestBed.configureTestingModule({
+      imports: [DonationsPlansComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: DonationsService,
+          useValue: {
+            getPlans: jest.fn().mockReturnValue(of({ success: true, data: [] })),
+            getFunds: jest.fn().mockReturnValue(of({ success: true, data: [existingFund] })),
+            getPlan,
+            getPlanAssignments: jest.fn().mockReturnValue(of({ success: true, data: { data: [] } })),
+            createPlan: createPlan.mockReturnValue(
+              of({
+                success: true,
+                data: {
+                  id: 'plan-ind',
+                  name: 'Educational fund',
+                  plan_type: 'individual',
+                  fund_id: existingFund.id,
+                  frequency: 'monthly',
+                  default_amount: 100,
+                  start_date: '2026-10-21',
+                  assignments: [
+                    { family_id: 'fam-a', amount: 100, effective_from: '2026-10-21', status: 'active' },
+                  ],
+                },
+              })
+            ),
+            updatePlan: updatePlan.mockReturnValue(
+              of({ success: true, data: { id: 'plan-ind', plan_type: 'individual', assignments: [] } })
+            ),
+            createFund: jest.fn(),
+          },
+        },
+        {
+          provide: FamilyService,
+          useValue: { getFamilies: jest.fn().mockReturnValue(of({ data: [familyA, familyB] })) },
+        },
+        {
+          provide: AuthService,
+          useValue: { hasPermission: jest.fn().mockReturnValue(true) },
+        },
+        { provide: ActionAuthorizationService, useValue: { allows: () => true } },
+        { provide: ConfirmationDialogService, useValue: { confirm: jest.fn() } },
+        {
+          provide: ToastService,
+          useValue: { success: jest.fn(), error: jest.fn() },
+        },
+        {
+          provide: ChurchCurrencyService,
+          useValue: {
+            currencySymbol: () => '₹',
+            currencyCode: () => 'INR',
+            formatAmount: (value: number) => `CUR ${value}`,
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(DonationsPlansComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  function openForm(): void {
+    component.openCreateForm();
+    fixture.detectChanges();
+  }
+
+  function fillBasePlanFields(): void {
+    component.planForm.patchValue({
+      name: 'Educational fund',
+      fund_id: existingFund.id,
+      start_date: '2026-10-21',
+      frequency: 'monthly',
+    });
+  }
+
+  function setIndividualMode(): void {
+    component.onSameAmountToggle({ target: { checked: false } } as unknown as Event);
+    fixture.detectChanges();
+  }
+
+  function submitForm(): void {
+    const form = fixture.nativeElement.querySelector('form.plan-sheet__form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+  }
+
+  it('shows the family amounts section when same amount for all is unchecked', () => {
+    openForm();
+    setIndividualMode();
+    expect(fixture.nativeElement.querySelector('.plan-family-amounts')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('#plan-amount')).toBeNull();
+  });
+
+  it('saves a uniform plan with empty assignments', () => {
+    openForm();
+    fillBasePlanFields();
+    component.planForm.patchValue({ default_amount: 250, plan_type: 'uniform' });
+    submitForm();
+    expect(createPlan).toHaveBeenCalled();
+    expect(createPlan.mock.calls[0][0].assignments).toEqual([]);
+  });
+
+  it('commits a completed pending row on save', () => {
+    openForm();
+    fillBasePlanFields();
+    setIndividualMode();
+    component.selectedFamilyId = 'fam-a';
+    component.assignmentAmount = 150;
+    component.assignmentEffectiveFrom = '2026-10-21';
+    submitForm();
+    expect(createPlan).toHaveBeenCalled();
+    expect(createPlan.mock.calls[0][0].assignments).toEqual([
+      expect.objectContaining({ family_id: 'fam-a', amount: 150 }),
+    ]);
+  });
+
+  it('adds a family amount via the add control', () => {
+    openForm();
+    setIndividualMode();
+    component.selectedFamilyId = 'fam-b';
+    component.assignmentAmount = 200;
+    component.addAssignment();
+    expect(component.draftAssignments).toHaveLength(1);
+    expect(component.draftAssignments[0].family_id).toBe('fam-b');
+  });
+
+  it('rejects an empty individual plan on submit', () => {
+    openForm();
+    fillBasePlanFields();
+    setIndividualMode();
+    submitForm();
+    expect(createPlan).not.toHaveBeenCalled();
+    expect(component.formError).toContain('at least one family amount');
+  });
+
+  it('rejects an incomplete pending row on submit', () => {
+    openForm();
+    fillBasePlanFields();
+    setIndividualMode();
+    component.selectedFamilyId = 'fam-a';
+    component.assignmentAmount = 0;
+    submitForm();
+    expect(createPlan).not.toHaveBeenCalled();
+    expect(component.formError).toBeTruthy();
+  });
+
+  it('rejects a zero amount when adding', () => {
+    openForm();
+    setIndividualMode();
+    component.selectedFamilyId = 'fam-a';
+    component.assignmentAmount = 0;
+    component.addAssignment();
+    expect(component.draftAssignments).toHaveLength(0);
+    expect(component.assignmentAddHint).toContain('greater than zero');
+  });
+
+  it('maps multiple family amounts into the create payload', () => {
+    openForm();
+    fillBasePlanFields();
+    setIndividualMode();
+    component.draftAssignments = [
+      { family_id: 'fam-a', amount: 100, effective_from: '2026-10-21', status: 'active' },
+      { family_id: 'fam-b', amount: 200, effective_from: '2026-10-21', status: 'active' },
+    ];
+    submitForm();
+    expect(createPlan.mock.calls[0][0].assignments).toHaveLength(2);
+    expect(createPlan.mock.calls[0][0].default_amount).toBe(100);
+  });
+
+  it('updates validation after removing a family amount row', () => {
+    openForm();
+    fillBasePlanFields();
+    setIndividualMode();
+    component.draftAssignments = [
+      { family_id: 'fam-a', amount: 100, effective_from: '2026-10-21', status: 'active' },
+    ];
+    component.removeAssignment(0);
+    submitForm();
+    expect(createPlan).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate families in the draft list', () => {
+    openForm();
+    setIndividualMode();
+    component.draftAssignments = [
+      { family_id: 'fam-a', amount: 100, effective_from: '2026-10-21', status: 'active' },
+    ];
+    component.selectedFamilyId = 'fam-a';
+    component.assignmentAmount = 50;
+    component.addAssignment();
+    expect(component.draftAssignments).toHaveLength(1);
+    expect(component.assignmentAddHint).toContain('already listed');
+  });
+
+  it('clears draft assignments when switching back to uniform pricing', () => {
+    openForm();
+    setIndividualMode();
+    component.draftAssignments = [
+      { family_id: 'fam-a', amount: 100, effective_from: '2026-10-21', status: 'active' },
+    ];
+    component.onSameAmountToggle({ target: { checked: true } } as unknown as Event);
+    expect(component.draftAssignments).toHaveLength(0);
+    expect(component.planForm.value.plan_type).toBe('uniform');
+  });
+
+  it('hydrates draft assignments when editing an individual plan', () => {
+    getPlan.mockReturnValue(
+      of({
+        success: true,
+        data: {
+          id: 'plan-ind',
+          name: 'Educational fund',
+          fund_id: existingFund.id,
+          plan_type: 'individual',
+          frequency: 'monthly',
+          default_amount: 1,
+          start_date: '2026-10-21',
+          assignments: [
+            { family_id: 'fam-a', amount: 300, effective_from: '2026-10-21', status: 'active' },
+          ],
+        },
+      })
+    );
+    component.editPlan({
+      id: 'plan-ind',
+      name: 'Educational fund',
+      fund_id: existingFund.id,
+      plan_type: 'individual',
+      frequency: 'monthly',
+      default_amount: 1,
+      start_date: '2026-10-21',
+      status: 'active',
+      code: 'EDU',
+    } as never);
+    fixture.detectChanges();
+    expect(component.draftAssignments).toHaveLength(1);
+    expect(component.draftAssignments[0].amount).toBe(300);
+  });
+
+  it('surfaces API validation errors on assignments', () => {
+    createPlan.mockReturnValue(
+      throwError(() => ({
+        status: 422,
+        error: { errors: { 'assignments.0.family_id': ['The selected family is invalid.'] } },
+      }))
+    );
+    openForm();
+    fillBasePlanFields();
+    setIndividualMode();
+    component.draftAssignments = [
+      { family_id: 'fam-a', amount: 100, effective_from: '2026-10-21', status: 'active' },
+    ];
+    submitForm();
+    expect(component.formError).toContain('invalid');
+  });
+
+  it('uses picker labels for family display names', () => {
+    expect(component.familyName('fam-a')).toBe('FAM000001 - Leonard Wilson');
+    const codeOnly = {
+      id: 'fam-x',
+      family_code: 'FAM000004',
+      family_name: 'Marshall',
+    };
+    component.families = [...component.families, codeOnly as never];
+    expect(component.familyName('fam-x')).toBe('FAM000004 - —');
+  });
+
+  it('requires family amounts when updating an individual plan', () => {
+    component.editingPlanId = 'plan-ind';
+    component.showForm = true;
+    fillBasePlanFields();
+    setIndividualMode();
+    component.draftAssignments = [];
+    submitForm();
+    expect(updatePlan).not.toHaveBeenCalled();
+    expect(component.formError).toContain('at least one family amount');
+  });
+});

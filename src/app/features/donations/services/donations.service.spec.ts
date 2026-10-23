@@ -61,6 +61,19 @@ describe('DonationsService', () => {
     });
   });
 
+  it('posts family contribution plan assignment', () => {
+    service.saveFamilyPlanAssignment('family-1', { plan_id: 'plan-1', amount: 2000 }).subscribe((response) => {
+      expect(response.success).toBe(true);
+    });
+
+    const req = httpMock.expectOne(
+      `${environment.apiUrl}/tenant/donations/families/family-1/contribution-plan-assignments`
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ plan_id: 'plan-1', amount: 2000 });
+    req.flush({ success: true, message: 'ok', data: { amount: 2000 } });
+  });
+
   it('maps family financial profile into summary shape', () => {
     service.getFamilySummary('family-1').subscribe((response) => {
       expect(response.success).toBe(true);

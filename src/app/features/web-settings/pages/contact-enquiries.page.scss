@@ -9,6 +9,47 @@
   text-underline-offset: 2px;
 }
 
+.contact-enquiries__table-panel .cf-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--cf-panel-bg);
+}
+
+.contact-enquiries__select-col {
+  width: 2.5rem;
+  vertical-align: middle;
+}
+
+.contact-enquiries__table-panel .contact-enquiries__select-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--cf-panel-bg);
+}
+
+.contact-enquiries__table-panel thead .contact-enquiries__select-col {
+  z-index: 3;
+}
+
+.contact-enquiries__actions-col {
+  width: 3rem;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.contact-enquiries__table-panel .contact-enquiries__actions-col {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--cf-panel-bg);
+  box-shadow: -4px 0 8px -4px rgb(15 23 42 / 12%);
+}
+
+.contact-enquiries__table-panel thead .contact-enquiries__actions-col {
+  z-index: 3;
+}
+
 .contact-enquiries__pager,
 .contact-enquiries__actions {
   display: flex;
