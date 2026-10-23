@@ -316,6 +316,54 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+/*
+ * Self-contained date control (enterprise modal §14.4). The inner text input must
+ * not pick up `.cf-split-field input` border/padding — only the wrap is chrome.
+ */
+.cf-split-field app-cf-date-field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.cf-split-field app-cf-date-field .cf-date-field {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--cf-space-1);
+}
+
+.cf-split-field app-cf-date-field .cf-date-field__input-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cf-split-field app-cf-date-field .cf-date-field__control {
+  width: 100%;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: var(--cf-control-pad-y) 0;
+  min-height: unset;
+}
+
+.cf-split-field app-cf-date-field .cf-date-field__control:focus {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.cf-split-field app-cf-date-field.cf-split-field__control--invalid .cf-date-field__input-wrap,
+.cf-split-field app-cf-date-field.cf-form-field__control--invalid .cf-date-field__input-wrap {
+  border-color: var(--cf-critical);
+  background: var(--cf-critical-soft, #fef2f2);
+}
+
+.cf-split-field app-cf-date-field .cf-date-field__clear {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  padding-inline: var(--cf-space-1);
+}
+
 .cf-split-field__hint {
   margin: 0;
   font-size: 0.75rem;

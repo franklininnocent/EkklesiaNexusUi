@@ -74,6 +74,131 @@ describe('ContactEnquiriesPage', () => {
     expect(page.displayField(page.selected?.message)).toBe('Please contact us about parish onboarding.');
   });
 
+  it('calls deleteEnquiry after confirming single delete', () => {
+    const deleteEnquiry = jest.fn(() => of(undefined));
+    const listEnquiries = jest.fn(() =>
+      of({
+        rows: [row],
+        meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 },
+      }),
+    );
+
+    TestBed.configureTestingModule({
+      imports: [ContactEnquiriesPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            canViewContactEnquiries: () => true,
+            canUpdateContactEnquiries: () => false,
+            canRetryContactEnquiryEmail: () => false,
+            canDeleteContactEnquiries: () => true,
+          },
+        },
+        {
+          provide: WebSettingsApiService,
+          useValue: {
+            listEnquiries,
+            deleteEnquiry,
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ContactEnquiriesPage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.requestDelete(row);
+    page.onConfirmDelete({ confirmed: true });
+    fixture.detectChanges();
+
+    expect(deleteEnquiry).toHaveBeenCalledWith(row.id);
+    expect(page.success).toBe('Enquiry deleted.');
+  });
+
+  it('calls bulkDeleteEnquiries with selected ids after confirming bulk delete', () => {
+    const bulkDeleteEnquiries = jest.fn(() => of({ deleted_count: 1 }));
+    const listEnquiries = jest.fn(() =>
+      of({
+        rows: [row],
+        meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 },
+      }),
+    );
+
+    TestBed.configureTestingModule({
+      imports: [ContactEnquiriesPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            canViewContactEnquiries: () => true,
+            canUpdateContactEnquiries: () => false,
+            canRetryContactEnquiryEmail: () => false,
+            canDeleteContactEnquiries: () => true,
+          },
+        },
+        {
+          provide: WebSettingsApiService,
+          useValue: {
+            listEnquiries,
+            bulkDeleteEnquiries,
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ContactEnquiriesPage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance;
+
+    page.toggleRowSelection(row, new Event('click'));
+    page.requestBulkDelete();
+    page.onConfirmDelete({ confirmed: true });
+    fixture.detectChanges();
+
+    expect(bulkDeleteEnquiries).toHaveBeenCalledWith([row.id]);
+    expect(page.success).toBe('1 enquiry deleted.');
+    expect(page.selectedCount).toBe(0);
+  });
+
+  it('shows row delete and bulk delete when permitted', () => {
+    TestBed.configureTestingModule({
+      imports: [ContactEnquiriesPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            canViewContactEnquiries: () => true,
+            canUpdateContactEnquiries: () => false,
+            canRetryContactEnquiryEmail: () => false,
+            canDeleteContactEnquiries: () => true,
+          },
+        },
+        {
+          provide: WebSettingsApiService,
+          useValue: {
+            listEnquiries: () =>
+              of({
+                rows: [row],
+                meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 },
+              }),
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ContactEnquiriesPage);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('input[type="checkbox"]')).toBeTruthy();
+    expect(root.querySelector('app-cf-action-icon')).toBeTruthy();
+  });
+
   it('surfaces detail load failures in the modal', () => {
     TestBed.configureTestingModule({
       imports: [ContactEnquiriesPage],

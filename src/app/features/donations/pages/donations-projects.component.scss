@@ -5,8 +5,26 @@
   container-type: inline-size;
 }
 
+.proj-modal.cf-split-form-body {
+  align-content: start;
+}
+
 .proj-modal .cf-split-form-actions {
   justify-content: flex-end;
+}
+
+.proj-assignment-toolbar__actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .proj-assignment-toolbar__actions {
+    grid-column: 1 / -1;
+  }
 }
 
 :host ::ng-deep app-page-header .cf-page-header__actions {
@@ -284,27 +302,6 @@
     width: 1.75rem;
     height: 1.75rem;
     min-height: 1.75rem;
-  }
-}
-
-.proj-date-input {
-  position: relative;
-
-  app-cf-date-field,
-  input[type='date'] {
-    width: 100%;
-    padding-right: 2.25rem;
-  }
-
-  &__icon {
-    position: absolute;
-    top: 50%;
-    right: 0.65rem;
-    display: flex;
-    align-items: center;
-    color: var(--cf-muted);
-    pointer-events: none;
-    transform: translateY(-50%);
   }
 }
 

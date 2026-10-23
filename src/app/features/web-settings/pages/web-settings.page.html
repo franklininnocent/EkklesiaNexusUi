@@ -34,6 +34,25 @@
     <section class="cf-panel web-settings__card">
       <h2>Email delivery configuration</h2>
       <p class="cf-meta">Transport credentials stay in server environment variables. This screen only shows whether they are present.</p>
+      <div class="cf-inline-alert" *ngIf="diagnostics?.mailer_writes_to_log_only" role="alert">
+        <p>
+          The API mailer is set to <strong>{{ diagnostics.mailer }}</strong>. Contact notifications are written to server logs only — they are not emailed until production uses Resend (<code>MAIL_MAILER=resend</code>).
+        </p>
+      </div>
+      <div class="cf-inline-alert" *ngIf="diagnostics && !diagnostics.contact_email_will_deliver && !diagnostics.mailer_writes_to_log_only" role="alert">
+        <p>Contact enquiry email is not ready. Fix the recipient address and mail transport, then use Send test email.</p>
+      </div>
+      <div class="cf-inline-alert" *ngIf="(diagnostics?.failed_delivery_count ?? 0) > 0 || (diagnostics?.stuck_received_count ?? 0) > 0" role="alert">
+        <p>
+          <ng-container *ngIf="(diagnostics?.failed_delivery_count ?? 0) > 0">
+            {{ diagnostics?.failed_delivery_count }} enquiry email(s) failed to send.
+          </ng-container>
+          <ng-container *ngIf="(diagnostics?.stuck_received_count ?? 0) > 0">
+            {{ diagnostics?.stuck_received_count }} enquiry(ies) are still waiting for notification delivery.
+          </ng-container>
+          Open <a routerLink="/settings/contact-enquiries">Contact enquiries</a> to review and retry.
+        </p>
+      </div>
       <dl class="web-settings__diag" *ngIf="diagnostics">
         <div><dt>Mailer</dt><dd>{{ diagnostics.mailer }}</dd></div>
         <div><dt>From address</dt><dd>{{ diagnostics.from_address_configured ? 'Configured' : 'Missing' }}</dd></div>
@@ -90,8 +109,8 @@
           [tone]="diagnostics.recipient_configured ? 'success' : 'critical'"
         ></app-status-badge>
         <app-status-badge
-          [label]="diagnostics.transport_ready ? 'Transport configured' : 'Transport incomplete'"
-          [tone]="diagnostics.transport_ready ? 'success' : 'warning'"
+          [label]="diagnostics.contact_email_will_deliver ? 'Notifications will email' : (diagnostics.mailer_writes_to_log_only ? 'Log mailer only' : 'Transport incomplete')"
+          [tone]="diagnostics.contact_email_will_deliver ? 'success' : 'warning'"
         ></app-status-badge>
         <app-status-badge
           [label]="diagnostics.captcha_enabled ? 'CAPTCHA on' : 'CAPTCHA off'"

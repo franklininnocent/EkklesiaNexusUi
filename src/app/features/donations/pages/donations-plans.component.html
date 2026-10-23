@@ -148,7 +148,7 @@
             <section class="plan-section" aria-labelledby="plan-section-rules">
               <h3 id="plan-section-rules" class="plan-section__title">Contribution rules</h3>
               <div class="plan-grid">
-                <div class="plan-field">
+                <div class="plan-field" *ngIf="sameAmountForAll">
                   <label for="plan-amount">Amount per family <span class="req" aria-hidden="true">*</span></label>
                   <div class="plan-amount" [class.is-invalid]="isFieldInvalid('default_amount')">
                     <span aria-hidden="true">{{ currencySymbol }}</span>
@@ -200,6 +200,48 @@
                 This amount will be expected from each active family. Saving does not bill anyone.
                 <a routerLink="/donations/categories">Use an offering category</a> when families may give any amount.
               </p>
+
+              <div
+                class="plan-family-amounts"
+                *ngIf="planForm.value.plan_type === 'individual'"
+                aria-labelledby="plan-section-family-amounts"
+              >
+                <h4 id="plan-section-family-amounts" class="plan-section__subtitle">Family amounts</h4>
+                <p class="plan-field__hint">
+                  Add each family and amount, then press +. Saving also adds a completed row if family and amount are filled in.
+                </p>
+                <p class="plan-field__error" *ngIf="assignmentSectionError" role="alert">{{ assignmentSectionError }}</p>
+                <p class="plan-field__error" *ngIf="assignmentAddHint" role="alert">{{ assignmentAddHint }}</p>
+                <div class="plan-assign cf-form-grid">
+                  <select [(ngModel)]="selectedFamilyId" [ngModelOptions]="{standalone: true}" aria-label="Family">
+                    <option value="">Family</option>
+                    <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
+                  </select>
+                  <input [(ngModel)]="assignmentAmount" [ngModelOptions]="{standalone: true}" type="number" min="0.01" step="0.01" placeholder="Amount" aria-label="Amount" />
+                  <app-cf-date-field [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" aria-label="Effective from" />
+                  <button type="button" class="cf-btn cf-btn-icon" (click)="addAssignment()" aria-label="Add family amount" title="Add family amount"><app-cf-action-icon name="plus" /></button>
+                </div>
+                <table *ngIf="draftAssignments.length" class="cf-table plan-assign-table">
+                  <tbody>
+                    <tr *ngFor="let row of draftAssignments; let i = index">
+                      <td>{{ familyName(row.family_id) }}</td>
+                      <td>{{ row.amount | cfCurrency : null : 0 }}</td>
+                      <td>{{ row.effective_from | cfDate }}</td>
+                      <td>
+                        <button
+                          type="button"
+                          class="cf-btn cf-btn-icon cf-btn--sm"
+                          (click)="removeAssignment(i)"
+                          aria-label="Remove"
+                          title="Remove"
+                        >
+                          <app-cf-action-icon name="trash" />
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <section class="plan-section" aria-labelledby="plan-section-schedule">
@@ -272,11 +314,35 @@
               <h3 id="plan-section-bill" class="plan-section__title">Bill families</h3>
               <p class="plan-field__hint" *ngIf="billingSummary" role="status">{{ billingSummary }}</p>
               <div class="plan-billing-actions">
-                <button type="button" class="cf-btn cf-btn-primary" (click)="billEligibleFamilies()" [disabled]="generatingPlanId === editingPlanId || editedPlan?.status === 'inactive'">
-                  {{ generatingPlanId === editingPlanId ? 'Billing…' : 'Bill eligible families' }}
+                <button
+                  type="button"
+                  class="cf-btn cf-btn-icon"
+                  (click)="billEligibleFamilies()"
+                  [disabled]="generatingPlanId === editingPlanId || editedPlan?.status === 'inactive'"
+                  [attr.aria-label]="generatingPlanId === editingPlanId ? 'Billing…' : 'Bill eligible families'"
+                  [attr.title]="generatingPlanId === editingPlanId ? 'Billing…' : 'Bill eligible families'"
+                >
+                  <app-cf-action-icon name="wallet" />
                 </button>
-                <a class="cf-btn" [routerLink]="['/donations/dues']" [queryParams]="{ plan_id: editingPlanId, roster: 1, plan_name: planForm.value.name }">Review families</a>
-                <button type="button" class="cf-btn" *ngIf="editedPlan?.status !== 'inactive'" (click)="closePlan()">Close plan</button>
+                <a
+                  class="cf-btn cf-btn-icon"
+                  [routerLink]="['/donations/dues']"
+                  [queryParams]="{ plan_id: editingPlanId, roster: 1, plan_name: planForm.value.name }"
+                  aria-label="Review families"
+                  title="Review families"
+                >
+                  <app-cf-action-icon name="users" />
+                </a>
+                <button
+                  type="button"
+                  class="cf-btn cf-btn-icon"
+                  *ngIf="editedPlan?.status !== 'inactive'"
+                  (click)="closePlan()"
+                  aria-label="Close plan"
+                  title="Close plan"
+                >
+                  <app-cf-action-icon name="x-circle" />
+                </button>
               </div>
             </section>
 
@@ -286,40 +352,6 @@
                 <label for="plan-code">Reference code</label>
                 <input id="plan-code" formControlName="code" placeholder="Auto-generated if blank" />
               </div>
-            </details>
-
-            <details class="plan-more" *ngIf="planForm.value.plan_type === 'individual'" open>
-              <summary>Family amounts</summary>
-              <p class="plan-field__error" *ngIf="submitAttempted && !draftAssignments.length" role="alert">Add at least one family amount.</p>
-              <div class="plan-assign cf-form-grid">
-                <select [(ngModel)]="selectedFamilyId" [ngModelOptions]="{standalone: true}" aria-label="Family">
-                  <option value="">Family</option>
-                  <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
-                </select>
-                <input [(ngModel)]="assignmentAmount" [ngModelOptions]="{standalone: true}" type="number" min="0.01" step="0.01" placeholder="Amount" aria-label="Amount" />
-                <app-cf-date-field [(ngModel)]="assignmentEffectiveFrom" [ngModelOptions]="{standalone: true}" aria-label="Effective from" />
-                <button type="button" class="cf-btn cf-btn-icon" (click)="addAssignment()" aria-label="Add" title="Add"><app-cf-action-icon name="plus" /></button>
-              </div>
-              <table *ngIf="draftAssignments.length" class="cf-table plan-assign-table">
-                <tbody>
-                  <tr *ngFor="let row of draftAssignments; let i = index">
-                    <td>{{ familyName(row.family_id) }}</td>
-                    <td>{{ row.amount | cfCurrency : null : 0 }}</td>
-                    <td>{{ row.effective_from | cfDate }}</td>
-                    <td>
-                      <button
-                        type="button"
-                        class="cf-btn cf-btn-icon cf-btn--sm"
-                        (click)="removeAssignment(i)"
-                        aria-label="Remove"
-                        title="Remove"
-                      >
-                        <app-cf-action-icon name="trash" />
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </details>
 
             <div class="plan-actions">
@@ -455,23 +487,28 @@
                         <app-edit-icon-button
                           size="sm"
                           [ariaLabel]="'Edit ' + plan.name"
-                          [title]="'Edit ' + plan.name"
+                          title="Edit"
                           (clicked)="editPlan(plan)"
                         ></app-edit-icon-button>
                         <button
                           type="button"
-                          class="cf-btn cf-btn--sm"
+                          class="cf-btn cf-btn-icon cf-btn--sm"
                           [disabled]="generatingPlanId === plan.id || plan.status === 'inactive'"
                           (click)="generateDues(plan)"
-                          [attr.aria-label]="'Bill eligible families for ' + plan.name"
+                          [attr.aria-label]="generatingPlanId === plan.id ? 'Billing…' : 'Bill eligible families'"
+                          [attr.title]="generatingPlanId === plan.id ? 'Billing…' : 'Bill eligible families'"
                         >
-                          {{ generatingPlanId === plan.id ? 'Billing…' : 'Bill eligible families' }}
+                          <app-cf-action-icon name="wallet" />
                         </button>
                         <a
-                          class="cf-btn cf-btn--sm"
+                          class="cf-btn cf-btn-icon cf-btn--sm"
                           [routerLink]="['/donations/dues']"
                           [queryParams]="{ plan_id: plan.id, roster: 1, plan_name: plan.name }"
-                        >Review families</a>
+                          aria-label="Review families"
+                          title="Review families"
+                        >
+                          <app-cf-action-icon name="users" />
+                        </a>
                       </div>
                     </td>
                   </tr>
