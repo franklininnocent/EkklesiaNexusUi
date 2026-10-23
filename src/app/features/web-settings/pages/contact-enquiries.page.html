@@ -14,6 +14,15 @@
       (searchChange)="onSearchChange($event)"
       (filtersOpened)="showFilters = true"
     >
+      <button
+        type="button"
+        class="cf-btn cf-btn-danger"
+        *ngIf="canDelete && selectedCount > 0"
+        [disabled]="loading || processing"
+        (click)="requestBulkDelete()"
+      >
+        Delete selected ({{ selectedCount }})
+      </button>
       <button type="button" class="cf-btn" [disabled]="loading" (click)="reload()">Refresh</button>
     </app-list-toolbar>
   </app-page-header>
@@ -41,10 +50,19 @@
     </div>
 
     <ng-container *ngIf="loaded">
-      <div class="cf-panel" *ngIf="rows.length">
+      <div class="cf-panel contact-enquiries__table-panel" *ngIf="rows.length">
         <app-data-table [clickableRows]="true" [ariaBusy]="loading">
           <thead>
             <tr>
+              <th scope="col" class="contact-enquiries__select-col" *ngIf="canDelete">
+                <input
+                  type="checkbox"
+                  [checked]="allRowsSelected"
+                  [attr.aria-checked]="someRowsSelected ? 'mixed' : allRowsSelected"
+                  aria-label="Select all enquiries on this page"
+                  (click)="toggleSelectAllOnPage($event)"
+                />
+              </th>
               <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('reference_number')">Reference</button></th>
               <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('full_name')">Name</button></th>
               <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('email')">Email</button></th>
@@ -53,10 +71,19 @@
               <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('created_at')">Submitted</button></th>
               <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('enquiry_status')">Status</button></th>
               <th scope="col"><button type="button" class="contact-enquiries__sort" (click)="sortBy('delivery_status')">Email</button></th>
+              <th scope="col" class="contact-enquiries__actions-col" *ngIf="canDelete"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of rows; trackBy: trackById" (click)="openDetail(row)">
+              <td class="contact-enquiries__select-col" *ngIf="canDelete" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  [checked]="isSelected(row.id)"
+                  [attr.aria-label]="'Select enquiry ' + row.reference_number"
+                  (click)="toggleRowSelection(row, $event)"
+                />
+              </td>
               <td>{{ row.reference_number }}</td>
               <td>{{ row.full_name }}</td>
               <td>{{ row.email }}</td>
@@ -65,6 +92,18 @@
               <td>{{ row.submitted_at | cfDate: 'datetime' }}</td>
               <td><app-status-badge [label]="statusLabel(row.enquiry_status)" [tone]="enquiryTone(row.enquiry_status)"></app-status-badge></td>
               <td><app-status-badge [label]="statusLabel(row.delivery_status)" [tone]="deliveryTone(row.delivery_status)"></app-status-badge></td>
+              <td class="contact-enquiries__actions-col" *ngIf="canDelete" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  class="cf-btn cf-btn-icon cf-btn--sm"
+                  [disabled]="processing"
+                  [attr.aria-label]="'Delete enquiry ' + row.reference_number"
+                  title="Delete"
+                  (click)="requestDelete(row, $event)"
+                >
+                  <app-cf-action-icon name="trash" />
+                </button>
+              </td>
             </tr>
           </tbody>
         </app-data-table>
@@ -140,18 +179,18 @@
       <button type="button" class="cf-btn" *ngIf="canUpdate" [disabled]="processing" (click)="setStatus(selected, 'in_progress')">In progress</button>
       <button type="button" class="cf-btn" *ngIf="canUpdate" [disabled]="processing" (click)="setStatus(selected, 'closed')">Close</button>
       <button type="button" class="cf-btn" *ngIf="canRetry && selected.can_retry_email" [disabled]="processing" (click)="retry(selected)">Retry email</button>
-      <button type="button" class="cf-btn" *ngIf="canDelete" [disabled]="processing" (click)="requestDelete(selected)">Delete</button>
+      <button type="button" class="cf-btn" *ngIf="canDelete" [disabled]="processing" (click)="requestDelete(selected!)">Delete</button>
     </div>
   </app-modal-shell>
 
   <app-confirmation-modal
     [show]="confirmOpen"
-    title="Delete this enquiry?"
-    message="This removes the visitor’s message from the enquiry list. This cannot be undone."
+    [title]="confirmTitle"
+    [message]="confirmMessage"
     confirmText="Delete"
     confirmButtonClass="btn-danger"
     (confirmed)="onConfirmDelete($event)"
-    (cancelled)="confirmOpen = false; pendingDelete = null"
-    (closed)="confirmOpen = false; pendingDelete = null"
+    (cancelled)="confirmOpen = false; pendingDelete = null; pendingBulkDelete = false"
+    (closed)="confirmOpen = false; pendingDelete = null; pendingBulkDelete = false"
   ></app-confirmation-modal>
 </section>

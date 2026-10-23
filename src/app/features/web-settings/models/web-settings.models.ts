@@ -27,6 +27,10 @@ export interface WebSettingsDiagnostics {
   smtp_username_configured: boolean;
   smtp_password_configured: boolean;
   transport_ready: boolean;
+  mailer_writes_to_log_only?: boolean;
+  contact_email_will_deliver?: boolean;
+  failed_delivery_count?: number;
+  stuck_received_count?: number;
 }
 
 export interface WebSettingsPayload {

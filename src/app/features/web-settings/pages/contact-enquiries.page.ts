@@ -22,6 +22,7 @@ import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/lo
 import { ConfirmationModalComponent, ConfirmationResult } from '@shared/components/confirmation-modal/confirmation-modal.component';
 import { StatusBadgeComponent, StatusBadgeTone } from '@shared/components/status-badge/status-badge.component';
 import { ModalShellComponent } from '@shared/components/modal-shell/modal-shell.component';
+import { CfActionIconComponent } from '@shared/components/cf-action-icon/cf-action-icon.component';
 import { CfDatePipe } from '@shared/pipes/cf-date.pipe';
 import { WebSettingsApiService } from '../services/web-settings.service';
 import { ContactEnquiryRow } from '../models/web-settings.models';
@@ -40,6 +41,7 @@ import { ContactEnquiryRow } from '../models/web-settings.models';
     ConfirmationModalComponent,
     StatusBadgeComponent,
     ModalShellComponent,
+    CfActionIconComponent,
     CfDatePipe,
   ],
   templateUrl: './contact-enquiries.page.html',
@@ -84,6 +86,11 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
   selected: ContactEnquiryRow | null = null;
   confirmOpen = false;
   pendingDelete: ContactEnquiryRow | null = null;
+  pendingBulkDelete = false;
+  confirmTitle = 'Delete this enquiry?';
+  confirmMessage =
+    'This removes the visitor’s message from the enquiry list. This cannot be undone.';
+  selectedIds = new Set<string>();
 
   ngOnInit(): void {
     this.searchFields = [
@@ -129,6 +136,18 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
 
   get drawerFilterCount(): number {
     return [this.enquiryStatus, this.deliveryStatus, this.submittedFrom, this.submittedTo].filter(Boolean).length;
+  }
+
+  get selectedCount(): number {
+    return this.selectedIds.size;
+  }
+
+  get allRowsSelected(): boolean {
+    return this.rows.length > 0 && this.rows.every((row) => this.selectedIds.has(row.id));
+  }
+
+  get someRowsSelected(): boolean {
+    return this.selectedIds.size > 0 && !this.allRowsSelected;
   }
 
   onSearchChange(value: string): void {
@@ -201,6 +220,7 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
           this.perPage = meta.per_page;
           this.total = meta.total;
           this.lastPage = meta.last_page;
+          this.pruneSelection();
         },
         error: (err: HttpErrorResponse) => {
           this.error = err.error?.message ?? 'Unable to load contact enquiries.';
@@ -260,16 +280,103 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
     this.mutate(() => this.api.retryEmail(row.id), 'Email delivery has been queued again.');
   }
 
-  requestDelete(row: ContactEnquiryRow): void {
+  isSelected(id: string): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  toggleRowSelection(row: ContactEnquiryRow, event: Event): void {
+    event.stopPropagation();
+    const next = new Set(this.selectedIds);
+    if (next.has(row.id)) {
+      next.delete(row.id);
+    } else {
+      next.add(row.id);
+    }
+    this.selectedIds = next;
+    this.cdr.markForCheck();
+  }
+
+  toggleSelectAllOnPage(event: Event): void {
+    event.stopPropagation();
+    if (this.allRowsSelected) {
+      this.selectedIds = new Set();
+    } else {
+      this.selectedIds = new Set(this.rows.map((row) => row.id));
+    }
+    this.cdr.markForCheck();
+  }
+
+  clearSelection(): void {
+    this.selectedIds = new Set();
+    this.cdr.markForCheck();
+  }
+
+  requestDelete(row: ContactEnquiryRow, event?: Event): void {
+    event?.stopPropagation();
+    this.pendingBulkDelete = false;
     this.pendingDelete = row;
+    this.confirmTitle = 'Delete this enquiry?';
+    this.confirmMessage =
+      'This removes the visitor’s message from the enquiry list. This cannot be undone.';
+    this.confirmOpen = true;
+  }
+
+  requestBulkDelete(): void {
+    if (!this.canDelete || this.selectedIds.size === 0) {
+      return;
+    }
+    this.pendingBulkDelete = true;
+    this.pendingDelete = null;
+    const count = this.selectedIds.size;
+    this.confirmTitle = count === 1 ? 'Delete this enquiry?' : `Delete ${count} enquiries?`;
+    this.confirmMessage =
+      count === 1
+        ? 'This removes the visitor’s message from the enquiry list. This cannot be undone.'
+        : `This removes ${count} enquiries from the list. This cannot be undone.`;
     this.confirmOpen = true;
   }
 
   onConfirmDelete(result: ConfirmationResult): void {
     const row = this.pendingDelete;
+    const bulk = this.pendingBulkDelete;
     this.confirmOpen = false;
     this.pendingDelete = null;
-    if (!result.confirmed || !row || !this.canDelete) {
+    this.pendingBulkDelete = false;
+    if (!result.confirmed || !this.canDelete) {
+      return;
+    }
+
+    if (bulk) {
+      const ids = [...this.selectedIds];
+      if (!ids.length) {
+        return;
+      }
+      this.processing = true;
+      this.api
+        .bulkDeleteEnquiries(ids)
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => {
+            this.processing = false;
+            this.cdr.markForCheck();
+          }),
+        )
+        .subscribe({
+          next: (data) => {
+            this.success =
+              data.deleted_count === 1 ? '1 enquiry deleted.' : `${data.deleted_count} enquiries deleted.`;
+            this.clearSelection();
+            this.closeDetail();
+            this.reload();
+          },
+          error: (err: HttpErrorResponse) => {
+            this.error = err.error?.message ?? 'Unable to delete enquiries.';
+          },
+        });
+      return;
+    }
+
+    if (!row) {
       return;
     }
     this.processing = true;
@@ -285,6 +392,7 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.success = 'Enquiry deleted.';
+          this.selectedIds.delete(row.id);
           this.closeDetail();
           this.reload();
         },
@@ -292,6 +400,11 @@ export class ContactEnquiriesPage implements OnInit, OnDestroy {
           this.error = err.error?.message ?? 'Unable to delete enquiry.';
         },
       });
+  }
+
+  private pruneSelection(): void {
+    const visible = new Set(this.rows.map((row) => row.id));
+    this.selectedIds = new Set([...this.selectedIds].filter((id) => visible.has(id)));
   }
 
   statusLabel(value: string): string {
