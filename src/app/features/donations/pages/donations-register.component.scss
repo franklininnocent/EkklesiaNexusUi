@@ -1,8 +1,7 @@
-.register__checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
+@use '../styles/stewardship-split-layout.scss';
+
+.cf-split-form-actions {
+  justify-content: flex-end;
 }
 
 .collect-form {

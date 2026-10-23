@@ -47,51 +47,156 @@
   <app-modal-shell
     *ngIf="showVoluntaryDonationModal && canCollect"
     title="Record voluntary donation"
-    description="Full form for pledges, anonymous gifts, and categories"
-    size="md"
+    description="Pledges, walk-in gifts, anonymous offerings, and category tracking"
+    size="lg"
     headerVariant="compact"
     bodyPadding="none"
     closeAriaLabel="Close record voluntary donation"
     [isSubmitting]="saving"
     (closeRequested)="closeVoluntaryDonationModal()"
   >
-    <form [formGroup]="collectForm" (ngSubmit)="collect()" class="collect-form cf-split-form-body cf-form-grid" novalidate>
-      <select formControlName="donation_id" (change)="onPledgeSelected()">
-        <option value="">New donation</option>
-        <option *ngFor="let entry of pledgedEntries" [value]="entry.id">
-          {{ entry.title || entry.category?.name || 'Pledge' }} — Outstanding {{ outstanding(entry) | cfCurrency }}
-        </option>
-      </select>
-      <select formControlName="family_id">
-        <option value="">No family link</option>
-        <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
-      </select>
-      <select formControlName="donation_category_id" [attr.disabled]="collectForm.value.donation_id ? true : null">
-        <option value="">Select category</option>
-        <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
-      </select>
-      <input formControlName="title" placeholder="Title (optional)" [readonly]="!!collectForm.value.donation_id" />
-      <input formControlName="amount" type="number" placeholder="Amount" />
-      <select formControlName="method">
-        <option value="cash">Cash</option>
-        <option value="bank_transfer">Bank Transfer</option>
-        <option value="cheque">Cheque</option>
-        <option value="online_placeholder">Online</option>
-      </select>
-      <app-cf-date-field formControlName="payment_date" />
-      <select formControlName="donor_id">
-        <option value="">New / walk-in donor</option>
-        <option *ngFor="let donor of donors" [value]="donor.id">{{ donor.name }}</option>
-      </select>
-      <input *ngIf="!collectForm.value.donor_id && !collectForm.value.is_anonymous" formControlName="donor_name" placeholder="Donor name" />
-      <input *ngIf="!collectForm.value.is_anonymous" formControlName="donor_email" placeholder="Donor email" />
-      <select formControlName="donor_type">
-        <option value="external">External Donor</option>
-        <option value="individual">Individual</option>
-        <option value="family">Family</option>
-        <option value="organization">Organization</option>
-      </select>
-      <label class="register__checkbox"><input type="checkbox" formControlName="is_anonymous" /> Anonymous donation</label>
+    <form [formGroup]="collectForm" (ngSubmit)="collect()" class="collect-form cf-split-form-body" novalidate>
+      <p class="cf-meta">
+        Use Quick Collect for simple same-day gifts. This form is for pledges, linking a family, or recording anonymous gifts.
+      </p>
+
+      <p
+        *ngIf="message && message !== 'Donation collected.'"
+        class="cf-split-form-alert cf-split-form-alert--error"
+        role="alert"
+      >
+        {{ message }}
+      </p>
+
+      <section
+        *ngIf="pledgedEntries.length"
+        class="cf-split-section"
+        aria-labelledby="register-voluntary-pledge-heading"
+      >
+        <h3 id="register-voluntary-pledge-heading" class="cf-split-section__title">Apply to a pledge</h3>
+        <div class="cf-split-grid">
+          <div class="cf-split-field cf-split-field--full">
+            <label for="register-voluntary-pledge">Pledge <span class="cf-split-optional">optional</span></label>
+            <select id="register-voluntary-pledge" formControlName="donation_id" (change)="onPledgeSelected()">
+              <option value="">New gift (not linked to a pledge)</option>
+              <option *ngFor="let entry of pledgedEntries" [value]="entry.id">
+                {{ entry.title || entry.category?.name || 'Pledge' }} — Outstanding {{ outstanding(entry) | cfCurrency }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="cf-split-section" aria-labelledby="register-voluntary-gift-heading">
+        <h3 id="register-voluntary-gift-heading" class="cf-split-section__title">Gift details</h3>
+        <div class="cf-split-grid">
+          <div class="cf-split-field">
+            <label for="register-voluntary-category">Offering category</label>
+            <select id="register-voluntary-category" formControlName="donation_category_id">
+              <option value="">Select category</option>
+              <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+            </select>
+          </div>
+          <div class="cf-split-field">
+            <label for="register-voluntary-family">Family link <span class="cf-split-optional">optional</span></label>
+            <select id="register-voluntary-family" formControlName="family_id">
+              <option value="">No family link</option>
+              <option *ngFor="let family of families" [value]="family.id">{{ family | cfFamilyPickerLabel }}</option>
+            </select>
+          </div>
+          <div class="cf-split-field cf-split-field--full">
+            <label for="register-voluntary-title">Title <span class="cf-split-optional">optional</span></label>
+            <input
+              id="register-voluntary-title"
+              formControlName="title"
+              placeholder="e.g., Building fund gift"
+              [readonly]="!!collectForm.value.donation_id"
+              [attr.aria-readonly]="collectForm.value.donation_id ? true : null"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="cf-split-section" aria-labelledby="register-voluntary-payment-heading">
+        <h3 id="register-voluntary-payment-heading" class="cf-split-section__title">Payment</h3>
+        <div class="cf-split-grid">
+          <div class="cf-split-field">
+            <label for="register-voluntary-amount">Amount <span class="cf-split-req" aria-hidden="true">*</span></label>
+            <div class="cf-amount-input">
+              <span class="cf-amount-input__prefix" aria-hidden="true">{{ currencySymbol }}</span>
+              <input
+                id="register-voluntary-amount"
+                formControlName="amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                aria-required="true"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <div class="cf-split-field">
+            <label for="register-voluntary-method">Method <span class="cf-split-req" aria-hidden="true">*</span></label>
+            <select id="register-voluntary-method" formControlName="method" aria-required="true">
+              <option value="cash">Cash</option>
+              <option value="bank_transfer">Bank transfer</option>
+              <option value="cheque">Cheque</option>
+              <option value="online_placeholder">Online</option>
+            </select>
+          </div>
+          <div class="cf-split-field">
+            <label for="register-voluntary-date">Payment date <span class="cf-split-req" aria-hidden="true">*</span></label>
+            <app-cf-date-field inputId="register-voluntary-date" formControlName="payment_date" aria-required="true" />
+          </div>
+        </div>
+      </section>
+
+      <section class="cf-split-section" aria-labelledby="register-voluntary-donor-heading">
+        <h3 id="register-voluntary-donor-heading" class="cf-split-section__title">Donor</h3>
+        <div class="cf-split-grid">
+          <div class="cf-split-field cf-split-field--full">
+            <label for="register-voluntary-donor">Existing donor <span class="cf-split-optional">optional</span></label>
+            <select id="register-voluntary-donor" formControlName="donor_id">
+              <option value="">New or walk-in donor</option>
+              <option *ngFor="let donor of donors" [value]="donor.id">{{ donor.name }}</option>
+            </select>
+          </div>
+          <div
+            class="cf-split-field cf-split-field--full"
+            *ngIf="!collectForm.value.donor_id && !collectForm.value.is_anonymous"
+          >
+            <label for="register-voluntary-donor-name">Donor name</label>
+            <input id="register-voluntary-donor-name" formControlName="donor_name" autocomplete="name" />
+          </div>
+          <div class="cf-split-field" *ngIf="!collectForm.value.is_anonymous">
+            <label for="register-voluntary-donor-email">Email <span class="cf-split-optional">optional</span></label>
+            <input
+              id="register-voluntary-donor-email"
+              type="email"
+              formControlName="donor_email"
+              autocomplete="email"
+            />
+          </div>
+          <div class="cf-split-field" *ngIf="!collectForm.value.is_anonymous">
+            <label for="register-voluntary-donor-type">Donor type</label>
+            <select id="register-voluntary-donor-type" formControlName="donor_type">
+              <option value="external">External supporter</option>
+              <option value="individual">Individual</option>
+              <option value="family">Family-linked</option>
+              <option value="organization">Organization</option>
+            </select>
+          </div>
+        </div>
+        <label class="cf-split-toggle cf-split-toggle--block">
+          <input type="checkbox" formControlName="is_anonymous" />
+          <span>
+            Anonymous donation
+            <small>Payer shows as Anonymous on the register and receipt.</small>
+          </span>
+        </label>
+      </section>
+
       <div class="cf-split-form-actions">
         <button
           type="submit"

@@ -6,6 +6,7 @@ import { ChangeDetectorRef, Component, DestroyRef, OnInit, ChangeDetectionStrate
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
+import { ChurchCurrencyService } from '@core/services/church-currency.service';
 import { FamilyService } from '@core/services/family.service';
 import { Family } from '@core/models/family.model';
 import {
@@ -67,6 +68,7 @@ type RegisterSortColumn = 'payment_number' | 'payer_name' | 'payment_date' | 'me
 })
 export class DonationsRegisterComponent implements OnInit {
   private readonly actions = inject(ActionAuthorizationService);
+  private readonly churchCurrency = inject(ChurchCurrencyService);
   categories: DonationCategory[] = [];
   donors: Donor[] = [];
   families: Family[] = [];
@@ -170,7 +172,12 @@ export class DonationsRegisterComponent implements OnInit {
     this.quickCollectService.open();
   }
 
+  get currencySymbol(): string {
+    return this.churchCurrency.currencySymbol() ?? '';
+  }
+
   openVoluntaryDonationModal(): void {
+    this.message = '';
     this.showVoluntaryDonationModal = true;
   }
 
@@ -212,7 +219,9 @@ export class DonationsRegisterComponent implements OnInit {
 
   onPledgeSelected(): void {
     const donationId = this.collectForm.value.donation_id;
+    const categoryControl = this.collectForm.get('donation_category_id');
     if (!donationId) {
+      categoryControl?.enable();
       return;
     }
     const entry = this.pledgedEntries.find((row) => row.id === donationId);
@@ -225,6 +234,7 @@ export class DonationsRegisterComponent implements OnInit {
       family_id: entry.family_id || '',
       amount: this.outstanding(entry),
     });
+    categoryControl?.disable();
   }
 
   onAdvancedSearch(values: { [key: string]: unknown }): void {
@@ -326,6 +336,7 @@ export class DonationsRegisterComponent implements OnInit {
             },
           });
         }
+        this.collectForm.get('donation_category_id')?.enable();
         this.collectForm.patchValue({
           donation_id: '',
           title: '',

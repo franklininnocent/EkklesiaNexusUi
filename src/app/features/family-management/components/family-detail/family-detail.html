@@ -118,8 +118,9 @@
         [attr.aria-labelledby]="workspaceTabId('financial')"
       >
         <app-family-financial-dashboard
-          *ngIf="familyFinancialProfile"
+          *ngIf="familyFinancialProfile && family"
           [profile]="familyFinancialProfile"
+          [familyId]="family.id"
           (refresh)="reloadFamilyFinancialSummary()"
         ></app-family-financial-dashboard>
       </div>

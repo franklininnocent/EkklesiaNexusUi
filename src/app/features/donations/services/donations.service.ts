@@ -403,6 +403,16 @@ export class DonationsService {
     );
   }
 
+  saveFamilyPlanAssignment(
+    familyId: string,
+    payload: { plan_id: string; amount: number }
+  ): Observable<{ success: boolean; message: string; data: ContributionPlanAssignment }> {
+    return this.http.post<{ success: boolean; message: string; data: ContributionPlanAssignment }>(
+      `${this.baseUrl}/families/${familyId}/contribution-plan-assignments`,
+      payload
+    );
+  }
+
   getPlanRevisionHistory(planId: string): Observable<{ success: boolean; data: PaginatedResponse<PlanRevisionHistory> }> {
     return this.http.get<{ success: boolean; data: PaginatedResponse<PlanRevisionHistory> }>(
       `${this.baseUrl}/plans/${planId}/revision-history`

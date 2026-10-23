@@ -5,16 +5,39 @@
 
 .plan-billing-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
   align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.cf-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
+.plans-table {
+  .cf-table__actions-col,
+  .cf-table__actions-cell {
+    width: auto;
+    min-width: 7.5rem;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .cf-row-actions {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+
+    .cf-btn,
+    a.cf-btn {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    app-edit-icon-button {
+      flex-shrink: 0;
+    }
+  }
 }
 
 .plans-banner {
@@ -200,6 +223,10 @@
   vertical-align: top;
 }
 
+.plans-table tbody td.cf-table__actions-cell {
+  vertical-align: middle;
+}
+
 .plans-list-empty {
   margin: 0;
   padding: 2rem 1.15rem;
@@ -228,6 +255,19 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--cf-muted);
+}
+
+.plan-section__subtitle {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cf-text);
+}
+
+.plan-family-amounts {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cf-panel-border);
 }
 
 .plan-form-alert {

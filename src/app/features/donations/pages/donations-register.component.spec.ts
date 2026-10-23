@@ -50,7 +50,7 @@ describe('DonationsRegisterComponent', () => {
             getPayments,
           },
         },
-        { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD' } },
+        { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD', currencySymbol: () => '$' } },
       ],
     }).compileComponents();
 
@@ -101,7 +101,7 @@ describe('DonationsRegisterComponent', () => {
             getPayments: jest.fn().mockReturnValue(of({ data: { data: [] } })),
           },
         },
-        { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD' } },
+        { provide: ChurchCurrencyService, useValue: { currencyCode: () => 'USD', currencySymbol: () => '$' } },
       ],
     }).compileComponents();
 

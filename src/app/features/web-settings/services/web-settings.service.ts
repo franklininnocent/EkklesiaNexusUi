@@ -105,4 +105,15 @@ export class WebSettingsApiService {
       }),
     );
   }
+
+  bulkDeleteEnquiries(ids: string[]): Observable<{ deleted_count: number }> {
+    return this.http.post<ApiEnvelope<{ deleted_count: number }>>(`${this.enquiriesUrl}/bulk-delete`, { ids }).pipe(
+      map((body) => {
+        if (!body.success || !body.data) {
+          throw new Error(body.message ?? 'Unable to delete enquiries.');
+        }
+        return body.data;
+      }),
+    );
+  }
 }

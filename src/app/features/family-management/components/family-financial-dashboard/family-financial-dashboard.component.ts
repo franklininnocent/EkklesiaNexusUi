@@ -1,6 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { IfFeatureDirective } from '@shared/directives/if-feature.directive';
-import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
+import { CanActionDirective } from '@shared/directives/can-action.directive';
+import { Component, EventEmitter, Input, Output, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
+import {
+  FamilyPlanAmountEditorComponent,
+  FamilyPlanAssignmentRow,
+} from '../family-plan-amount-editor/family-plan-amount-editor.component';
 import { RouterModule } from '@angular/router';
 import { QuickCollectService } from '@features/donations/services/quick-collect.service';
 import { ReceiptPrintService } from '@features/donations/services/receipt-print.service';
@@ -18,7 +23,15 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
 @Component({
   selector: 'app-family-financial-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FinancialActivityTimelineComponent, IfFeatureDirective, CfCurrencyPipe],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FinancialActivityTimelineComponent,
+    IfFeatureDirective,
+    CanActionDirective,
+    CfCurrencyPipe,
+    FamilyPlanAmountEditorComponent,
+  ],
   template: `
     <section class="family-financial-dashboard cf-panel" *ngIf="profile">
       <header class="dashboard-header">
@@ -65,6 +78,16 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
             <h4 class="cf-subsection-title">Contribution Plans</h4>
             <p class="cf-meta">Active plan assignments and payment progress for this family.</p>
           </div>
+          <ng-container *appIfFeature="'CONTRIBUTION_PLANS'">
+            <button
+              *appCan="'donations.manage'"
+              type="button"
+              class="cf-btn"
+              (click)="openPlanAmountEditor()"
+            >
+              Set Plan Amount
+            </button>
+          </ng-container>
         </header>
 
         <table class="cf-table contribution-plans-table" *ngIf="contributionPlans.length">
@@ -84,6 +107,18 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
               <td>
                 <strong>{{ plan.plan_name || plan.plan_id }}</strong>
                 <span class="plan-meta cf-caption">{{ plan.plan_code || '—' }} · {{ frequencyLabel(plan.frequency) }}</span>
+                <ng-container *ngIf="plan.plan_type === 'individual'">
+                  <ng-container *appIfFeature="'CONTRIBUTION_PLANS'">
+                    <button
+                      *appCan="'donations.manage'"
+                      type="button"
+                      class="cf-btn cf-btn--link plan-edit-amount"
+                      (click)="openPlanAmountEditor(plan.plan_id)"
+                    >
+                      Edit amount
+                    </button>
+                  </ng-container>
+                </ng-container>
               </td>
               <td>{{ formatCurrency(plan.assigned_amount) }}</td>
               <td>{{ formatCurrency(plan.amount_paid) }}</td>
@@ -156,6 +191,16 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
           </div>
         </div>
       </article>
+
+      <app-family-plan-amount-editor
+        #planAmountEditor
+        [familyId]="familyId"
+        [assignments]="planAssignmentRows"
+        [open]="planAmountEditorOpen"
+        [preselectedPlanId]="planAmountEditorPlanId"
+        (closed)="closePlanAmountEditor()"
+        (saved)="onPlanAmountSaved()"
+      />
 
       <app-financial-activity-timeline
         class="activity-feed"
@@ -355,8 +400,22 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
     .empty-note { margin: 0.5rem 0 0; }
     .contribution-plans-panel { margin-bottom: 0.85rem; display: grid; gap: 0.85rem; }
     .activity-feed { display: block; margin-bottom: 0.85rem; }
+    .contribution-plans-panel__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.65rem;
+    }
     .contribution-plans-panel__header .cf-subsection-title { margin: 0; color: var(--cf-slate-900); }
     .contribution-plans-panel__header p { margin: 0.2rem 0 0; }
+    .plan-edit-amount {
+      display: inline-block;
+      margin-top: 0.25rem;
+      padding: 0;
+      min-height: auto;
+      font-size: inherit;
+    }
     .contribution-plans-table .plan-meta { display: block; margin-top: 0.1rem; }
     .outstanding-dues-block { display: grid; gap: 0.5rem; }
     .outstanding-dues-block .cf-subsection-title { margin: 0; color: var(--cf-slate-900); }
@@ -366,8 +425,13 @@ type DashboardSection = 'breakdown' | 'projects' | 'donations' | 'analytics' | '
 })
 export class FamilyFinancialDashboardComponent {
   private readonly churchCurrency = inject(ChurchCurrencyService);
+  @ViewChild('planAmountEditor') private planAmountEditor?: FamilyPlanAmountEditorComponent;
   @Input({ required: true }) profile!: DonationFamilyFinancialProfile;
+  @Input({ required: true }) familyId!: string;
   @Output() refresh = new EventEmitter<void>();
+
+  planAmountEditorOpen = false;
+  planAmountEditorPlanId: string | null = null;
 
   private expandedSections = new Set<DashboardSection>();
 
@@ -380,6 +444,10 @@ export class FamilyFinancialDashboardComponent {
     return this.profile?.mandatory_contributions?.contribution_plans
       ?? this.profile?.mandatory_contributions?.plan_summaries
       ?? [];
+  }
+
+  get planAssignmentRows(): FamilyPlanAssignmentRow[] {
+    return this.profile?.mandatory_contributions?.assignments ?? [];
   }
 
   get outstandingDues(): Array<ContributionDue & { is_overdue?: boolean }> {
@@ -580,5 +648,22 @@ export class FamilyFinancialDashboardComponent {
 
   printStatement(): void {
     this.receiptPrintService.printFamilyStatement(this.profile.family_id);
+  }
+
+  openPlanAmountEditor(planId?: string): void {
+    this.planAmountEditorPlanId = planId ?? null;
+    this.planAmountEditorOpen = true;
+    queueMicrotask(() => {
+      this.planAmountEditor?.beginOpen(this.planAmountEditorPlanId);
+    });
+  }
+
+  closePlanAmountEditor(): void {
+    this.planAmountEditorOpen = false;
+    this.planAmountEditorPlanId = null;
+  }
+
+  onPlanAmountSaved(): void {
+    this.refresh.emit();
   }
 }
